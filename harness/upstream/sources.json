@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "sources": {
+    "superpowers": {
+      "type": "git",
+      "url": "https://github.com/obra/superpowers",
+      "path": "harness/upstream/superpowers"
+    },
+    "planning-with-files": {
+      "type": "local-initial-import",
+      "path": "harness/upstream/planning-with-files"
+    }
+  }
+}

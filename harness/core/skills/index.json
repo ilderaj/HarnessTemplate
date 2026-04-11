@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "skills": {
+    "superpowers": {
+      "source": "https://github.com/obra/superpowers",
+      "baselinePath": "harness/upstream/superpowers/skills",
+      "projection": {
+        "default": "link",
+        "copilot": "link",
+        "cursor": "link",
+        "codex": "link",
+        "claude-code": "link"
+      }
+    },
+    "planning-with-files": {
+      "source": "local-initial-import",
+      "baselinePath": "harness/upstream/planning-with-files",
+      "projection": {
+        "default": "link",
+        "copilot": "materialize",
+        "cursor": "link",
+        "codex": "link",
+        "claude-code": "link"
+      },
+      "patches": {
+        "copilot": "harness/core/skills/patches/copilot-planning-with-files.patch.md"
+      }
+    }
+  }
+}

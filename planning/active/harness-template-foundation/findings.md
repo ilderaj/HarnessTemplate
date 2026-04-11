@@ -122,6 +122,13 @@
 - superpowers plans path 被项目 policy 覆盖：长期计划必须回写 active task 的三份 planning 文件，除非用户明确要求写入 `docs/superpowers/plans/`
 - Task 3 的 `base.md` 使用平台中立表述，保留完整硬约束；shell/token guidance 单独拆为 snippet，并同步在 base policy 中保留
 
+## Task 6 记录
+
+- `harness/core/skills/index.json` 现在是 v1 skill source metadata 的事实源
+- `planning-with-files` 对 Copilot 明确走 `materialize`，其余四个平台当前都按 `link` 设计
+- `harness/upstream/sources.json` 记录了 `superpowers` 的 git source 和 `planning-with-files` 的 local initial import source
+- core tests 已扩展到 2 个：作者路径泄漏检查 + skill index 元数据检查
+
 ## Task 5 记录
 
 - Task 5 仅涉及静态元数据与本地状态 schema，文件内容必须严格按 plan 中的 JSON 结构落地
