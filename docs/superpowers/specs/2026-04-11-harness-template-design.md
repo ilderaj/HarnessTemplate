@@ -11,7 +11,7 @@ The design uses a `Core + Adapters + Installer` architecture:
 - `installer` manages interactive setup, projection, health checks, and update state.
 - `upstream` stores vendored baselines and source metadata for external skills.
 
-The v1 default is project-local installation. A user-level Harness home is supported as an opt-in mode for people who want one reusable installation across projects.
+The v1 installer supports three installation scopes: `workspace`, `user-global`, and `both`. `workspace` remains the default, but `user-global` is a first-class v1 capability rather than a later enhancement.
 
 ## Goals
 
@@ -23,6 +23,8 @@ The v1 default is project-local installation. A user-level Harness home is suppo
 - Prefer symlinks to avoid drift, but copy or render where platform compatibility requires it.
 - Remove all machine-specific paths so the template works outside the original author environment.
 - Provide a clear README and maintenance documentation for both users and maintainers.
+- Extract the full current global agent policy, including hard behavioral constraints beyond the `planning-with-files` and `superpowers` coordination rules.
+- Allow users to install Harness rules and skills at workspace scope, user-global scope, or both.
 
 ## Non-Goals
 
@@ -35,13 +37,39 @@ The v1 default is project-local installation. A user-level Harness home is suppo
 ## Confirmed Constraints
 
 - The repository must use an IDE-neutral source of truth.
-- The v1 runtime model must support both project-local mode and optional user-home mode.
-- Project-local mode is the default.
+- The v1 runtime model must support `workspace`, `user-global`, and `both` installation scopes.
+- `workspace` mode is the default.
+- `user-global` mode is a required v1 capability, not a deferred enhancement.
 - Codex, GitHub Copilot, Cursor, and Claude Code are the required v1 targets.
 - `superpowers` and `planning-with-files` use a hybrid integration model:
   - a vendored working baseline lives in the template,
   - upstream fetch and update flows remain available.
 - The template must be fully depersonalized.
+
+## Initial Policy Extraction Source
+
+The initial v1 policy source is the author's current global Codex `AGENTS.md`, read at extraction time. This source must be reviewed as a complete policy document, not as only a `planning-with-files` and `superpowers` integration note.
+
+The extraction must include:
+
+- hybrid workflow rules,
+- planning persistence and archive rules,
+- superpowers usage boundaries,
+- mandatory sync-back rules,
+- task completion standards,
+- verification expectations,
+- communication language rules,
+- coding principles,
+- comment standards,
+- tool preferences,
+- subagent expectations,
+- output style rules,
+- compact-context preservation priorities,
+- shell and token-saving preferences.
+
+After extraction, the template's `harness/core/policy/base.md` becomes the source of truth for HarnessTemplate. Local global agent files are treated as import sources or projection targets, not as the long-term canonical source.
+
+If the local global policy changes before implementation starts, the extraction step must reread the latest file and use the latest content as the source. The implementation plan must include an explicit reread step before policy extraction.
 
 ## Repository Structure
 
@@ -83,7 +111,7 @@ HarnessTemplate/
 
 It must contain:
 
-- `policy/base.md`: shared hybrid workflow rules, planning persistence rules, superpowers boundaries, verification expectations, communication expectations, and token-saving guidance.
+- `policy/base.md`: shared hybrid workflow rules, planning persistence rules, superpowers boundaries, task completion rules, verification expectations, communication expectations, development constraints, output style, compact-context priorities, and token-saving guidance.
 - `policy/platform-overrides/`: platform-specific behavioral notes that do not belong in the shared base.
 - `policy/snippets/`: reusable policy fragments such as shell guidance or subagent guidance.
 - `skills/first-party/`: first-party Harness skills and maintained compatibility skills.
@@ -115,7 +143,7 @@ It should:
 - render `AGENTS.md`,
 - link skills where reliable,
 - avoid Codex-specific policy drift,
-- support project-local and user-home installation.
+- support workspace, user-global, and both installation scopes.
 
 ### Copilot Adapter
 
@@ -124,6 +152,8 @@ Copilot needs explicit local instructions and local skill visibility.
 It should:
 
 - render `copilot-instructions.md`,
+- support user-global Copilot instructions when selected,
+- support workspace-level Copilot files for tools that cannot reliably read global instructions,
 - link compatible `superpowers` skills,
 - materialize patched `planning-with-files` content,
 - avoid assuming Copilot reads Codex global configuration or shared `.agents/skills`.
@@ -136,6 +166,8 @@ It should:
 
 - render rules into Cursor-compatible `.mdc` files,
 - expose supported skills through Cursor-readable skill directories,
+- support global Cursor rules and skills when selected,
+- support workspace-level Cursor files when global discovery is unavailable or insufficient,
 - keep rules and skills derived from the same core source.
 
 ### Claude Code Adapter
@@ -146,6 +178,7 @@ It should:
 
 - render a thin `CLAUDE.md` entry file,
 - link compatible skills where reliable,
+- support global and workspace-level Claude Code entry files where the platform supports them,
 - document optional hooks separately,
 - avoid mutating invasive hook configuration unless explicitly selected.
 
@@ -172,7 +205,7 @@ It should:
 
 - detect available target platforms,
 - ask which platforms to configure,
-- ask whether to use project-local mode or user-home mode,
+- ask which installation scope to use: `workspace`, `user-global`, or `both`,
 - ask whether to prefer symlinks or portable materialized files,
 - render, link, or materialize platform projections,
 - write `.harness/state.json`.
@@ -206,7 +239,7 @@ Apply fetched upstream updates to the template baseline, rerun compatibility pat
 
 ### `status`
 
-Show installed targets, install mode, projection mode, upstream versions, and sync health.
+Show installed targets, installation scope, projection mode, upstream versions, and sync health.
 
 ## State Model
 
@@ -219,7 +252,7 @@ The installer writes local state to:
 State should record:
 
 - selected targets,
-- install mode,
+- installation scope,
 - target paths,
 - projection mode per target,
 - skill source versions,
@@ -237,6 +270,7 @@ It should include:
 - what HarnessTemplate is,
 - who should use it,
 - a quick install path,
+- installation scope choices,
 - supported v1 platforms,
 - common CLI commands,
 - a realistic compatibility statement.
@@ -280,6 +314,7 @@ Checks for each v1 platform:
 Checks:
 
 - a new user can follow README installation,
+- a new user can choose workspace, user-global, or both scopes,
 - selected platforms are configurable in arbitrary combinations,
 - generated files are discoverable in expected target locations,
 - a planning-related workflow can read the expected instructions.
@@ -317,10 +352,12 @@ Automation should update `dev`, run verification, and only promote to `main` aft
 The first milestone should produce:
 
 - core policy baseline,
+- full extraction of the current global policy into the core policy baseline,
 - minimal adapters for Codex, Copilot, Cursor, and Claude Code,
 - vendored baselines for `superpowers` and `planning-with-files`,
 - skill metadata,
 - `install`, `doctor`, and `sync`,
+- support for workspace, user-global, and both installation scopes,
 - README and architecture docs,
 - verification checks for depersonalization and projection idempotence,
 - local Git and GitHub repository setup with `main` and `dev`.
@@ -357,7 +394,7 @@ Mitigation: split `fetch` from `update`, require patch reapplication, and genera
 
 Automatically mutating global hooks or IDE settings may surprise users.
 
-Mitigation: default to project-local install and make hooks opt-in.
+Mitigation: default to workspace scope and make hooks opt-in.
 
 ## Implementation Defaults
 
