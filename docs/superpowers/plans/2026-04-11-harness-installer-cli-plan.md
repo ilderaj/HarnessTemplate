@@ -664,6 +664,7 @@ git commit -m "feat: add install state command"
 ## Task 7: Implement Doctor And Sync Contracts
 
 **Files:**
+- Modify: `package.json`
 - Modify: `harness/installer/commands/doctor.mjs`
 - Modify: `harness/installer/commands/sync.mjs`
 - Modify: `harness/installer/commands/fetch.mjs`
@@ -704,6 +705,16 @@ export async function doctor(args = []) {
   }
 
   console.log(checkOnly ? 'Harness check passed.' : 'Harness installation is healthy.');
+}
+```
+
+After `doctor.mjs` exists, update `package.json` so `verify` runs the doctor check as well:
+
+```json
+{
+  "scripts": {
+    "verify": "node --test && node harness/installer/commands/doctor.mjs --check-only"
+  }
 }
 ```
 

@@ -47,7 +47,7 @@ Create `package.json` with:
   "scripts": {
     "test": "node --test",
     "test:core": "node --test tests/core/*.test.mjs",
-    "verify": "node --test && node harness/installer/commands/doctor.mjs --check-only"
+    "verify": "node --test"
   }
 }
 ```
