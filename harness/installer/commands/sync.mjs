@@ -1,3 +1,7 @@
+import { readState } from '../lib/state.mjs';
+
 export async function sync() {
-  console.log('sync command contract ready');
+  const state = await readState(process.cwd());
+  const targets = Object.keys(state.targets);
+  console.log(`Sync contract ready for ${targets.length} target(s): ${targets.join(', ')}`);
 }

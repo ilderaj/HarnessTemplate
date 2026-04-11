@@ -1,3 +1,3 @@
 export async function fetchCommand() {
-  console.log('fetch command contract ready');
+  console.log('Fetch command contract ready. Upstream mutation is not enabled in this milestone.');
 }
