@@ -45,3 +45,12 @@
 - Task 2 已完成：新增 depersonalization test `tests/core/no-personal-paths.test.mjs`
 - 初版扫描命中 `planning/active/...` 中的研究路径，已按计划把 `planning` 加入忽略目录
 - `npm run test:core` 已通过
+- Task 3 开始：已按要求重新读取最新全局 `$HOME/.codex/AGENTS.md`
+- Task 3 新增中立 core policy 文件：
+  - `harness/core/policy/base.md`
+  - `harness/core/policy/snippets/shell-token-guidance.md`
+- Task 3 验证通过：`npm run test:core`
+- Task 3 已提交：`8f57cfd`，commit message 为 `feat: extract core harness policy`
+- Task 3 code quality review 要求平台中立化 archive guard，并为 shell/token snippet 增加使用边界
+- Task 3 质量修复已提交：`37f230a`，commit message 为 `fix: keep core policy platform neutral`
+- Task 3 code quality 复审通过

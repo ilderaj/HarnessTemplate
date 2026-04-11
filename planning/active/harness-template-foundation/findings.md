@@ -115,3 +115,9 @@
 
 - depersonalization 测试必须忽略 `planning` 目录，否则会把保留的本机研究证据误判成模板泄漏
 - 当前测试仅约束模板与实现文件中的作者专属绝对路径字符串
+
+## Task 3 记录
+
+- 最新全局 policy 已包含 planning lifecycle/archive guard，抽取到 core policy 时必须保留，不能只抽取 superpowers/planning 协同规则
+- superpowers plans path 被项目 policy 覆盖：长期计划必须回写 active task 的三份 planning 文件，除非用户明确要求写入 `docs/superpowers/plans/`
+- Task 3 的 `base.md` 使用平台中立表述，保留完整硬约束；shell/token guidance 单独拆为 snippet，并同步在 base policy 中保留
