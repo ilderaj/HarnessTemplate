@@ -199,7 +199,23 @@
 - Adapters Task 5 相关 commits：
   - `ce16f63` `feat: add skill projection lookup`
 - adapters-projection 子计划已完成
-- 下一步待执行：docs-verification-release 子计划
+- 当前转入 docs-verification-release 子计划 Task 1：新增 README
+- Docs Task 1 已完成：新增 `README.md`
+- Docs Task 1 commit：`4f705d2` `docs: add project readme`
+- 当前转入 Docs Task 2：新增 architecture 与 install docs
+- Docs Task 2 已完成：新增 architecture doc 与四个平台 install docs
+- Docs Task 2 commit：`162e369` `docs: add architecture and install guides`
+- 当前转入 Docs Task 3：新增 compatibility、maintenance、release docs
+- Docs Task 3 已完成：新增 compatibility、maintenance、release docs
+- Docs Task 3 commit：`fbae031` `docs: add maintenance and compatibility guides`
+- 当前转入 Docs Task 4：新增 verification report command
+- Docs Task 4 已完成：新增 `harness verify` report command
+- Docs Task 4 commit：`96c4d06` `feat: add verification report command`
+- `./scripts/harness verify` 已验证可生成 `reports/verification/latest.md/json`，生成物已清理，仓库只保留 `.gitkeep`
+- 当前转入 Docs Task 5：把 GitHub repository setup 写入 release doc
+- Docs Task 5 已完成：release doc 增加 GitHub repository setup
+- Release flow 已从 `npm test` / `doctor` 调整为 `npm run verify` / `./scripts/harness verify`
+- docs-verification-release 子计划已完成
 - Task 4 已完成：新增四个平台 overrides，`npm run test:core` 通过，commit `ee96d24`
 - Task 5 已开始：按计划创建 `harness/core/metadata/` 与 `harness/core/state-schema/`
 - Task 5 将只落地核心元数据与状态 schema，不扩展到 Task 6

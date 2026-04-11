@@ -244,6 +244,12 @@
 - `projection.default` 只能作为已知 target 的显式默认策略，不能掩盖拼写错误或平台配置漂移
 - 当前 Copilot `planning-with-files` 返回 `materialize`，Codex `superpowers` 返回 `link`
 
+## Docs / Release 记录
+
+- Release flow 不能用 `npm test`，因为 vendored upstream 目录可能带有自己的测试依赖，模板仓库验证应使用 repo-scoped `npm run verify`
+- Release flow 也不应强依赖 `doctor`，因为 `doctor` 是本地安装健康检查，结果取决于 `.harness/state.json`
+- `./scripts/harness verify` 负责生成 verification report，但 `latest.md/json` 是生成物，不进入 Git
+
 ## Task 5 记录
 
 - Task 5 仅涉及静态元数据与本地状态 schema，文件内容必须严格按 plan 中的 JSON 结构落地

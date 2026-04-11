@@ -27,7 +27,8 @@
 6. 已完成 core-policy-upstream 子计划
 7. 已完成 installer-cli 子计划
 8. 已完成 adapters-projection 子计划
-9. 下一步执行 docs-verification-release 子计划
+9. 已完成 docs-verification-release 子计划
+10. 下一步执行本地 GitHub repo / main-dev-origin 发布准备
 
 ## 已产出
 
@@ -46,14 +47,10 @@
 
 ## 当前子任务
 
-- 下一阶段候选：Docs / Verification / Release
+- 发布准备
 - 目标文件：
-  - `README.md`
-  - `docs/architecture.md`
-  - `docs/install/*.md`
-  - `docs/maintenance.md`
-  - `docs/release.md`
-  - `reports/verification/*`
+  - Git branches: `main`, `dev`
+  - GitHub repo: `HarnessTemplate`
 
 ## 已确认设计前提
 
