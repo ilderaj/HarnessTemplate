@@ -34,3 +34,8 @@
 - 未执行任何 implementation task
 - 用户已确认 implementation plan review
 - 等待选择执行方式：subagent-driven 或 inline execution
+- 用户选择 Subagent-Driven execution
+- 已将 plans 基线提交到 `main`
+- 已创建并切换到 `dev` 分支开始 implementation
+- 派发 Core plan Task 1：添加 Node test harness
+- Task 1 已完成：新增 `package.json`，并通过 `npm test` 验证无测试时为 0 tests / pass
