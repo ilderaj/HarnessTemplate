@@ -54,3 +54,4 @@
 - Task 3 code quality review 要求平台中立化 archive guard，并为 shell/token snippet 增加使用边界
 - Task 3 质量修复已提交：`37f230a`，commit message 为 `fix: keep core policy platform neutral`
 - Task 3 code quality 复审通过
+- Task 4 已完成：新增四个平台 overrides，`npm run test:core` 通过，commit `ee96d24`
