@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -112,7 +113,10 @@ export async function writeState(rootDir, state) {
   const stateDir = path.dirname(stateFile);
   await mkdir(stateDir, { recursive: true });
 
-  const tempFile = path.join(stateDir, `${path.basename(stateFile)}.${process.pid}.${Date.now()}.tmp`);
+  const tempFile = path.join(
+    stateDir,
+    `${path.basename(stateFile)}.${process.pid}.${Date.now()}.${randomUUID()}.tmp`
+  );
   try {
     await writeFile(tempFile, `${JSON.stringify(state, null, 2)}\n`);
     await rename(tempFile, stateFile);

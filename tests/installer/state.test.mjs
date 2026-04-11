@@ -72,3 +72,32 @@ test('writeState rejects invalid state shape', async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('writeState survives concurrent writes with a constant timestamp', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'harness-state-'));
+  const originalNow = Date.now;
+  Date.now = () => 1700000000000;
+  try {
+    const states = Array.from({ length: 12 }, (_, index) => ({
+      schemaVersion: 1,
+      scope: index % 2 === 0 ? 'workspace' : 'both',
+      projectionMode: index % 3 === 0 ? 'link' : 'portable',
+      targets: { codex: { enabled: true, paths: ['AGENTS.md'] } },
+      upstream: {}
+    }));
+
+    const results = await Promise.allSettled(states.map((state) => writeState(dir, state)));
+    assert.deepEqual(
+      results.map((result) => result.status),
+      Array(states.length).fill('fulfilled')
+    );
+    const stored = await readState(dir);
+    assert.ok(
+      states.some((state) => JSON.stringify(state) === JSON.stringify(stored)),
+      'stored state should match one of the concurrent writes'
+    );
+  } finally {
+    Date.now = originalNow;
+    await rm(dir, { recursive: true, force: true });
+  }
+});
