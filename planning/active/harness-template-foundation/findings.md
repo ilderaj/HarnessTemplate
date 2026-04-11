@@ -129,6 +129,12 @@
 - `harness/upstream/sources.json` 记录了 `superpowers` 的 git source 和 `planning-with-files` 的 local initial import source
 - core tests 已扩展到 2 个：作者路径泄漏检查 + skill index 元数据检查
 
+## Task 7 记录
+
+- `harness/upstream/superpowers` 已通过浅 clone 获取初始 baseline，并移除了 `.git`
+- `harness/upstream/planning-with-files` 已从本机共享 skill 目录复制初始 baseline
+- 当前 core tests 在 vendored baselines 存在的情况下仍保持通过
+
 ## Task 5 记录
 
 - Task 5 仅涉及静态元数据与本地状态 schema，文件内容必须严格按 plan 中的 JSON 结构落地

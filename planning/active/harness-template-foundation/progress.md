@@ -58,6 +58,8 @@
 - Task 5 已完成：新增 `platforms.json` 与 `state.schema.json`，并收紧 schema 约束
 - Task 6 已完成：新增 skill index、Copilot patch note、upstream sources metadata、`tests/core/skill-index.test.mjs`
 - 当前 `npm run test:core` 结果：2 tests pass / 0 fail
+- Task 7 已完成：vendored `superpowers` baseline 与 `planning-with-files` baseline 已落地到 `harness/upstream/`
+- Task 7 验证通过：`npm run test:core` 仍为 2 tests pass / 0 fail
 - Task 4 已完成：新增四个平台 overrides，`npm run test:core` 通过，commit `ee96d24`
 - Task 5 已开始：按计划创建 `harness/core/metadata/` 与 `harness/core/state-schema/`
 - Task 5 将只落地核心元数据与状态 schema，不扩展到 Task 6
