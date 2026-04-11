@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { resolveTargetPaths } from './paths.mjs';
 import { renderTemplate } from './fs-ops.mjs';
 
 export async function loadAdapter(rootDir, target) {
@@ -22,10 +23,5 @@ export async function renderEntry(rootDir, target) {
 }
 
 export function entriesForScope(rootDir, homeDir, adapter, scope) {
-  const workspace = adapter.workspaceEntries.map((entry) => path.join(rootDir, entry));
-  const global = adapter.globalEntries.map((entry) => path.join(homeDir, entry));
-
-  if (scope === 'workspace') return workspace;
-  if (scope === 'user-global') return global;
-  return [...workspace, ...global];
+  return resolveTargetPaths(rootDir, homeDir, scope, adapter.target);
 }
