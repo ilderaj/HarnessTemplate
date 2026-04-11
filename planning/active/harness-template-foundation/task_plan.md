@@ -32,6 +32,13 @@
   - 无 `TBD` / `TODO` / `FIXME`
   - 无个人绝对路径泄漏
   - 已把关键实现默认值收敛到文档中
+- implementation plan review/index：
+  - `docs/superpowers/plans/2026-04-11-harness-template-plan-review.md`
+- implementation 子计划：
+  - `docs/superpowers/plans/2026-04-11-harness-core-policy-upstream-plan.md`
+  - `docs/superpowers/plans/2026-04-11-harness-installer-cli-plan.md`
+  - `docs/superpowers/plans/2026-04-11-harness-adapters-projection-plan.md`
+  - `docs/superpowers/plans/2026-04-11-harness-docs-verification-release-plan.md`
 
 ## 已确认设计前提
 
@@ -54,5 +61,6 @@
 - 不初始化 GitHub 仓库
 - 不创建代码脚手架
 - 不写安装脚本
+- 不执行 implementation plans
 
 以上内容待设计确认后进入下一阶段

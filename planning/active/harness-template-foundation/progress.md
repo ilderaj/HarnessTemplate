@@ -26,3 +26,11 @@
 - 准备汇总为完整执行计划框架，覆盖抽取、验证、梳理、README、通用化、GitHub 仓库与分支策略
 - 写入设计 spec：`docs/superpowers/specs/2026-04-11-harness-template-design.md`
 - 完成 spec 自检并修正个人路径示例与开放决策歧义
+- 根据 spec 写出 implementation plan review/index 和 4 个子计划
+- 完成 plan 自检：
+  - 无占位符关键词
+  - 无旧 scope 术语
+  - 无个人绝对路径字面量
+- 未执行任何 implementation task
+- 用户已确认 implementation plan review
+- 等待选择执行方式：subagent-driven 或 inline execution
