@@ -1,6 +1,6 @@
 # Harness Upstream Smooth Update Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. This repository overrides the default Superpowers plan location: durable state for this task lives in `planning/active/harness-upstream-smooth-update/`, not in `docs/superpowers/plans/`.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking. This repository overrides the default Superpowers plan location: durable state for this task lives in `planning/active/harness-upstream-smooth-update/`, not in `docs/superpowers/plans/`.
 
 **Goal:** Add a hard upstream update path that can refresh vendored `superpowers` and `planning-with-files` baselines while preventing accidental changes to Harness core policy, adapters, installer flow, or planning state.
 
@@ -11,9 +11,9 @@
 ---
 
 ## Current State
-Status: waiting_execution
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: 已完成 upstream smooth update 硬能力实现，并通过 focused upstream tests、完整仓库验证和 mutation boundary 检查。
 
 ## Scope
 
@@ -57,7 +57,7 @@ Close Reason:
 - Create: `harness/installer/lib/upstream.mjs`
 - Test: `tests/installer/upstream.test.mjs`
 
-- [ ] **Step 1: Write failing tests for source loading and path guards**
+- [x] **Step 1: Write failing tests for source loading and path guards**
 
 Create `tests/installer/upstream.test.mjs` with:
 
@@ -118,7 +118,7 @@ test('candidate paths are constrained to local harness state', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests and verify they fail**
+- [x] **Step 2: Run tests and verify they fail**
 
 Run:
 
@@ -128,7 +128,7 @@ node --test tests/installer/upstream.test.mjs
 
 Expected: FAIL with an import error because `harness/installer/lib/upstream.mjs` does not exist.
 
-- [ ] **Step 3: Implement minimal upstream helper**
+- [x] **Step 3: Implement minimal upstream helper**
 
 Create `harness/installer/lib/upstream.mjs`:
 
@@ -247,7 +247,7 @@ export async function applyCandidate(rootDir, sourceName, source) {
 }
 ```
 
-- [ ] **Step 4: Run focused helper tests**
+- [x] **Step 4: Run focused helper tests**
 
 Run:
 
@@ -257,7 +257,7 @@ node --test tests/installer/upstream.test.mjs
 
 Expected: PASS for the three helper tests.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 Run:
 
@@ -272,7 +272,7 @@ git commit -m "feat: add upstream update helpers"
 - Modify: `harness/installer/commands/fetch.mjs`
 - Test: `tests/installer/upstream-commands.test.mjs`
 
-- [ ] **Step 1: Write failing command tests for local staging**
+- [x] **Step 1: Write failing command tests for local staging**
 
 Create `tests/installer/upstream-commands.test.mjs`:
 
@@ -333,7 +333,7 @@ test('fetchCommand stages local planning-with-files candidate without touching c
 });
 ```
 
-- [ ] **Step 2: Run test and verify it fails**
+- [x] **Step 2: Run test and verify it fails**
 
 Run:
 
@@ -343,7 +343,7 @@ node --test tests/installer/upstream-commands.test.mjs
 
 Expected: FAIL because `fetchCommand` still only prints the contract message and does not stage candidates.
 
-- [ ] **Step 3: Implement fetch command**
+- [x] **Step 3: Implement fetch command**
 
 Replace `harness/installer/commands/fetch.mjs` with:
 
@@ -387,7 +387,7 @@ export async function fetchCommand(args = []) {
 }
 ```
 
-- [ ] **Step 4: Run command tests**
+- [x] **Step 4: Run command tests**
 
 Run:
 
@@ -397,7 +397,7 @@ node --test tests/installer/upstream-commands.test.mjs
 
 Expected: PASS for local candidate staging.
 
-- [ ] **Step 5: Run helper and command tests together**
+- [x] **Step 5: Run helper and command tests together**
 
 Run:
 
@@ -407,7 +407,7 @@ node --test tests/installer/upstream.test.mjs tests/installer/upstream-commands.
 
 Expected: PASS for all upstream tests.
 
-- [ ] **Step 6: Commit Task 2**
+- [x] **Step 6: Commit Task 2**
 
 Run:
 
@@ -422,7 +422,7 @@ git commit -m "feat: stage upstream fetch candidates"
 - Modify: `harness/installer/commands/update.mjs`
 - Modify: `tests/installer/upstream-commands.test.mjs`
 
-- [ ] **Step 1: Add failing update tests**
+- [x] **Step 1: Add failing update tests**
 
 Modify `tests/installer/upstream-commands.test.mjs` so the import section includes:
 
@@ -484,7 +484,7 @@ test('updateCommand rejects source metadata that targets harness core', async ()
 });
 ```
 
-- [ ] **Step 2: Run test and verify it fails**
+- [x] **Step 2: Run test and verify it fails**
 
 Run:
 
@@ -494,7 +494,7 @@ node --test tests/installer/upstream-commands.test.mjs
 
 Expected: FAIL because `updateCommand` still only prints the contract message.
 
-- [ ] **Step 3: Implement update command**
+- [x] **Step 3: Implement update command**
 
 Replace `harness/installer/commands/update.mjs` with:
 
@@ -527,7 +527,7 @@ export async function updateCommand(args = []) {
 }
 ```
 
-- [ ] **Step 4: Run command tests**
+- [x] **Step 4: Run command tests**
 
 Run:
 
@@ -537,7 +537,7 @@ node --test tests/installer/upstream-commands.test.mjs
 
 Expected: PASS for fetch and update command tests.
 
-- [ ] **Step 5: Run repo verification**
+- [x] **Step 5: Run repo verification**
 
 Run:
 
@@ -547,7 +547,7 @@ npm run verify
 
 Expected: all repo-scoped tests pass, including the new upstream tests through `tests/installer/*.test.mjs`.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 Run:
 
@@ -563,7 +563,7 @@ git commit -m "feat: apply upstream candidates safely"
 - Modify: `planning/active/harness-upstream-smooth-update/findings.md`
 - Modify: `planning/active/harness-upstream-smooth-update/progress.md`
 
-- [ ] **Step 1: Update maintenance docs**
+- [x] **Step 1: Update maintenance docs**
 
 Add this section to `docs/maintenance.md`:
 
@@ -595,7 +595,7 @@ npm run verify
 ```
 ````
 
-- [ ] **Step 2: Run documentation diff check**
+- [x] **Step 2: Run documentation diff check**
 
 Run:
 
@@ -605,7 +605,7 @@ git diff --check -- docs/maintenance.md
 
 Expected: no whitespace errors.
 
-- [ ] **Step 3: Run full verification**
+- [x] **Step 3: Run full verification**
 
 Run:
 
@@ -615,7 +615,7 @@ npm run verify
 
 Expected: all repo-scoped tests pass.
 
-- [ ] **Step 4: Update Planning with Files**
+- [x] **Step 4: Update Planning with Files**
 
 Update:
 
@@ -623,7 +623,7 @@ Update:
 - `planning/active/harness-upstream-smooth-update/progress.md` with commands and pass/fail outcomes.
 - `planning/active/harness-upstream-smooth-update/task_plan.md` lifecycle only after implementation is fully verified.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 Run:
 
@@ -634,7 +634,7 @@ git commit -m "docs: document upstream skill update flow"
 
 ## Final Verification
 
-- [ ] **Step 1: Run focused upstream tests**
+- [x] **Step 1: Run focused upstream tests**
 
 Run:
 
@@ -644,7 +644,7 @@ node --test tests/installer/upstream.test.mjs tests/installer/upstream-commands.
 
 Expected: all upstream helper and command tests pass.
 
-- [ ] **Step 2: Run full repository verification**
+- [x] **Step 2: Run full repository verification**
 
 Run:
 
@@ -654,7 +654,7 @@ npm run verify
 
 Expected: all tests pass.
 
-- [ ] **Step 3: Inspect mutation boundaries**
+- [x] **Step 3: Inspect mutation boundaries**
 
 Run:
 

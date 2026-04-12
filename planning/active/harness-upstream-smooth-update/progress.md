@@ -28,3 +28,12 @@
   - `npm run verify` 通过，31 tests pass。
 - Task 3 commit：`4e885cb feat: apply upstream candidates safely`。
 - Task 4 已开始：更新 `docs/maintenance.md` 和 Planning with Files 记录。
+- Task 4 验证通过：
+  - `git diff --check -- docs/maintenance.md`：通过。
+  - `npm run verify`：31 tests pass。
+- Task 4 commit：`d24d88b docs: document upstream skill update flow`。
+- Final verification 通过：
+  - `node --test tests/installer/upstream.test.mjs tests/installer/upstream-commands.test.mjs`：6 tests pass。
+  - `npm run verify`：31 tests pass。
+  - `git diff --name-only dev...HEAD` 只包含计划允许的文件范围。
+- 已将 `task_plan.md` lifecycle 更新为 `closed` / `Archive Eligible: yes`。

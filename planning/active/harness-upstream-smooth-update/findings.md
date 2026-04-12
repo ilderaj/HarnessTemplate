@@ -26,3 +26,15 @@
 - Task 2: `node --test tests/installer/upstream.test.mjs tests/installer/upstream-commands.test.mjs` passed with 4 tests.
 - Task 3: `node --test tests/installer/upstream-commands.test.mjs` passed with 3 tests.
 - Task 3: `npm run verify` passed with 31 tests.
+- Task 4: `git diff --check -- docs/maintenance.md` passed.
+- Task 4: `npm run verify` passed with 31 tests.
+- Final verification: `node --test tests/installer/upstream.test.mjs tests/installer/upstream-commands.test.mjs` passed with 6 tests.
+- Final verification: `npm run verify` passed with 31 tests.
+- Mutation boundary check: `git diff --name-only dev...HEAD` listed only `docs/maintenance.md`, upstream command/helper files, upstream tests, and this task's Planning with Files directory.
+
+## Final Conclusion
+
+- `fetch` now stages upstream candidates under `.harness/upstream-candidates/<source-name>/`.
+- `update` now applies staged candidates only through the `harness/upstream` path guard.
+- A malicious source entry pointing at `harness/core/policy` is rejected by tests.
+- Harness core flow remains separate from vendored upstream skill updates.
