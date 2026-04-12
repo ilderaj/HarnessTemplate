@@ -37,3 +37,7 @@
   - `npm run verify`：31 tests pass。
   - `git diff --name-only dev...HEAD` 只包含计划允许的文件范围。
 - 已将 `task_plan.md` lifecycle 更新为 `closed` / `Archive Eligible: yes`。
+- 复查规格覆盖时发现 `superpowers` git source 缺少直接测试；已新增 local git repo 测试覆盖 `stageGitCandidate`，避免真实网络依赖。
+- 新增 git-source 覆盖后验证通过：
+  - `node --test tests/installer/upstream.test.mjs tests/installer/upstream-commands.test.mjs`：7 tests pass。
+  - `npm run verify`：32 tests pass。

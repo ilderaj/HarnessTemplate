@@ -31,10 +31,14 @@
 - Final verification: `node --test tests/installer/upstream.test.mjs tests/installer/upstream-commands.test.mjs` passed with 6 tests.
 - Final verification: `npm run verify` passed with 31 tests.
 - Mutation boundary check: `git diff --name-only dev...HEAD` listed only `docs/maintenance.md`, upstream command/helper files, upstream tests, and this task's Planning with Files directory.
+- Coverage follow-up: added a local git repository test for `stageGitCandidate`, avoiding a real network call while verifying git-source staging behavior.
+- Final verification after git-source coverage: `node --test tests/installer/upstream.test.mjs tests/installer/upstream-commands.test.mjs` passed with 7 tests.
+- Final verification after git-source coverage: `npm run verify` passed with 32 tests.
 
 ## Final Conclusion
 
 - `fetch` now stages upstream candidates under `.harness/upstream-candidates/<source-name>/`.
 - `update` now applies staged candidates only through the `harness/upstream` path guard.
 - A malicious source entry pointing at `harness/core/policy` is rejected by tests.
+- Git-backed sources are covered with a local git repository clone test.
 - Harness core flow remains separate from vendored upstream skill updates.

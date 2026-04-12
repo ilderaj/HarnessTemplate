@@ -1,14 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import {
   assertInsideRoot,
   candidatePathForSource,
   loadUpstreamSources,
+  stageGitCandidate,
   upstreamPathForSource
 } from '../../harness/installer/lib/upstream.mjs';
+
+const execFileAsync = promisify(execFile);
 
 test('loadUpstreamSources reads configured upstream sources', async () => {
   const sources = await loadUpstreamSources(process.cwd());
@@ -51,4 +56,25 @@ test('candidate paths are constrained to local harness state', () => {
     path.join(root, '.harness/upstream-candidates/superpowers')
   );
   assert.throws(() => assertInsideRoot('/repo/harness/core', '/repo/harness/upstream'), /outside allowed root/);
+});
+
+test('stageGitCandidate clones a git source into local candidate state', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'harness-git-candidate-'));
+  const upstreamRepo = await mkdtemp(path.join(os.tmpdir(), 'harness-git-source-'));
+  try {
+    await execFileAsync('git', ['init'], { cwd: upstreamRepo });
+    await writeFile(path.join(upstreamRepo, 'SKILL.md'), '# Superpowers\n');
+    await execFileAsync('git', ['add', 'SKILL.md'], { cwd: upstreamRepo });
+    await execFileAsync(
+      'git',
+      ['-c', 'user.name=Harness Test', '-c', 'user.email=harness@example.invalid', 'commit', '-m', 'initial'],
+      { cwd: upstreamRepo }
+    );
+
+    const candidate = await stageGitCandidate(root, 'superpowers', { url: upstreamRepo });
+    assert.equal(candidate, path.join(root, '.harness/upstream-candidates/superpowers'));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(upstreamRepo, { recursive: true, force: true });
+  }
 });
