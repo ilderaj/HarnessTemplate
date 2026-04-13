@@ -11,7 +11,7 @@ Workspace scope writes:
 User-global scope writes:
 
 ```text
-~/.copilot/copilot-instructions.md
+~/.copilot/instructions/harness.instructions.md
 ```
 
 Copilot must not be assumed to read Codex global configuration. `planning-with-files` is materialized for Copilot when required.

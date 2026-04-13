@@ -13,7 +13,7 @@ Close Reason:
 
 - 官方文档结论已记录。
 - Workspace scope 的 Copilot instructions 写入 `.github/copilot-instructions.md`。
-- User-global scope 保持 `~/.copilot/copilot-instructions.md`。
+- User-global scope 写入 `~/.copilot/instructions/harness.instructions.md`。
 - 实现、测试、文档保持一致。
 - 相关 Node 测试通过。
 
@@ -27,4 +27,4 @@ Close Reason:
 
 ## 结果
 
-Workspace scope 的 Copilot instructions 现在写入 `.github/copilot-instructions.md`。User-global scope 仍写入 `~/.copilot/copilot-instructions.md`。
+Workspace scope 的 Copilot instructions 现在写入 `.github/copilot-instructions.md`。User-global scope 写入 `~/.copilot/instructions/harness.instructions.md`，并带有 `applyTo: "**"` frontmatter。
