@@ -172,7 +172,8 @@ flowchart LR
   Sync --> Entry
 
   Entry --> Codex["Codex: AGENTS.md"]
-  Entry --> Copilot["Copilot: copilot-instructions.md"]
+  Entry --> CopilotWs["Copilot workspace: .github/copilot-instructions.md"]
+  Entry --> CopilotGlobal["Copilot user-global: ~/.copilot/instructions/harness.instructions.md"]
   Entry --> Cursor["Cursor: .cursor/rules/harness.mdc"]
   Entry --> Claude["Claude Code: CLAUDE.md"]
 

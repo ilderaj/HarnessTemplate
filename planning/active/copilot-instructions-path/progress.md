@@ -17,3 +17,4 @@
 - 当前本机全局 Copilot instructions 文件为 `/Users/jared/.copilot/instructions/harness.instructions.md`。
 - 已将本地 `.harness/state.json` 恢复为 user-global 全目标状态，其中 Copilot 路径为新文件。
 - 已在 `README.md` 的 Entry Files 部分补充 Copilot workspace/user-global 路径依据、`applyTo: "**"` 自动应用规则，以及旧路径不再使用的说明。
+- 已同步更新 `README.md` 的 Installation Structure Mermaid 图，将 Copilot 节点拆成 workspace 和 user-global 两个真实路径。
