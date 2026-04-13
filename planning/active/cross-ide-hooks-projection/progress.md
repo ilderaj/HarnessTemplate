@@ -94,3 +94,11 @@
   - Projection smoke：临时目录中 `install -> sync -> doctor --check-only -> status` 通过，四个 target 的 entry 和 skills 均创建。
   - Conflict smoke：默认 `sync` 拒绝覆盖非 Harness-owned Copilot skill path；`sync --conflict=backup` 备份后成功 materialize。
   - Whitespace verification：首次 `git diff --check` 发现 planning Markdown trailing whitespace；已机械清理，重跑 `git diff --check` 通过。
+
+## 2026-04-13 README refinement
+
+- 按用户要求精简 README 相关段落：
+  - installation structure bullets 更短。
+  - diagram 中 `sync` 改为 `sync projects entries + skills`。
+  - entry/skills/upstream 说明去掉冗长解释。
+- Verification：`rg` 旧表述扫描无匹配；`git diff --check` 通过。

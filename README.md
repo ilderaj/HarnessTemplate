@@ -140,9 +140,9 @@ Record the reported `Worktree base: <base-ref> @ <base-sha>` in the active task'
 
 Harness has four layers:
 
-- `harness/core`: platform-neutral policy, templates, metadata, skill projection metadata, and schemas.
+- `harness/core`: shared policy, templates, metadata, skill projection metadata, and schemas.
 - `harness/adapters`: target-specific manifests for Codex, Copilot, Cursor, and Claude Code.
-- `harness/installer`: CLI commands and projection logic.
+- `harness/installer`: CLI commands, projection logic, and health checks.
 - `harness/upstream`: vendored baselines for `superpowers` and `planning-with-files`.
 
 ```mermaid
@@ -159,7 +159,7 @@ flowchart LR
 
   Adapters --> Manifests["target manifest.json files"]
   Installer --> Install["install writes .harness/state.json"]
-  Installer --> Sync["sync renders entry files"]
+  Installer --> Sync["sync projects entries + skills"]
   Installer --> Fetch["fetch stages upstream candidates"]
   Installer --> Update["update applies allowlisted upstream changes"]
   Installer --> FsOps["fs-ops can write, copy, or symlink"]
@@ -184,25 +184,25 @@ flowchart LR
   Skills -. "link/materialize strategy metadata" .-> Planning
 ```
 
-Current implementation note: `sync` renders entry files and projects supported skills into each enabled IDE's configured skill directory. Link projections use symlinks; materialized projections create real directory copies. Existing non-Harness-owned files are never overwritten by default. Use `./scripts/harness sync --conflict=backup` when you explicitly want Harness to preserve a local backup and write the projection.
+`sync` now projects both entry files and skills. Link projections use symlinks; materialized projections copy directories. Existing non-Harness-owned files are not overwritten unless `./scripts/harness sync --conflict=backup` is used.
 
 ## Entry Files
 
-| Target | Workspace entry | User-global entry | Current file behavior |
+| Target | Workspace entry | User-global entry | Behavior |
 | --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `~/.codex/AGENTS.md` | Rendered real file |
-| GitHub Copilot | `.copilot/copilot-instructions.md` | `~/.copilot/copilot-instructions.md` | Rendered real file |
-| Cursor | `.cursor/rules/harness.mdc` | `~/.cursor/rules/harness.mdc` | Rendered real file |
-| Claude Code | `CLAUDE.md` | `~/.claude/CLAUDE.md` | Rendered real file |
+| Codex | `AGENTS.md` | `~/.codex/AGENTS.md` | Rendered file |
+| GitHub Copilot | `.copilot/copilot-instructions.md` | `~/.copilot/copilot-instructions.md` | Rendered file |
+| Cursor | `.cursor/rules/harness.mdc` | `~/.cursor/rules/harness.mdc` | Rendered file |
+| Claude Code | `CLAUDE.md` | `~/.claude/CLAUDE.md` | Rendered file |
 
-Skill projection metadata:
+## Skills
 
 | Skill baseline | Codex | GitHub Copilot | Cursor | Claude Code |
 | --- | --- | --- | --- | --- |
 | `harness/upstream/superpowers/skills` | `link` | `link` | `link` | `link` |
 | `harness/upstream/planning-with-files` | `link` | `materialize` | `link` | `link` |
 
-Copilot uses `materialize` for `planning-with-files` because its skill and hook behavior differs from Codex and Claude Code. Other targets prefer symlink-compatible projections. If install state uses `projectionMode: "portable"`, `sync` materializes link-preferred skill projections too.
+Copilot materializes `planning-with-files`; other default projections use symlinks. `projectionMode: "portable"` materializes link-preferred skills too.
 
 Skill target roots:
 
@@ -215,9 +215,7 @@ Skill target roots:
 
 ## Upstream Updates
 
-Harness keeps governance separate from vendored skill baselines. `fetch` stages candidates under `.harness/upstream-candidates/<source>`, and `update` applies them only to the configured `harness/upstream/<source>` path. Guards prevent upstream refreshes from targeting `harness/core`, `harness/adapters`, `harness/installer`, or `planning/active`.
-
-Workflow guardrails such as worktree base preflight live in `harness/core` and `harness/installer`, not in vendored `superpowers` or `planning-with-files` sources. Updating upstream baselines should refresh only the vendored source copies; it should not change the Harness-owned base-selection mechanism.
+Harness keeps governance separate from vendored skill baselines. `fetch` stages candidates under `.harness/upstream-candidates/<source>`. `update` applies them only to `harness/upstream/<source>`. The next `sync` projects the refreshed baseline into IDE directories.
 
 ```bash
 ./scripts/harness fetch
