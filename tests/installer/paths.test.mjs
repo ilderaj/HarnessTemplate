@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveTargetPaths } from '../../harness/installer/lib/paths.mjs';
+import {
+  resolveHookRoots,
+  resolveSkillRoots,
+  resolveSkillTargetPaths,
+  resolveTargetPaths
+} from '../../harness/installer/lib/paths.mjs';
 
 test('resolveTargetPaths returns workspace paths', () => {
   const paths = resolveTargetPaths('/repo', '/home/user', 'workspace', 'codex');
@@ -19,4 +24,61 @@ test('resolveTargetPaths returns both paths', () => {
 
 test('resolveTargetPaths rejects unknown targets', () => {
   assert.throws(() => resolveTargetPaths('/repo', '/home/user', 'workspace', 'unknown'), /Unknown target/);
+});
+
+test('resolveSkillRoots returns workspace skill root for Copilot', () => {
+  assert.deepEqual(resolveSkillRoots('/repo', '/home/user', 'workspace', 'copilot'), [
+    '/repo/.github/skills'
+  ]);
+});
+
+test('resolveSkillRoots returns global skill root for Codex', () => {
+  assert.deepEqual(resolveSkillRoots('/repo', '/home/user', 'user-global', 'codex'), [
+    '/home/user/.codex/skills'
+  ]);
+});
+
+test('resolveSkillTargetPaths maps a single skill into each selected root', () => {
+  assert.deepEqual(
+    resolveSkillTargetPaths('/repo', '/home/user', 'both', 'cursor', {
+      layout: 'single',
+      targetName: 'planning-with-files'
+    }),
+    [
+      '/repo/.cursor/skills/planning-with-files',
+      '/home/user/.cursor/skills/planning-with-files'
+    ]
+  );
+});
+
+test('resolveSkillTargetPaths maps collection children into the skill root', () => {
+  assert.deepEqual(
+    resolveSkillTargetPaths('/repo', '/home/user', 'workspace', 'claude-code', {
+      layout: 'collection',
+      childNames: ['using-superpowers', 'writing-plans']
+    }),
+    [
+      '/repo/.claude/skills/using-superpowers',
+      '/repo/.claude/skills/writing-plans'
+    ]
+  );
+});
+
+test('resolveHookRoots returns workspace hook root for Cursor', () => {
+  assert.deepEqual(resolveHookRoots('/repo', '/home/user', 'workspace', 'cursor'), [
+    '/repo/.cursor'
+  ]);
+});
+
+test('resolveHookRoots returns workspace hook root for Copilot', () => {
+  assert.deepEqual(resolveHookRoots('/repo', '/home/user', 'workspace', 'copilot'), [
+    '/repo/.github/hooks'
+  ]);
+});
+
+test('resolveHookRoots returns both hook roots for Claude Code', () => {
+  assert.deepEqual(resolveHookRoots('/repo', '/home/user', 'both', 'claude-code'), [
+    '/repo/.claude',
+    '/home/user/.claude'
+  ]);
 });

@@ -6,6 +6,14 @@
     "codex": {
       "displayName": "Codex",
       "entryFiles": ["AGENTS.md"],
+      "skillRoots": {
+        "workspace": [".codex/skills"],
+        "global": [".codex/skills"]
+      },
+      "hookRoots": {
+        "workspace": [".codex"],
+        "global": [".codex"]
+      },
       "supportsGlobal": true,
       "supportsWorkspace": true,
       "skillsStrategy": "link-preferred"
@@ -13,6 +21,14 @@
     "copilot": {
       "displayName": "GitHub Copilot",
       "entryFiles": ["copilot-instructions.md"],
+      "skillRoots": {
+        "workspace": [".github/skills"],
+        "global": [".copilot/skills"]
+      },
+      "hookRoots": {
+        "workspace": [".github/hooks"],
+        "global": [".copilot/hooks"]
+      },
       "supportsGlobal": true,
       "supportsWorkspace": true,
       "skillsStrategy": "mixed"
@@ -20,6 +36,14 @@
     "cursor": {
       "displayName": "Cursor",
       "entryFiles": [".cursor/rules/harness.mdc"],
+      "skillRoots": {
+        "workspace": [".cursor/skills"],
+        "global": [".cursor/skills"]
+      },
+      "hookRoots": {
+        "workspace": [".cursor"],
+        "global": [".cursor"]
+      },
       "supportsGlobal": true,
       "supportsWorkspace": true,
       "skillsStrategy": "mixed"
@@ -27,6 +51,14 @@
     "claude-code": {
       "displayName": "Claude Code",
       "entryFiles": ["CLAUDE.md"],
+      "skillRoots": {
+        "workspace": [".claude/skills"],
+        "global": [".claude/skills"]
+      },
+      "hookRoots": {
+        "workspace": [".claude"],
+        "global": [".claude"]
+      },
       "supportsGlobal": true,
       "supportsWorkspace": true,
       "skillsStrategy": "link-preferred"

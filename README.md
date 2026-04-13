@@ -10,6 +10,7 @@ Use it at workspace scope when a single project should carry its own rules. Use 
 - `superpowers` as temporary reasoning support for complex planning, debugging, execution, review, and verification.
 - Rendered governance entry files for Codex, GitHub Copilot, Cursor, and Claude Code.
 - Workspace, user-global, and combined installation scopes.
+- Optional hook projection for verified target adapters.
 - Staged upstream updates for vendored `superpowers` and `planning-with-files` baselines.
 
 Harness is the top-level local integration layer. Lower-level skills, project rules, or local routers such as Carnival can stay in place, but Harness should decide when and how those lower-level capabilities are used.
@@ -140,9 +141,9 @@ Record the reported `Worktree base: <base-ref> @ <base-sha>` in the active task'
 
 Harness has four layers:
 
-- `harness/core`: platform-neutral policy, templates, metadata, skill projection metadata, and schemas.
+- `harness/core`: shared policy, templates, metadata, skill projection metadata, and schemas.
 - `harness/adapters`: target-specific manifests for Codex, Copilot, Cursor, and Claude Code.
-- `harness/installer`: CLI commands and projection logic.
+- `harness/installer`: CLI commands, projection logic, and health checks.
 - `harness/upstream`: vendored baselines for `superpowers` and `planning-with-files`.
 
 ```mermaid
@@ -159,7 +160,7 @@ flowchart LR
 
   Adapters --> Manifests["target manifest.json files"]
   Installer --> Install["install writes .harness/state.json"]
-  Installer --> Sync["sync renders entry files"]
+  Installer --> Sync["sync projects entries + skills"]
   Installer --> Fetch["fetch stages upstream candidates"]
   Installer --> Update["update applies allowlisted upstream changes"]
   Installer --> FsOps["fs-ops can write, copy, or symlink"]
@@ -184,31 +185,72 @@ flowchart LR
   Skills -. "link/materialize strategy metadata" .-> Planning
 ```
 
-Current implementation note: `sync` renders instruction entry files as real files. Skill projection strategies are modeled and tested, but skill filesystem projection is not wired into `sync` yet. There is no hard-link implementation; the filesystem helpers support real files and symlinks.
+`sync` now projects both entry files and skills. Link projections use symlinks; materialized projections copy directories. Existing non-Harness-owned files are not overwritten unless `./scripts/harness sync --conflict=backup` is used.
 
 ## Entry Files
 
-| Target | Workspace entry | User-global entry | Current file behavior |
+| Target | Workspace entry | User-global entry | Behavior |
 | --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `~/.codex/AGENTS.md` | Rendered real file |
-| GitHub Copilot | `.copilot/copilot-instructions.md` | `~/.copilot/copilot-instructions.md` | Rendered real file |
-| Cursor | `.cursor/rules/harness.mdc` | `~/.cursor/rules/harness.mdc` | Rendered real file |
-| Claude Code | `CLAUDE.md` | `~/.claude/CLAUDE.md` | Rendered real file |
+| Codex | `AGENTS.md` | `~/.codex/AGENTS.md` | Rendered file |
+| GitHub Copilot | `.copilot/copilot-instructions.md` | `~/.copilot/copilot-instructions.md` | Rendered file |
+| Cursor | `.cursor/rules/harness.mdc` | `~/.cursor/rules/harness.mdc` | Rendered file |
+| Claude Code | `CLAUDE.md` | `~/.claude/CLAUDE.md` | Rendered file |
 
-Skill projection metadata:
+## Skills
 
 | Skill baseline | Codex | GitHub Copilot | Cursor | Claude Code |
 | --- | --- | --- | --- | --- |
 | `harness/upstream/superpowers/skills` | `link` | `link` | `link` | `link` |
 | `harness/upstream/planning-with-files` | `link` | `materialize` | `link` | `link` |
 
-Copilot uses `materialize` for `planning-with-files` because its skill and hook behavior differs from Codex and Claude Code. Other targets prefer symlink-compatible projections when skill projection is implemented.
+Copilot materializes `planning-with-files`; other default projections use symlinks. `projectionMode: "portable"` materializes link-preferred skills too.
+
+Skill target roots:
+
+| Target | Workspace skill root | User-global skill root |
+| --- | --- | --- |
+| Codex | `.codex/skills` | `~/.codex/skills` |
+| GitHub Copilot | `.github/skills` | `~/.copilot/skills` |
+| Cursor | `.cursor/skills` | `~/.cursor/skills` |
+| Claude Code | `.claude/skills` | `~/.claude/skills` |
+
+## Hooks
+
+Hooks are opt-in. The default install keeps hook mode off and projects entry files plus skills only:
+
+```bash
+./scripts/harness install --scope=workspace --targets=all --projection=link
+```
+
+Enable hook projection explicitly:
+
+```bash
+./scripts/harness install --scope=workspace --targets=all --projection=link --hooks=on
+./scripts/harness sync
+./scripts/harness doctor --check-only
+```
+
+Harness installs only verified hook adapters. Unsupported adapters appear in `status` and `doctor` output as unsupported, but they do not fail health checks.
+
+| Hook source | Codex | GitHub Copilot | Cursor | Claude Code |
+| --- | --- | --- | --- | --- |
+| `planning-with-files` task-scoped hook | Unsupported | Supported | Supported | Supported |
+| `superpowers` upstream hooks | Unsupported | Unsupported | Supported | Supported |
+
+Hook targets:
+
+| Target | Workspace hook files | User-global hook files |
+| --- | --- | --- |
+| Codex | Not projected | Not projected |
+| GitHub Copilot | `.github/hooks/planning-with-files.json`, `.github/hooks/task-scoped-hook.sh` | `~/.copilot/hooks/planning-with-files.json`, `~/.copilot/hooks/task-scoped-hook.sh` |
+| Cursor | `.cursor/hooks.json`, `.cursor/hooks/*` | `~/.cursor/hooks.json`, `~/.cursor/hooks/*` |
+| Claude Code | `.claude/hooks.json`, `.claude/hooks/*` | `~/.claude/hooks.json`, `~/.claude/hooks/*` |
+
+Hook config merge is conservative. Harness-managed hook entries are marked with `Harness-managed ... hook`; `sync` replaces prior Harness-managed entries for the same skill and preserves unrelated user hook entries. Malformed hook config files require `./scripts/harness sync --conflict=backup`.
 
 ## Upstream Updates
 
-Harness keeps governance separate from vendored skill baselines. `fetch` stages candidates under `.harness/upstream-candidates/<source>`, and `update` applies them only to the configured `harness/upstream/<source>` path. Guards prevent upstream refreshes from targeting `harness/core`, `harness/adapters`, `harness/installer`, or `planning/active`.
-
-Workflow guardrails such as worktree base preflight live in `harness/core` and `harness/installer`, not in vendored `superpowers` or `planning-with-files` sources. Updating upstream baselines should refresh only the vendored source copies; it should not change the Harness-owned base-selection mechanism.
+Harness keeps governance separate from vendored skill baselines. `fetch` stages candidates under `.harness/upstream-candidates/<source>`. `update` applies them only to `harness/upstream/<source>`. The next `sync` projects the refreshed baseline into IDE directories.
 
 ```bash
 ./scripts/harness fetch
