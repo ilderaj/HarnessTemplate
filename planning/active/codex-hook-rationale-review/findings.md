@@ -18,6 +18,31 @@
   - repo skills 走 `.agents/skills`
   - user skills 走 `~/.agents/skills`
   - 不是仓库当前写死的 `.codex/skills`
+- VS Code 官方 hooks 文档明确给出：
+  - workspace hooks 目录是 `.github/hooks/*.json`
+  - user hooks 目录是 `~/.copilot/hooks`
+  - VS Code 也会读取 Claude 格式的 `.claude/settings.json` / `.claude/settings.local.json` / `~/.claude/settings.json`
+  - VS Code 支持 `SessionStart`、`UserPromptSubmit`、`PreToolUse`、`PostToolUse`、`PreCompact`、`SubagentStart`、`SubagentStop`、`Stop`
+  - VS Code 会解析 Copilot CLI lowerCamelCase 事件名并映射到 PascalCase
+  - VS Code 解析 Claude matcher，但当前忽略 matcher 值
+- Claude Code 官方 hooks 文档明确给出：
+  - hooks 配在 `~/.claude/settings.json`、`.claude/settings.json`、`.claude/settings.local.json`
+  - `UserPromptSubmit` 和 `SessionStart` 才会把 stdout 作为上下文注入；大多数其他事件不会
+  - `Stop` hooks 能阻止停止并要求继续
+  - hooks 还可以来自 plugin 和 skills/subagents frontmatter
+
+## 官方证据分级
+
+- A 级：可直接作为实施前提
+  - Codex hooks
+  - Codex skills
+  - VS Code / GitHub Copilot hooks
+  - Claude Code hooks
+- B 级：只能作为存在性背景，不能直接决定路径/事件/schema
+  - Cursor 官方 blog / changelog 中关于 hooks beta 的表述
+- 缺口：
+  - 当前没有从 Cursor 官方 docs 页里抓到可直接引用的 hooks 配置路径、事件名、JSON schema 文档。
+  - 因此任何关于 `.cursor/hooks.json`、事件命名、输出字段的设计，都不能再当作“官方支持的事实”写进实施前提。
 
 ## 对当前设计的含义
 
@@ -28,6 +53,9 @@
 - 当前 Codex adapter 至少有两个漂移点：
   - hooks 仍被标成 unsupported；
   - skill roots 仍使用 `.codex/skills` / `~/.codex/skills`，与官方 `.agents/skills` / `~/.agents/skills` 不一致。
+- 当前对其他 IDE 的计划边界也要收紧：
+  - Copilot 和 Claude Code 可以继续设计和校验，因为有官方 hooks 文档支撑。
+  - Cursor 不能继续按现有实现细节扩展，只能先做“证据复核”，若拿不到 docs 级依据，则计划里应改成降级支持声明或保守维持，不扩面。
 
 ## 待确认问题
 
@@ -41,4 +69,15 @@
 - Copilot 过去之所以显得“特殊”，主要不是它不能挂 hooks，而是：
   - `planning-with-files` 对 Copilot 要 materialize skill 副本，不能简单 symlink；
   - `superpowers` 上游并没有提供 Copilot 的 hook descriptor，所以当前只 cover `planning-with-files`，不 cover `superpowers`。
-- 当前 hooks 支持矩阵对 Copilot / Claude Code / Cursor 基本仍可自圆其说，但对 Codex 已经过时。
+- 当前 hooks 支持矩阵需要拆开看：
+  - Codex：实现已过时，应补 adapter。
+  - Copilot：有官方文档支撑，可继续维护和增强校验。
+  - Claude Code：有官方文档支撑，可继续维护和增强校验。
+  - Cursor：当前仓库实现可能是合理猜测，但在拿到官方 docs 证据前，不应再把这些细节写进计划前提。
+
+## 官方来源
+
+- Codex hooks: https://developers.openai.com/codex/hooks
+- Codex skills: https://developers.openai.com/codex/skills
+- VS Code hooks: https://code.visualstudio.com/docs/copilot/customization/hooks
+- Claude Code hooks: https://docs.claude.com/en/docs/claude-code/hooks
