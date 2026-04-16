@@ -38,6 +38,9 @@ origin  https://github.com/ilderaj/HarnessTemplate.git (push)
 - 仓库仍是 template repo，默认分支仍是 `main`。
 - PR 已创建：`https://github.com/ilderaj/superpowering-with-files/pull/12`。PR base 是 `dev`，head 是 `codex/rename-repo-superpowering-with-files`，状态 `OPEN`，merge state `CLEAN`，当前 status checks 为空。
 - 当前 docs/package 改动提交：`05746b1 Rename project to superpowering-with-files`。
+- PR #12 已合并到 `dev`，merge commit 为 `e6bed2182b91f4340d8c88e01ef71c8c28d314ad`。
+- 后续 `git push --porcelain origin` 被拒的根因：本地 `dev` 有一个 planning 文件提交，而远端 `origin/dev` 已经新增 PR #12 的 merge commit 和原 feature commit，形成 `ahead 1, behind 2` 的非快进状态。
+- 处理方式：先 `git fetch origin --prune`，确认本地唯一领先提交只添加 planning files，再 `git rebase origin/dev`，最后 `git push --porcelain origin dev` 成功。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -55,6 +58,7 @@ origin  https://github.com/ilderaj/HarnessTemplate.git (push)
 | `fd` 不可用 | 退回 `rg --files`，符合项目偏好中的 fallback 规则 |
 | `npm test` 触发 vendored upstream superpowers test 缺少 `ws` | 记录为既有基线问题；本次更名使用 `npm run verify`，覆盖 Harness core/installer/adapters 测试并通过 113 项 |
 | 初次创建 PR 时 Markdown 反引号被 shell 解释 | PR 创建成功后，用 heredoc 安全重写 PR body |
+| `git push --porcelain origin` 被拒，提示 remote has new commits | 远端 `dev` 已包含 PR #12 merge commit；fetch 后 rebase 本地 planning 提交到 `origin/dev`，再 push 成功 |
 
 ## Resources
 - GitHub Docs: Renaming a repository: https://docs.github.com/en/repositories/creating-and-managing-repositories/renaming-a-repository

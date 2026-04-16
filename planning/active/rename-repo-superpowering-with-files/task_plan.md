@@ -121,6 +121,7 @@ rg -n "HarnessTemplate|github.com/ilderaj/HarnessTemplate|superpowering-with-fil
 | `fd` unavailable | 1 | 使用 `rg --files` 替代文件搜索 |
 | `npm test` failed because vendored upstream superpowers test requires missing `ws` | 1 | 记录为既有基线问题；使用项目定义的 `npm run verify` 验证 Harness 代码面，结果通过 113 项 |
 | PR body command used Markdown backticks inside shell double quotes | 1 | PR 已创建；随后用 `gh pr edit --body-file -` 和 heredoc 重写 body |
+| `git push --porcelain origin` rejected with `(fetch first)` | 1 | 远端 `dev` 已包含 PR #12 merge commit；fetch 后 rebase 本地 planning 提交到 `origin/dev`，再 push 成功 |
 
 ## Notes
 - 当前分支：`dev`
@@ -128,6 +129,7 @@ rg -n "HarnessTemplate|github.com/ilderaj/HarnessTemplate|superpowering-with-fil
 - 当前 remote：`https://github.com/ilderaj/superpowering-with-files.git`
 - Worktree base: `dev @ a3db87c4819a13dc1bee78ddbed4b650151919d7`
 - 当前 GitHub repo：`https://github.com/ilderaj/superpowering-with-files`
-- PR：`https://github.com/ilderaj/superpowering-with-files/pull/12`
+- PR：`https://github.com/ilderaj/superpowering-with-files/pull/12`，已合并到 `dev`
+- 当前 `dev`：`b499941`
 - 计划执行时不要读取或输出 secret。
 - 前端相关命令如 dev/start/serve 不适用；本任务以文档、Git remote、GitHub 设置和静态检查为主。

@@ -122,6 +122,8 @@
 | Harness verification | `npm run verify` | Tests pass | 113 passed, 0 failed | pass |
 | Harness doctor | `./scripts/harness doctor` | Healthy installation | Healthy; warning only for historical `docs/superpowers/plans` | pass |
 | PR status | `gh pr view 12 --json ...` | PR exists and is mergeable | PR #12 open, base `dev`, head `codex/rename-repo-superpowering-with-files`, merge state `CLEAN`, no status checks | pass |
+| Push conflict diagnosis | `git fetch origin --prune`; `git log --oneline --left-right --cherry-pick --graph dev...origin/dev` | Identify why push was rejected | Local `dev` was ahead 1 with planning files and behind 2 because PR #12 had merged into remote `dev` | pass |
+| Push conflict resolution | `git rebase origin/dev`; `git push --porcelain origin dev` | Rebase local planning commit and push normally | Rebase succeeded; push updated `origin/dev` from `e6bed21` to `b499941` | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
@@ -130,6 +132,7 @@
 | 2026-04-16 13:45 CST | `fd` command not found | 1 | 使用 `rg --files` 替代 |
 | 2026-04-16 13:47 CST | `npm test` failed: vendored upstream superpowers test could not find module `ws` | 1 | 记录为既有基线问题；改用项目定义的 `npm run verify`，通过 113 项 |
 | 2026-04-16 13:58 CST | PR create command body used shell double quotes with Markdown backticks, causing command substitution noise | 1 | PR 创建后用 `gh pr edit --body-file -` 和 heredoc 重写 body |
+| 2026-04-16 14:04 CST | `git push --porcelain origin` rejected with `(fetch first)` | 1 | Fetched remote, confirmed `origin/dev` had PR #12 merge commit, rebased local planning commit onto `origin/dev`, pushed successfully |
 
 ## 5-Question Reboot Check
 | Question | Answer |
@@ -138,4 +141,4 @@
 | Where am I going? | User review, then optional merge/close/archive decision |
 | What's the goal? | Rename GitHub repository to `superpowering-with-files` and update related checks/references safely |
 | What have I learned? | See `findings.md` |
-| What have I done? | Renamed GitHub repo, updated local remote, committed and pushed docs/package metadata branch, created PR #12, verified checks, and synced planning files |
+| What have I done? | Renamed GitHub repo, updated local remote, merged PR #12 to `dev`, resolved the follow-up push rejection by rebasing local planning commit onto `origin/dev`, pushed successfully, and synced planning files |
