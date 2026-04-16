@@ -4,9 +4,9 @@
 收敛并重组 `README.md`，明确说明 `superpowers` 与 `planning-with-files` 的上游授权、原始使用方式、在本项目中的继承方式与使用范围，补充 credit/thanks，并发布下一个 GitHub release。
 
 ## Current State
-Status: active
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: README 重构、上游授权与 credit 补充，以及 GitHub release 1.0.3 已完成并验证。
 
 ## Current Phase
 Phase 3
@@ -28,8 +28,8 @@ Phase 3
 ### Phase 3: 验证与发布
 - [x] 运行必要验证
 - [x] 整理自上一个版本以来的 release notes
-- [ ] 创建提交、tag 和 GitHub release
-- **Status:** in_progress
+- [x] 创建提交、tag 和 GitHub release
+- **Status:** complete
 
 ## Decisions Made
 | Decision | Rationale |

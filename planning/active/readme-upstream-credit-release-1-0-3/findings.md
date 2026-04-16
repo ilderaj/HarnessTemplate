@@ -24,6 +24,10 @@
   - active plan location 收敛与相关补丁/检查
   - 仓库改名为 `superpowering-with-files`
   - README 收敛并补充上游 license / inheritance / credit 说明
+- GitHub release `1.0.3` 已创建：
+  - tag: `1.0.3`
+  - URL: `https://github.com/ilderaj/superpowering-with-files/releases/tag/1.0.3`
+- 发布过程中第一次 `gh release create` 因 shell 反引号转义导致 release body 被错误截断，但 release 本身已创建；随后通过 `gh release edit --notes-file -` 修正为目标文案。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -41,3 +45,4 @@
 - `/Users/jared/HarnessTemplate/harness/upstream/superpowers/README.md`
 - `/Users/jared/HarnessTemplate/harness/upstream/planning-with-files/SKILL.md`
 - `/Users/jared/HarnessTemplate/README.md`
+- `https://github.com/ilderaj/superpowering-with-files/releases/tag/1.0.3`

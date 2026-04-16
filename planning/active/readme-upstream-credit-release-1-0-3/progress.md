@@ -26,15 +26,23 @@
   - `README.md`
 
 ### Phase 3: 验证与发布
-- **Status:** in_progress
+- **Status:** complete
 - Actions taken:
   - 运行 `git diff --check`，通过。
   - 运行 `npm run verify`，通过 113 项。
   - 运行 `./scripts/harness sync`，同步本地投影状态。
   - 运行 `./scripts/harness doctor`，当前结果健康，仅保留 `docs/superpowers/plans` 警告。
   - 整理 `1.0.2..HEAD` 的提交范围，归纳 release notes。
+  - 提交改动：`de35688 docs: tighten README and add upstream attribution`。
+  - 推送 `dev` 到 `origin/dev`。
+  - 将 `main` rebase 到最新 `origin/main` 后推送。
+  - 创建 tag `1.0.3` 并推送。
+  - 创建 GitHub release `1.0.3`，随后修正文案。
+  - 切回 `dev`，保持开发分支上下文。
 - Files created/modified:
   - `.harness/state.json`（ignored）
+  - GitHub tag `1.0.3`
+  - GitHub release `1.0.3`
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -45,6 +53,7 @@
 | Whitespace check | `git diff --check` | No diff formatting issues | No output | pass |
 | Harness verification | `npm run verify` | Test suite passes | 113 passed, 0 failed | pass |
 | Harness doctor | `./scripts/harness doctor` | Healthy installation | Healthy; only warns about historical `docs/superpowers/plans` | pass |
+| Release check | `gh release view 1.0.3 --json ...` | Release exists with expected body | Release published at target URL with corrected notes | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
@@ -54,8 +63,8 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 3 in progress |
-| Where am I going? | 创建提交、tag 并发布 `1.0.3` |
+| Where am I? | All phases complete; task closed |
+| Where am I going? | 等待用户 review，必要时再决定是否归档 |
 | What's the goal? | 让 README 更清晰，并发布包含这些调整的新 release |
 | What have I learned? | 见 `findings.md` |
-| What have I done? | 已完成上游核对、README 重构和验证，待发布 release |
+| What have I done? | 已完成上游核对、README 重构、验证以及 `1.0.3` release 发布 |
