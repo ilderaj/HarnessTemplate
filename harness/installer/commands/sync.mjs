@@ -3,6 +3,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { entriesForScope, loadAdapter, renderEntry } from '../lib/adapters.mjs';
 import { applyCopilotPlanningPatch } from '../lib/copilot-planning-patch.mjs';
+import { applySuperpowersWritingPlansPatch } from '../lib/superpowers-writing-plans-patch.mjs';
 import {
   linkDirectoryProjection,
   materializeDirectoryProjection,
@@ -67,6 +68,9 @@ async function applySkillProjection(projection, ownedTargets, conflictMode, proj
     });
     if (projection.patch?.type === 'copilot-planning-with-files') {
       await applyCopilotPlanningPatch(projection.targetPath);
+    }
+    if (projection.patch?.type === 'superpowers-writing-plans') {
+      await applySuperpowersWritingPlansPatch(projection.targetPath);
     }
     return effectiveStrategy;
   }

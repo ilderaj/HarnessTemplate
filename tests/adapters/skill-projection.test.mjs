@@ -45,6 +45,20 @@ test('planSkillProjections expands superpowers collection children', async () =>
   assert.match(usingSuperpowers.targetPath, /\.agents\/skills\/using-superpowers$/);
 });
 
+test('planSkillProjections marks Superpowers writing-plans for Harness plan-location patching', async () => {
+  const plan = await planSkillProjections({
+    rootDir: process.cwd(),
+    homeDir: '/home/user',
+    scope: 'workspace',
+    target: 'codex'
+  });
+
+  const writingPlans = plan.find((entry) => entry.skillName === 'writing-plans');
+  assert.ok(writingPlans);
+  assert.equal(writingPlans.patch.type, 'superpowers-writing-plans');
+  assert.equal(writingPlans.patch.marker, 'Harness Superpowers writing-plans location patch');
+});
+
 test('planSkillProjections materializes Copilot planning-with-files', async () => {
   const plan = await planSkillProjections({
     rootDir: process.cwd(),

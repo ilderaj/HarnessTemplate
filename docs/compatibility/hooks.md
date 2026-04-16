@@ -1,6 +1,6 @@
 # Hooks Compatibility
 
-HarnessTemplate does not force hooks during installation.
+superpowering-with-files does not force hooks during installation.
 
 Hooks can be powerful but invasive. They may mutate global IDE or agent behavior and differ across platforms. The default install renders policy and skill projections only.
 
@@ -44,6 +44,8 @@ Harness merges hook config files conservatively. Claude Code hook entries are me
 The planning-with-files hook is task-scoped. It reads active task plans from `planning/active/<task-id>/task_plan.md`, recent progress from `planning/active/<task-id>/progress.md`, and emits context for supported hook events.
 
 It does not create a second planning system. It does not read root-level `task_plan.md`, `findings.md`, or `progress.md` files. It does not archive tasks. Stop-style events only remind the agent to update the active task files and confirm the lifecycle block.
+
+Plan-location diagnostics are separate from hook behavior. `./scripts/harness doctor` warns when it sees root-level task files, `docs/superpowers/plans/*.md`, or `docs/plans/*.md`, but these warnings do not fail health checks because those files may be historical or explicitly requested project documentation.
 
 Smoke test after `sync`:
 

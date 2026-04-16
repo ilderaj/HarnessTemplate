@@ -1,8 +1,8 @@
-# HarnessTemplate
+# superpowering-with-files
 
-HarnessTemplate is a higher-level governance harness for humans and agents working in local projects. It turns one shared policy into the native instruction entry files used by Codex, GitHub Copilot, Cursor, and Claude Code.
+superpowering-with-files is a higher-level governance harness for humans and agents working in local projects. It turns one shared policy into the native instruction entry files used by Codex, GitHub Copilot, Cursor, and Claude Code.
 
-Gemini CLI is not currently a supported Harness installer target. HarnessTemplate does not create installer-managed Gemini rendered entries, skill roots, or user-global state.
+Gemini CLI is not currently a supported Harness installer target. superpowering-with-files does not create installer-managed Gemini rendered entries, skill roots, or user-global state.
 
 Use it at workspace scope when a single project should carry its own rules. Use it at user-global scope when you want the same Harness baseline across local projects. Use `both` when a project needs local entry files and a user-level baseline.
 
@@ -50,7 +50,7 @@ For an existing setup, inspect the current workspace and user-global entry files
 | Mode | Use when | Result |
 | --- | --- | --- |
 | Replace | Existing workspace or user-global rules should be retired. | Harness-rendered entry files become the rule source for the selected scope. |
-| Update | A previous Harness install already owns the selected scope. | `sync` refreshes the rendered entry files from the current HarnessTemplate policy. |
+| Update | A previous Harness install already owns the selected scope. | `sync` refreshes the rendered entry files from the current superpowering-with-files policy. |
 | Enhance | Existing lower-level skills or rules are still useful. | Harness becomes the higher-level policy and routes into those capabilities when appropriate. |
 | Wrap | A local router or framework already coordinates lower-level behavior. | Harness stays above it, sets governance, and calls into that router only as a scoped capability. |
 
@@ -130,6 +130,21 @@ Rendered entry files carry this mode into Codex, GitHub Copilot, Cursor, and Cla
 
 Use Superpowers only when the architecture is unclear, requirements are ambiguous, debugging is complex, the root cause is not obvious, or deep structured reasoning is explicitly requested. If Superpowers are used, durable decisions must be copied back into the task's three Planning with Files documents.
 
+## Plan File Locations
+
+Harness keeps agent task memory in exactly one task-scoped place:
+
+| Location | Role |
+| --- | --- |
+| `planning/active/<task-id>/task_plan.md` | Active task plan, phases, lifecycle, and durable execution decisions. |
+| `planning/active/<task-id>/findings.md` | Research findings, discovered constraints, and durable design decisions. |
+| `planning/active/<task-id>/progress.md` | Session log, verification results, failures, and changed files. |
+| `planning/archive/<timestamp>-<task-id>/` | Closed historical tasks that passed the archive lifecycle guard. |
+
+`docs/**` is for human-facing project documentation. It is not agent task memory. `docs/superpowers/plans/**` and `docs/plans/**` are treated as historical or explicitly requested documentation locations, not default plan output paths. `harness/upstream/**` is vendored upstream source and never represents this project's active task state.
+
+Harness patches the materialized Superpowers `writing-plans` skill during `sync` so its upstream default `docs/superpowers/plans` location is replaced with the task-scoped `planning/active/<task-id>/` model. `./scripts/harness doctor` reports non-canonical plan locations as warnings, so existing historical files remain visible without failing installation health.
+
 Before creating an isolated worktree, run the Harness-owned preflight command and use its explicit start point:
 
 ```bash
@@ -150,7 +165,7 @@ Harness has four layers:
 
 ```mermaid
 flowchart LR
-  Repo["HarnessTemplate"] --> Core["harness/core"]
+  Repo["superpowering-with-files"] --> Core["harness/core"]
   Repo --> Adapters["harness/adapters"]
   Repo --> Installer["harness/installer"]
   Repo --> Upstream["harness/upstream"]

@@ -55,6 +55,21 @@ Whenever superpowers is used:
 
 If a superpowers skill suggests saving long-lived plans under `docs/superpowers/plans/`, treat that as overridden by this project policy unless the user explicitly asks for that file. Durable plans must be represented in the active task's planning files instead.
 
+## Plan Location Boundaries
+
+Harness uses one durable agent task-memory location:
+
+| Location | Role |
+| --- | --- |
+| `planning/active/<task-id>/task_plan.md` | Current task plan, phases, lifecycle, and durable execution decisions. |
+| `planning/active/<task-id>/findings.md` | Research findings, discovered constraints, and durable design decisions. |
+| `planning/active/<task-id>/progress.md` | Session log, verification results, failures, and changed files. |
+| `planning/archive/<timestamp>-<task-id>/` | Closed historical tasks that passed the archive lifecycle guard. |
+
+Treat `docs/**` as human-facing project documentation, not agent task memory. Treat `docs/superpowers/plans/**` and `docs/plans/**` as historical or explicitly requested documentation locations, not default plan output locations. Treat `harness/upstream/**` as vendored upstream source, not this project's active planning state.
+
+If a tool, skill, or model instruction suggests creating root-level `task_plan.md`, `findings.md`, `progress.md`, `docs/superpowers/plans/*`, or `docs/plans/*` for agent task state, do not follow it by default. Create or update the task-scoped files under `planning/active/<task-id>/` and only write docs plans when the user explicitly asks for a documentation artifact.
+
 ## Planning-With-Files Lifecycle Rule
 
 Each active `task_plan.md` should include:

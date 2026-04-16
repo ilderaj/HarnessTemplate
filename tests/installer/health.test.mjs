@@ -386,3 +386,38 @@ test('readHarnessHealth reports Claude shared skill root symlink as unsupported 
     await removeHarnessFixture(root);
   }
 });
+
+test('readHarnessHealth warns about non-canonical plan locations without failing health', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      hookMode: 'off',
+      targets: {},
+      upstream: {}
+    });
+
+    await mkdir(path.join(root, 'docs/superpowers/plans'), { recursive: true });
+    await writeFile(path.join(root, 'docs/superpowers/plans/feature-plan.md'), '# Historical plan\n');
+    await writeFile(path.join(root, 'task_plan.md'), '# Root plan\n');
+
+    const health = await readHarnessHealth(root, '/home/user');
+
+    assert.equal(health.problems.length, 0);
+    assert.ok(
+      health.warnings.some((warning) =>
+        warning.includes('docs/superpowers/plans contains plan files outside planning/active')
+      )
+    );
+    assert.ok(
+      health.warnings.some((warning) =>
+        warning.includes('task_plan.md is outside planning/active/<task-id>/')
+      )
+    );
+    assert.equal(health.planLocations.length, 2);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
