@@ -12,6 +12,12 @@
         "codex": "materialize",
         "claude-code": "materialize"
       },
+      "childPatches": {
+        "writing-plans": {
+          "type": "superpowers-writing-plans",
+          "marker": "Harness Superpowers writing-plans location patch"
+        }
+      },
       "hooks": {
         "cursor": {
           "source": "harness/upstream/superpowers/hooks",

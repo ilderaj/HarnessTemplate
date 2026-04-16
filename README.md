@@ -130,6 +130,21 @@ Rendered entry files carry this mode into Codex, GitHub Copilot, Cursor, and Cla
 
 Use Superpowers only when the architecture is unclear, requirements are ambiguous, debugging is complex, the root cause is not obvious, or deep structured reasoning is explicitly requested. If Superpowers are used, durable decisions must be copied back into the task's three Planning with Files documents.
 
+## Plan File Locations
+
+Harness keeps agent task memory in exactly one task-scoped place:
+
+| Location | Role |
+| --- | --- |
+| `planning/active/<task-id>/task_plan.md` | Active task plan, phases, lifecycle, and durable execution decisions. |
+| `planning/active/<task-id>/findings.md` | Research findings, discovered constraints, and durable design decisions. |
+| `planning/active/<task-id>/progress.md` | Session log, verification results, failures, and changed files. |
+| `planning/archive/<timestamp>-<task-id>/` | Closed historical tasks that passed the archive lifecycle guard. |
+
+`docs/**` is for human-facing project documentation. It is not agent task memory. `docs/superpowers/plans/**` and `docs/plans/**` are treated as historical or explicitly requested documentation locations, not default plan output paths. `harness/upstream/**` is vendored upstream source and never represents this project's active task state.
+
+Harness patches the materialized Superpowers `writing-plans` skill during `sync` so its upstream default `docs/superpowers/plans` location is replaced with the task-scoped `planning/active/<task-id>/` model. `./scripts/harness doctor` reports non-canonical plan locations as warnings, so existing historical files remain visible without failing installation health.
+
 Before creating an isolated worktree, run the Harness-owned preflight command and use its explicit start point:
 
 ```bash

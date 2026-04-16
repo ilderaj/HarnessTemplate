@@ -1,9 +1,9 @@
 import { access, lstat, readFile, readlink, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { entriesForScope, loadAdapter } from './adapters.mjs';
-import { COPILOT_PLANNING_PATCH_MARKER } from './copilot-planning-patch.mjs';
 import { hookEntryMarker } from './hook-config.mjs';
 import { planHookProjections } from './hook-projection.mjs';
+import { inspectPlanLocations } from './plan-locations.mjs';
 import { planSkillProjections } from './skill-projection.mjs';
 import { readState } from './state.mjs';
 
@@ -78,13 +78,13 @@ async function inspectMaterializedSkill(projection) {
     return { ...projection, status: 'problem', message: 'Materialized skill is missing SKILL.md.' };
   }
 
-  if (projection.patch?.type === 'copilot-planning-with-files') {
+  if (projection.patch?.marker) {
     const text = await readFile(skillFile, 'utf8').catch(() => '');
-    if (!text.includes(COPILOT_PLANNING_PATCH_MARKER)) {
+    if (!text.includes(projection.patch.marker)) {
       return {
         ...projection,
         status: 'problem',
-        message: 'Copilot materialized copy is missing the Harness patch marker.'
+        message: `Materialized skill is missing the Harness patch marker: ${projection.patch.marker}.`
       };
     }
   }
@@ -207,6 +207,12 @@ export async function readHarnessHealth(rootDir, homeDir) {
   const state = await readState(rootDir);
   const targets = {};
   const problems = [];
+  const warnings = [];
+  const planLocations = await inspectPlanLocations(rootDir);
+
+  for (const location of planLocations) {
+    warnings.push(`${location.path}: ${location.message}`);
+  }
 
   for (const target of Object.keys(state.targets).filter((name) => state.targets[name].enabled)) {
     const adapter = await loadAdapter(rootDir, target);
@@ -255,6 +261,8 @@ export async function readHarnessHealth(rootDir, homeDir) {
     lastFetch: state.lastFetch,
     lastUpdate: state.lastUpdate,
     upstream: publicUpstreamStatus(state.upstream),
+    planLocations,
+    warnings,
     targets,
     problems
   };

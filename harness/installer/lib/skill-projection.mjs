@@ -90,7 +90,7 @@ export async function planSkillProjections({ rootDir, homeDir, scope, target }) 
             strategy,
             sourcePath: path.join(sourceRoot, childName),
             targetPath,
-            patch: undefined
+            patch: skill.childPatches ? skill.childPatches[childName] : undefined
           });
         }
       }

@@ -35,6 +35,10 @@ test('sync projects workspace entries and skills', async () => {
 
     const copilotPlanning = await readFile(path.join(root, '.github/skills/planning-with-files/SKILL.md'), 'utf8');
     assert.match(copilotPlanning, /Harness Copilot planning-with-files patch/);
+
+    const writingPlans = await readFile(path.join(root, '.agents/skills/writing-plans/SKILL.md'), 'utf8');
+    assert.match(writingPlans, /Harness Superpowers writing-plans location patch/);
+    assert.doesNotMatch(writingPlans, /\*\*Save plans to:\*\* `docs\/superpowers\/plans/);
   } finally {
     await removeHarnessFixture(root);
   }

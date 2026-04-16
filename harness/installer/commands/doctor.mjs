@@ -34,6 +34,10 @@ export async function doctor(args = []) {
     return;
   }
 
+  if (health.warnings.length) {
+    console.error(health.warnings.join('\n'));
+  }
+
   console.log(checkOnly ? 'Harness check passed.' : 'Harness installation is healthy.');
 }
 

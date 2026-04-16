@@ -16,6 +16,8 @@ test('renderEntry includes complex orchestration policy for every supported targ
     const rendered = await renderEntry(process.cwd(), target);
     assert.match(rendered, /Complex Task Orchestration/, target);
     assert.match(rendered, /Planning with Files is the source of truth/, target);
+    assert.match(rendered, /Plan Location Boundaries/, target);
+    assert.match(rendered, /docs\/superpowers\/plans/, target);
     assert.match(rendered, /Git worktrees and branches provide isolation/, target);
     assert.match(rendered, /Worktree Base Preflight/, target);
     assert.match(rendered, /worktree-preflight/, target);
