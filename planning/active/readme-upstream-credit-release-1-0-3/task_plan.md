@@ -4,9 +4,9 @@
 收敛并重组 `README.md`，明确说明 `superpowers` 与 `planning-with-files` 的上游授权、原始使用方式、在本项目中的继承方式与使用范围，补充 credit/thanks，并发布下一个 GitHub release。
 
 ## Current State
-Status: active
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: README 收口、GitHub About 更新、分支推送与 PR #15 已完成。
 
 ## Current Phase
 Phase 6
@@ -46,11 +46,11 @@ Phase 6
 - **Status:** complete
 
 ### Phase 6: 提交、推送、PR 与 About 更新
-- [ ] 创建独立分支承载本轮 README 收口
-- [ ] 更新 GitHub repository About 描述
-- [ ] 提交并推送分支
-- [ ] 创建 PR
-- **Status:** in_progress
+- [x] 创建独立分支承载本轮 README 收口
+- [x] 更新 GitHub repository About 描述
+- [x] 提交并推送分支
+- [x] 创建 PR
+- **Status:** complete
 
 ## Decisions Made
 | Decision | Rationale |
