@@ -1,25 +1,86 @@
 # superpowering-with-files
 
-superpowering-with-files is a higher-level governance harness for humans and agents working in local projects. It turns one shared policy into the native instruction entry files used by Codex, GitHub Copilot, Cursor, and Claude Code.
+superpowering-with-files is a governance harness for local coding-agent workflows. It turns one shared policy into the native instruction, skill, and optional hook entry points used by Codex, GitHub Copilot, Cursor, and Claude Code.
 
-Gemini CLI is not currently a supported Harness installer target. superpowering-with-files does not create installer-managed Gemini rendered entries, skill roots, or user-global state.
+Gemini CLI is not currently a supported Harness installer target. Harness does not render installer-managed Gemini entry files, skill roots, or user-global state.
 
-Use it at workspace scope when a single project should carry its own rules. Use it at user-global scope when you want the same Harness baseline across local projects. Use `both` when a project needs local entry files and a user-level baseline.
+## What It Adds
 
-## What It Gives You
+- `planning-with-files` as durable task memory under `planning/active/<task-id>/`
+- `superpowers` as optional reasoning support for complex planning, debugging, review, and execution
+- Rendered workspace and user-global entry files for supported IDEs
+- Skill projection into each target's discovery path
+- Optional hook projection for adapters with an explicit contract
+- Staged upstream update flow for the vendored `superpowers` and `planning-with-files` baselines
 
-- `planning-with-files` as durable task memory under `planning/active/<task-id>/`.
-- `superpowers` as temporary reasoning support for complex planning, debugging, execution, review, and verification.
-- Rendered governance entry files for Codex, GitHub Copilot, Cursor, and Claude Code.
-- Workspace, user-global, and combined installation scopes.
-- Optional hook projection for verified target adapters.
-- Staged upstream updates for vendored `superpowers` and `planning-with-files` baselines.
+## Core Rules
 
-Harness is the top-level local integration layer. Lower-level skills, project rules, or local routers such as Carnival can stay in place, but Harness should decide when and how those lower-level capabilities are used.
+Harness is opinionated about where agent workflow state lives and when extra process is justified.
+
+1. **Durable task state lives only in task-scoped planning files**
+   - `planning/active/<task-id>/task_plan.md`
+   - `planning/active/<task-id>/findings.md`
+   - `planning/active/<task-id>/progress.md`
+   - closed work may move to `planning/archive/<timestamp>-<task-id>/`
+
+2. **`planning-with-files` is the source of truth**
+   - `docs/**`, `docs/superpowers/plans/**`, and `docs/plans/**` are documentation, not active task memory.
+   - If `superpowers` is used, durable decisions must be synced back into the active planning files.
+
+3. **Default mode stays lightweight**
+   - Do direct execution for straightforward work.
+   - Use `superpowers` only when architecture is unclear, requirements are ambiguous, debugging is complex, root cause is not obvious, or deep structured reasoning is explicitly needed.
+
+4. **Complex-mode order is fixed**
+   - create or reuse one task under `planning/active/<task-id>/`
+   - group work into phases with finishing criteria
+   - run worktree preflight before isolation when needed
+   - use `superpowers` only for the phase that justifies it
+   - sync durable decisions back into Planning with Files
+   - let the main agent review, verify, and integrate
+
+5. **Worktree base must be explicit**
+
+```bash
+./scripts/harness worktree-preflight
+git worktree add <path> -b <new-branch> <base-ref>
+```
+
+Record `Worktree base: <base-ref> @ <base-sha>` in the active task files before implementation continues.
+
+## Upstream Foundations
+
+Harness vendors two upstream systems and applies a stricter integration policy on top of them.
+Both vendored baselines are used under their upstream MIT licenses, with original attribution preserved.
+
+| Upstream | Original role | License | How Harness inherits it |
+| --- | --- | --- | --- |
+| [`superpowers`](https://github.com/obra/superpowers) | Agentic skills framework and software-development workflow | MIT | Kept as an optional, temporary reasoning layer for complex phases such as design, debugging, execution, and review |
+| [`planning-with-files`](https://github.com/OthmanAdi/planning-with-files) | Persistent markdown planning skill for task memory and session recovery | MIT | Adopted as the only durable task-memory system, always rooted in `planning/active/<task-id>/` |
+
+### Inherited Usage Model
+
+- Harness **does not replace** the upstream projects' original purpose. It composes them.
+- Harness **does narrow their scope**:
+  - `planning-with-files` owns durable task state
+  - `superpowers` can guide a phase, but it does not own long-lived project memory
+- Harness **does adapt projection behavior**:
+  - upstream files stay in `harness/upstream/**`
+  - `sync` projects target-specific copies into IDE roots
+  - the projected `writing-plans` flow is patched so active plans stay under `planning/active/<task-id>/`, not `docs/superpowers/plans/**`
+
+### Credit
+
+Thanks to the upstream authors and communities whose work this project builds on:
+
+- [`obra/superpowers`](https://github.com/obra/superpowers) by Jesse Vincent and contributors
+- [`OthmanAdi/planning-with-files`](https://github.com/OthmanAdi/planning-with-files) by Othman Adi and contributors
+
+Harness vendors these projects as upstream baselines, preserves their attribution, and layers repository-specific governance on top.
 
 ## Quick Start
 
-New workspace:
+Workspace install:
 
 ```bash
 ./scripts/harness install --scope=workspace --targets=all --projection=link
@@ -27,7 +88,7 @@ New workspace:
 ./scripts/harness doctor
 ```
 
-New user-global baseline:
+User-global baseline:
 
 ```bash
 ./scripts/harness install --scope=user-global --targets=all --projection=link
@@ -35,223 +96,26 @@ New user-global baseline:
 ./scripts/harness doctor
 ```
 
-Workspace scope is the default and safest starting point because it keeps Harness local to the repository. Use user-global scope when you want new local projects to inherit the same baseline. Use `both` when you want shared user-level rules plus repository-local entry files:
+Use `--scope=both` when you want a shared user-global baseline plus repository-local entry files.
 
-```bash
-./scripts/harness install --scope=both --targets=all --projection=link
-./scripts/harness sync
-./scripts/harness doctor
-```
-
-For an existing setup, inspect the current workspace and user-global entry files before syncing. `sync` writes rendered entry files to the configured target paths, so choose whether Harness should replace, update, enhance, or wrap what is already there.
-
-## Integration Modes
+## Installation Modes
 
 | Mode | Use when | Result |
 | --- | --- | --- |
-| Replace | Existing workspace or user-global rules should be retired. | Harness-rendered entry files become the rule source for the selected scope. |
-| Update | A previous Harness install already owns the selected scope. | `sync` refreshes the rendered entry files from the current superpowering-with-files policy. |
-| Enhance | Existing lower-level skills or rules are still useful. | Harness becomes the higher-level policy and routes into those capabilities when appropriate. |
-| Wrap | A local router or framework already coordinates lower-level behavior. | Harness stays above it, sets governance, and calls into that router only as a scoped capability. |
+| Replace | Existing rules should be retired | Harness-rendered files become the rule source |
+| Update | Harness already owns the scope | `sync` refreshes the rendered files |
+| Enhance | Existing lower-level rules are still useful | Harness stays above them as governance |
+| Wrap | Another local router already coordinates behavior | Harness sets policy and delegates selectively |
 
-Recommended path:
+## What Harness Projects
 
-1. Start with `workspace` scope for a single project.
-2. Move to `user-global` only when the same Harness baseline should apply across projects.
-3. Use `both` when the global baseline should exist, but this repository still needs explicit local entry files.
-4. Before replacing user-global files, preserve any local rules that should become lower-level capabilities under Harness.
+Harness manages three categories of target output:
 
-## Workflow
+1. **Entry files** for Codex, GitHub Copilot, Cursor, and Claude Code
+2. **Skills** projected into each target's discovery path
+3. **Hooks** only when explicitly enabled
 
-Harness routes work through one governance policy before tool-specific behavior matters. The default path is lightweight: do the work directly, keep the active planning files current, and verify before reporting back. Superpowers are reserved for cases where their extra structure is worth the cost.
-
-```mermaid
-flowchart TD
-  A["Task arrives"] --> B["Agent reads the nearest Harness entry file"]
-  B --> C["Apply Harness governance rules"]
-  C --> D{"Is the task simple and clear?"}
-
-  D -- "Yes" --> E["Execute directly"]
-  E --> F["Update active planning files when relevant"]
-  F --> G["Verify"]
-  G --> H["Report result"]
-
-  D -- "No" --> I["Create or reuse planning/active/<task-id>/"]
-  I --> J["task_plan.md"]
-  I --> K["findings.md"]
-  I --> L["progress.md"]
-
-  J --> M{"Does this need Superpowers?"}
-  K --> M
-  L --> M
-
-  M -- "No" --> N["Execute in normal mode"]
-  M -- "Yes" --> O["Use temporary Superpowers reasoning"]
-
-  O --> P{"Which capability fits?"}
-  P -- "Unclear architecture or requirements" --> P1["brainstorming / writing-plans"]
-  P -- "Complex debugging or unknown root cause" --> P2["systematic-debugging"]
-  P -- "Existing plan to run" --> P3["executing-plans"]
-  P -- "Independent parallel work" --> P4["dispatching-parallel-agents / subagent-driven-development"]
-  P -- "Completion checks or review" --> P5["verification-before-completion / requesting-code-review"]
-
-  P1 --> Q["Sync durable decisions back to Planning with Files"]
-  P2 --> Q
-  P3 --> Q
-  P4 --> Q
-  P5 --> Q
-
-  Q --> N
-  N --> R["Verify"]
-  R --> S{"Complete?"}
-  S -- "No" --> T["Record the failure and try a different approach"]
-  T --> N
-  S -- "Yes" --> U["Set Status: closed and Archive Eligible: yes"]
-  U --> V{"Archive requested and lifecycle guard passes?"}
-  V -- "No" --> W["Keep task under planning/active/"]
-  V -- "Yes" --> X["Move to planning/archive/<timestamp>-<task-id>/"]
-```
-
-## Complex Request Mode
-
-For broad requests with mixed bug fixes, UI changes, product strategy, release checks, or App Store preparation, use this order:
-
-```text
-Planning with Files master orchestration
--> worktree base preflight when isolation is needed
--> worktree/branch isolation with an explicit base ref
--> per-phase Superpowers reasoning only when justified
--> scoped subagent execution
--> main-agent review and verification
--> sync back to Planning with Files
-```
-
-Rendered entry files carry this mode into Codex, GitHub Copilot, Cursor, and Claude Code. The main agent remains responsible for file ownership boundaries, integration, verification, and syncing durable decisions back to the active Planning with Files task.
-
-Use Superpowers only when the architecture is unclear, requirements are ambiguous, debugging is complex, the root cause is not obvious, or deep structured reasoning is explicitly requested. If Superpowers are used, durable decisions must be copied back into the task's three Planning with Files documents.
-
-## Plan File Locations
-
-Harness keeps agent task memory in exactly one task-scoped place:
-
-| Location | Role |
-| --- | --- |
-| `planning/active/<task-id>/task_plan.md` | Active task plan, phases, lifecycle, and durable execution decisions. |
-| `planning/active/<task-id>/findings.md` | Research findings, discovered constraints, and durable design decisions. |
-| `planning/active/<task-id>/progress.md` | Session log, verification results, failures, and changed files. |
-| `planning/archive/<timestamp>-<task-id>/` | Closed historical tasks that passed the archive lifecycle guard. |
-
-`docs/**` is for human-facing project documentation. It is not agent task memory. `docs/superpowers/plans/**` and `docs/plans/**` are treated as historical or explicitly requested documentation locations, not default plan output paths. `harness/upstream/**` is vendored upstream source and never represents this project's active task state.
-
-Harness patches the materialized Superpowers `writing-plans` skill during `sync` so its upstream default `docs/superpowers/plans` location is replaced with the task-scoped `planning/active/<task-id>/` model. `./scripts/harness doctor` reports non-canonical plan locations as warnings, so existing historical files remain visible without failing installation health.
-
-Before creating an isolated worktree, run the Harness-owned preflight command and use its explicit start point:
-
-```bash
-./scripts/harness worktree-preflight
-git worktree add <path> -b <new-branch> <base-ref>
-```
-
-Record the reported `Worktree base: <base-ref> @ <base-sha>` in the active task's Planning with Files documents. This keeps simple `dev` or feature-branch sessions from accidentally forking work from `main`, while still allowing clean trunk-based work when the current context is intentionally `main` or `master`.
-
-## Installation Structure
-
-Harness has four layers:
-
-- `harness/core`: shared policy, templates, metadata, skill projection metadata, and schemas.
-- `harness/adapters`: target-specific manifests for Codex, Copilot, Cursor, and Claude Code.
-- `harness/installer`: CLI commands, projection logic, and health checks.
-- `harness/upstream`: vendored baselines for `superpowers` and `planning-with-files`.
-
-```mermaid
-flowchart LR
-  Repo["superpowering-with-files"] --> Core["harness/core"]
-  Repo --> Adapters["harness/adapters"]
-  Repo --> Installer["harness/installer"]
-  Repo --> Upstream["harness/upstream"]
-
-  Core --> Policy["policy/base.md"]
-  Core --> Templates["templates/*.hbs"]
-  Core --> Metadata["metadata/platforms.json"]
-  Core --> Skills["skills/index.json"]
-
-  Adapters --> Manifests["target manifest.json files"]
-  Installer --> Install["install writes .harness/state.json"]
-  Installer --> Sync["sync projects entries + skills"]
-  Installer --> Fetch["fetch stages upstream candidates"]
-  Installer --> Update["update applies known upstream sources"]
-  Installer --> FsOps["fs-ops can write, copy, or symlink"]
-
-  Policy --> Entry["Rendered governance entry file"]
-  Templates --> Entry
-  Metadata --> Entry
-  Manifests --> Entry
-  Sync --> Entry
-
-  Entry --> WorkspaceEntries["Workspace entries"]
-  Entry --> GlobalEntries["User-global entries"]
-
-  WorkspaceEntries --> CodexWs["Codex: AGENTS.md"]
-  WorkspaceEntries --> CopilotWs["Copilot: .github/copilot-instructions.md"]
-  WorkspaceEntries --> CursorWs["Cursor: .cursor/rules/harness.mdc"]
-  WorkspaceEntries --> ClaudeWs["Claude Code: CLAUDE.md"]
-
-  GlobalEntries --> CodexGlobal["Codex: ~/.codex/AGENTS.md"]
-  GlobalEntries --> CopilotGlobal["Copilot: ~/.copilot/instructions/harness.instructions.md"]
-  GlobalEntries --> CursorGlobal["Cursor: User Rules in settings; user-global skills only"]
-  GlobalEntries --> ClaudeGlobal["Claude Code: ~/.claude/CLAUDE.md"]
-
-  Upstream --> Superpowers["superpowers skills baseline"]
-  Upstream --> Planning["planning-with-files baseline"]
-  Fetch --> Candidates[".harness/upstream-candidates/<source>"]
-  Candidates --> Update
-  Update --> Upstream
-  Skills -. "link/materialize strategy metadata" .-> Superpowers
-  Skills -. "link/materialize strategy metadata" .-> Planning
-```
-
-`sync` now projects both entry files and skills. Link projections use symlinks; materialized projections copy directories. Existing non-Harness-owned files are not overwritten unless `./scripts/harness sync --conflict=backup` is used. When the desired projection set shrinks, `sync` garbage-collects stale Harness-managed projections instead of leaving stale entries in `.harness/projections.json`.
-
-## Entry Files
-
-| Target | Workspace entry | User-global entry | Behavior |
-| --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `~/.codex/AGENTS.md` | Rendered file |
-| GitHub Copilot | `.github/copilot-instructions.md` | `~/.copilot/instructions/harness.instructions.md` | Rendered file |
-| Cursor | `.cursor/rules/harness.mdc` | User Rules in Cursor Settings; no rendered file-system entry | Workspace rendered file; user-global skills only |
-| Claude Code | `CLAUDE.md` | `~/.claude/CLAUDE.md` | Rendered file |
-
-GitHub Copilot follows VS Code's default instruction file locations: workspace instructions live under `.github`, while user profile instructions live under `~/.copilot/instructions` as `*.instructions.md` files. Harness renders the Copilot user-global file with `applyTo: "**"` frontmatter so it is applied automatically across workspaces. The legacy `~/.copilot/copilot-instructions.md` path is not used.
-
-## Skills
-
-| Skill baseline | Codex | GitHub Copilot | Cursor | Claude Code |
-| --- | --- | --- | --- | --- |
-| `harness/upstream/superpowers/skills` | `materialize` | `materialize` | `materialize` | `materialize` |
-| `harness/upstream/planning-with-files` | `materialize` | `materialize` | `materialize` | `materialize` |
-
-Harness materializes projected skills for all supported targets to keep IDE discovery stable and avoid symlink-specific candidate duplication. GitHub Copilot still receives the patched `planning-with-files` copy because its skill and hook behavior differs from the other adapters. `projectionMode: "portable"` remains valid and produces the same effective layout for skills.
-
-Claude Code uses per-skill projection under `.claude/skills` and `~/.claude/skills`. Directory-level shared roots such as `.claude/skills -> ~/.agents/skills` are not supported; `status` and `doctor` treat that layout as unhealthy.
-
-Skill target roots:
-
-| Target | Workspace skill root | User-global skill root |
-| --- | --- | --- |
-| Codex | `.agents/skills` | `~/.agents/skills` |
-| GitHub Copilot | `.github/skills` | `~/.copilot/skills` |
-| Cursor | `.cursor/skills` | `~/.cursor/skills` |
-| Claude Code | `.claude/skills` | `~/.claude/skills` |
-
-## Hooks
-
-Hooks are opt-in. The default install keeps hook mode off and projects entry files plus skills only:
-
-```bash
-./scripts/harness install --scope=workspace --targets=all --projection=link
-```
-
-Enable hook projection explicitly:
+Hooks are opt-in:
 
 ```bash
 ./scripts/harness install --scope=workspace --targets=all --projection=link --hooks=on
@@ -259,34 +123,18 @@ Enable hook projection explicitly:
 ./scripts/harness doctor --check-only
 ```
 
-Harness installs only adapters with an explicit target contract. Unsupported adapters appear in `status` and `doctor` output as unsupported, and provisional adapters are marked as provisional, but neither state fails health checks when the projected files are healthy.
-
-| Hook source | Codex | GitHub Copilot | Cursor | Claude Code |
-| --- | --- | --- | --- | --- |
-| `planning-with-files` task-scoped hook | Supported with Codex event limits | Supported | Provisional | Supported |
-| `superpowers` session-start hook | Supported via Harness wrapper | Unsupported | Provisional | Supported |
-
-Hook targets:
-
-| Target | Workspace hook files | User-global hook files |
-| --- | --- | --- |
-| Codex | `.codex/hooks.json`, `.codex/hooks/*` | `~/.codex/hooks.json`, `~/.codex/hooks/*` |
-| GitHub Copilot | `.github/hooks/planning-with-files.json`, `.github/hooks/task-scoped-hook.sh` | `~/.copilot/hooks/planning-with-files.json`, `~/.copilot/hooks/task-scoped-hook.sh` |
-| Cursor | `.cursor/hooks.json`, `.cursor/hooks/*` | `~/.cursor/hooks.json`, `~/.cursor/hooks/*` |
-| Claude Code | `.claude/settings.json`, `.claude/hooks/*` | `~/.claude/settings.json`, `~/.claude/hooks/*` |
-
-Hook config/settings JSON merge is conservative. Harness-managed hook entries are marked with `Harness-managed ... hook`; `sync` replaces prior Harness-managed entries for the same skill and preserves unrelated user hook entries. Malformed hook config or settings JSON files require `./scripts/harness sync --conflict=backup`.
+Detailed target paths, hook behavior, and adapter support live in the docs instead of this README.
 
 ## Upstream Updates
 
-Harness keeps governance separate from vendored skill baselines. `fetch` stages candidates under `.harness/upstream-candidates/<source>`. `update` applies them only to `harness/upstream/<source>`. The next `sync` projects the refreshed baseline into IDE directories.
+Harness keeps governance separate from vendored upstream content.
 
 ```bash
 ./scripts/harness fetch
 ./scripts/harness update
 ```
 
-Both baselines are Git-backed. To update one baseline, pass its source name:
+To update a single upstream baseline:
 
 ```bash
 ./scripts/harness fetch --source=superpowers
@@ -295,7 +143,7 @@ Both baselines are Git-backed. To update one baseline, pass its source name:
 ./scripts/harness update --source=planning-with-files
 ```
 
-After updating upstream baselines, rerun repository verification before syncing installed projections:
+After updating baselines:
 
 ```bash
 npm run verify
@@ -304,13 +152,7 @@ npm run verify
 ./scripts/harness doctor
 ```
 
-`verify` now prints the report to stdout by default. To write report files explicitly:
-
-```bash
-./scripts/harness verify --output=.harness/verification
-```
-
-## Commands and Docs
+## Commands
 
 ```bash
 ./scripts/harness install
@@ -322,6 +164,8 @@ npm run verify
 ./scripts/harness verify --output=.harness/verification
 ./scripts/harness worktree-preflight
 ```
+
+## Docs
 
 - [Architecture](docs/architecture.md)
 - [Maintenance](docs/maintenance.md)
