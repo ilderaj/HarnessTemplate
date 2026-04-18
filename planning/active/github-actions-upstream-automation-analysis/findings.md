@@ -29,6 +29,11 @@
 - 2026-04-17 复核：仓库当前 `.harness/state.json` 为 `scope: "user-global"`，target 指向用户目录，不是 CI 可直接复用的 workspace 安装状态。
 - 2026-04-17 复核：`package.json` 提供的仓库级验证命令是 `npm run verify`；维护文档要求 upstream update 后继续跑 `./scripts/harness worktree-preflight`、`./scripts/harness sync --dry-run`、`./scripts/harness sync`、`./scripts/harness doctor`。
 - 2026-04-17 复核：当前没有以 `dev` 为 base 的 open PR，说明计划若要“最终落到 origin dev”，需自行定义 PR 分支命名、合并策略和去重逻辑。
+- 2026-04-18 复核：仓库最近新增的是 workflow/policy 审计与 companion-plan 三层模型相关文档、自检与测试，没有新增 `.github/workflows/`、`scripts/ci/`、`tests/automation/` 等旧计划假定的实现文件。
+- 2026-04-18 复核：`package.json` 仍未把 `tests/automation/*.test.mjs` 纳入 `npm run verify`，说明旧计划中的自动化测试接线尚未开始落地。
+- 2026-04-18 复核：当前 policy 明确要求 `sync-back is summary-only`，并强调 detailed implementation checklist 不应继续直接塞进 `planning/active/<task-id>/task_plan.md`。
+- 2026-04-18 复核：旧计划中的 refresh runner 使用 `git status --porcelain --untracked-files=no` 收集变更；这会漏掉首次由 `sync` 生成的 untracked projection files，导致自动 PR 可能缺失 repo-owned 新文件。
+- 2026-04-18 复核：旧计划没有为 GitHub runner 上的自动 commit 配置 `git user.name` / `git user.email`，commit 步骤存在失败风险。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -48,6 +53,10 @@
 | 自动化分支名固定为 `automation/upstream-refresh` | 固定分支便于 PR 去重与更新，也让 reviewer 能稳定识别自动更新来源 |
 | v1 的 commit allowlist 只接受 `harness/upstream/**`、repo-local projection paths 和 `docs/maintenance.md` | 需要把供应链变更面收窄到 Harness-owned 文件，避免 CI 意外改动其他路径 |
 | `.harness/projections.json` 视为运行态文件，不进入 commit | `sync` 会写入该文件，但它不属于本次 PR 应提交的 repo-owned baseline/projection 结果 |
+| 旧计划的架构方向保留，但实现计划需要重写为“修订版” | 仓库最近的 policy/health 语义变化没有推翻总体架构，但已足以让旧计划不能按原样执行 |
+| 修订版 refresh 逻辑必须纳入 untracked repo-owned files | 否则首次自动刷新时可能遗漏新生成的 projection files |
+| 修订版 PR 流程必须显式配置 bot git identity | 避免 GitHub runner 上的 `git commit` 因身份未配置而失败 |
+| 修订版计划应把 `task_plan.md` 恢复为摘要级状态记录 | 与最新 companion-plan / summary-only sync-back 边界保持一致 |
 
 ## Issues Encountered
 | Issue | Resolution |

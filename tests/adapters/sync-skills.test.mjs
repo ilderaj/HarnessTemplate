@@ -42,10 +42,18 @@ test('sync projects workspace entries and skills', async () => {
     assert.match(writingPlans, /Harness Superpowers writing-plans location patch/);
     assert.match(writingPlans, /planning\/active\/<task-id>\/` as the primary task-memory location/);
     assert.match(writingPlans, /\*\*Save durable task state to:\*\* `planning\/active\/<task-id>\/task_plan\.md`/);
-    assert.match(writingPlans, /For Deep-reasoning tasks, you may additionally create a companion plan/);
+    assert.match(
+      writingPlans,
+      /If a Deep-reasoning task actually uses Superpowers, create a companion plan/
+    );
     assert.match(writingPlans, /secondary artifact for reasoning and review, not the primary task-memory record/);
-    assert.match(writingPlans, /Keep detailed implementation plans in that companion artifact/);
+    assert.match(writingPlans, /Keep the detailed implementation plan and execution checklist in that companion artifact/);
     assert.match(writingPlans, /write its path, a short summary, and the current sync-back status/);
+    assert.match(
+      writingPlans,
+      /The companion plan must also point back to `planning\/active\/<task-id>\/`/
+    );
+    assert.doesNotMatch(writingPlans, /you may additionally create a companion plan/);
     assert.doesNotMatch(writingPlans, /\*\*Save plans to:\*\* `docs\/superpowers\/plans/);
   } finally {
     await removeHarnessFixture(root);

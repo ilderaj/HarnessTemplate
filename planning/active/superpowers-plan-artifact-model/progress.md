@@ -157,6 +157,37 @@
   - 结果：118 tests passed, 0 failed
 - 本轮验证作为 commit / push / PR / local-merge 的新鲜证据，不复用上一轮结果。
 
+## Session: 2026-04-18
+
+### Phase 6: Companion Plan Mandatory Persistence 对齐
+- **Status:** complete
+- Actions taken:
+  - 复读现有 `superpowers-plan-artifact-model` planning 记录，确认此前实现已引入 companion-plan 路径与 health 检查，但规则文案仍保留 optional 语义。
+  - 审查 `harness/core/policy/base.md`、`AGENTS.md`、`README.md`、`docs/maintenance.md` 与 `harness/installer/lib/superpowers-writing-plans-patch.mjs`，定位出 `may create` / `may additionally create` 等与当前要求冲突的语句。
+  - 确认当前最需要修正的是规则与投影语义，而不是新增第三套 memory system。
+- 统一更新 source policy、Codex workspace entry、README、maintenance 文档与 projected `writing-plans` 文案，改为 “实际使用 Superpowers => 必须落盘 companion plan + 保持双向引用”。
+- 更新 `harness/installer/lib/plan-locations.mjs`，新增 companion plan -> `planning/active/<task-id>/` 的 back-reference 检查，缺少反向引用时输出 warning。
+- 运行受影响 adapter tests 与仓库级 verify，确认语义切换没有破坏现有 projection/health 行为。
+- Files changed in this phase:
+  - `harness/core/policy/base.md`
+  - `AGENTS.md`
+  - `README.md`
+  - `docs/maintenance.md`
+  - `harness/installer/lib/superpowers-writing-plans-patch.mjs`
+  - `tests/adapters/templates.test.mjs`
+  - `tests/adapters/sync-skills.test.mjs`
+  - `planning/active/superpowers-plan-artifact-model/task_plan.md`
+  - `planning/active/superpowers-plan-artifact-model/findings.md`
+  - `planning/active/superpowers-plan-artifact-model/progress.md`
+
+## Phase 6 Verification
+- Focused tests:
+  - `node --test tests/installer/health.test.mjs tests/adapters/templates.test.mjs tests/adapters/sync-skills.test.mjs`
+  - 结果：25 tests passed, 0 failed
+- Repo verify:
+  - `npm run verify`
+  - 结果：119 tests passed, 0 failed
+
 ## Task 3 Evidence Chain
 - `renderEntry()` on `codex`, `copilot`, `cursor`, `claude-code` now renders the same companion-plan model and no longer matches the old “do not follow docs/superpowers/plans by default” wording.
 - `planSkillProjections()` now has explicit four-target assertions showing that `writing-plans` is projected and patched for `codex`, `copilot`, `cursor`, `claude-code`, with the expected per-target skill roots.

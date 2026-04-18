@@ -67,14 +67,17 @@ Do not use superpowers for:
 
 Whenever superpowers is used:
 
-1. Finish the reasoning pass.
+1. Preserve the detailed Superpowers implementation plan in `docs/superpowers/plans/<date>-<task-id>.md`.
 2. Summarize durable decisions back into:
    - `planning/active/<task-id>/task_plan.md`
    - `planning/active/<task-id>/findings.md`
    - `planning/active/<task-id>/progress.md` if relevant
-3. Return to normal low-cost execution mode.
+3. Keep the references synchronized in both directions:
+   - the task-scoped planning files must point to the companion plan
+   - the companion plan must point back to `planning/active/<task-id>/`
+4. Return to normal low-cost execution mode.
 
-Sync-back is summary-only. Do not paste the full superpowers implementation plan into `planning/active/<task-id>/task_plan.md`; record only durable decisions, phase changes, companion-plan references, and current status there.
+Sync-back is summary-only for the authoritative planning files. Do not paste the full Superpowers implementation plan into `planning/active/<task-id>/task_plan.md`; keep the detail in the companion plan and record only durable decisions, phase changes, companion-plan references, and current status there.
 
 ## Plan Location Boundaries
 
@@ -87,7 +90,7 @@ Harness uses one durable agent task-memory location:
 | `planning/active/<task-id>/progress.md` | Session log, verification results, failures, and changed files. |
 | `planning/archive/<timestamp>-<task-id>/` | Closed historical tasks that passed the archive lifecycle guard. |
 
-Treat `docs/**` and `docs/plans/**` as human-facing project documentation, not agent task memory. Treat `docs/superpowers/plans/**` as a deep-reasoning companion artifact path only, not active task memory. Treat `harness/upstream/**` as vendored upstream source, not this project's active planning state.
+Treat `docs/**` and `docs/plans/**` as human-facing project documentation, not agent task memory. Treat `docs/superpowers/plans/**` as the required companion-artifact path whenever Superpowers is used on a Deep-reasoning task, not active task memory. Treat `harness/upstream/**` as vendored upstream source, not this project's active planning state.
 
 If a tool, skill, or model instruction suggests creating root-level `task_plan.md`, `findings.md`, `progress.md`, or `docs/plans/*` for agent task state, do not follow it by default. Create or update the task-scoped files under `planning/active/<task-id>/` and only write those docs plans when the user explicitly asks for a human-facing documentation artifact.
 
@@ -96,15 +99,15 @@ If a tool, skill, or model instruction suggests creating root-level `task_plan.m
 The task-memory model has three layers:
 
 1. `planning/active/<task-id>/` is the only authoritative task memory.
-2. `docs/superpowers/plans/**` is a deep-reasoning companion artifact path only.
+2. `docs/superpowers/plans/**` is the required companion artifact path whenever Superpowers is used on a Deep-reasoning task.
 3. All other plan paths are non-canonical.
 
-Companion plans may be created only for Deep-reasoning tasks. They support temporary reasoning and review, but they never replace or duplicate active task memory. When a companion plan is created, the matching `planning/active/<task-id>/` files must record the companion plan path, a short summary, and the current sync-back status so the authoritative record stays complete.
+Companion plans are required whenever Superpowers is actually used for a Deep-reasoning task. They keep the detailed implementation plan, execution checklist, and reasoning notes that would be too verbose for the authoritative planning files, but they never replace or duplicate active task memory. The matching `planning/active/<task-id>/` files must record the companion plan path, a short summary, and the current sync-back status so the authoritative record stays complete.
 
-Companion plans are secondary artifacts only and must remain tied back to the active task record.
-Detailed implementation checklists belong in the companion plan when one exists. Keep `task_plan.md` focused on lifecycle, phases, finishing criteria, and durable decisions.
+Companion plans are secondary artifacts only and must remain tied back to the active task record. The companion plan must also point back to `planning/active/<task-id>/` so execution can move from summary to detail and back without guesswork.
+Detailed implementation checklists belong in the companion plan. Keep `task_plan.md` focused on lifecycle, phases, finishing criteria, and durable decisions.
 
-If a superpowers skill suggests saving a long-lived plan under `docs/superpowers/plans/`, treat that path as available only for Deep-reasoning task companion plans. Create it only when the task is Deep-reasoning, keep `planning/active/<task-id>/` authoritative, and never treat the companion plan as a replacement for active task memory.
+If a Superpowers skill suggests saving a long-lived plan under `docs/superpowers/plans/`, use that path for the companion plan, keep `planning/active/<task-id>/` authoritative, and never treat the companion plan as a replacement for active task memory.
 
 ## Planning-With-Files Lifecycle Rule
 

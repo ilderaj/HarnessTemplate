@@ -107,6 +107,44 @@ function referencesForCompanionPlan(referenceTexts, companionRelativePath) {
   return matches.sort();
 }
 
+function companionPlanBackReferences(companionText, referencedBy) {
+  const normalizedLines = normalizeForMatch(companionText)
+    .split('\n')
+    .map((line) => line.trim());
+
+  const expectedPaths = new Set();
+  for (const planningPath of referencedBy) {
+    const normalizedPlanningPath = normalizeForMatch(planningPath);
+    expectedPaths.add(normalizedPlanningPath);
+    expectedPaths.add(`${path.posix.dirname(normalizedPlanningPath)}/`);
+  }
+
+  const matches = [];
+  for (const expectedPath of expectedPaths) {
+    const exactPathPattern = new RegExp(`^${escapeRegExp(expectedPath)}$`);
+    const backtickPattern = new RegExp(`\`${escapeRegExp(expectedPath)}\``);
+    const absoluteBacktickPattern = new RegExp(`\`${escapeRegExp(`/${expectedPath}`)}\``);
+    const labeledPathPattern = new RegExp(
+      `\\b(?:active task|planning|task)\\s*path\\s*:\\s*${escapeRegExp(expectedPath)}(?:$|\\s)`,
+      'i'
+    );
+
+    if (
+      normalizedLines.some(
+        (line) =>
+          exactPathPattern.test(line) ||
+          backtickPattern.test(line) ||
+          absoluteBacktickPattern.test(line) ||
+          labeledPathPattern.test(line)
+      )
+    ) {
+      matches.push(expectedPath);
+    }
+  }
+
+  return matches.sort();
+}
+
 export async function inspectPlanLocations(rootDir) {
   const results = [];
   const { references: planningReferences, unreadable: unreadablePlanningFiles } =
@@ -138,12 +176,39 @@ export async function inspectPlanLocations(rootDir) {
     const relativePath = relative(rootDir, filePath);
     const referencedBy = referencesForCompanionPlan(planningReferences, relativePath);
     if (referencedBy.length > 0) {
+      let companionText;
+      try {
+        companionText = await readFile(filePath, 'utf8');
+      } catch (error) {
+        results.push({
+          type: 'companion-plan-read-error',
+          path: relativePath,
+          severity: 'problem',
+          message: `Companion plan exists but could not be read: ${error.message}`
+        });
+        continue;
+      }
+
+      const pointsBackTo = companionPlanBackReferences(companionText, referencedBy);
+      if (pointsBackTo.length === 0) {
+        results.push({
+          type: 'companion-plan-missing-back-reference',
+          path: relativePath,
+          severity: 'warning',
+          message:
+            'Companion plan is referenced by active task planning files but does not point back to planning/active/<task-id>/. Add the active task path so summary/detail navigation stays bidirectional.',
+          referencedBy
+        });
+        continue;
+      }
+
       results.push({
         type: 'companion-plan',
         path: relativePath,
         severity: 'ok',
         message: `Referenced companion plan recorded by active task planning files.`,
-        referencedBy
+        referencedBy,
+        pointsBackTo
       });
       continue;
     }

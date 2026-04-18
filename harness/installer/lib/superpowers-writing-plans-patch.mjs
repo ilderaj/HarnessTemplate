@@ -17,11 +17,12 @@ const HARNESS_SAVE_BLOCK = [
   '',
   'Also keep `planning/active/<task-id>/findings.md` and `planning/active/<task-id>/progress.md` updated.',
   '',
-  'For Deep-reasoning tasks, you may additionally create a companion plan at `docs/superpowers/plans/<date>-<task-id>.md`.',
+  'If a Deep-reasoning task actually uses Superpowers, create a companion plan at `docs/superpowers/plans/<date>-<task-id>.md`.',
   'That companion plan is a secondary artifact for reasoning and review, not the primary task-memory record.',
-  'Keep detailed implementation plans in that companion artifact; sync only durable summaries back into `planning/active/<task-id>/`.',
+  'Keep the detailed implementation plan and execution checklist in that companion artifact; sync only durable summaries back into `planning/active/<task-id>/`.',
   '',
-  'Whenever a companion plan exists, write its path, a short summary, and the current sync-back status into the task-scoped planning files under `planning/active/<task-id>/`.'
+  'Whenever a companion plan exists, write its path, a short summary, and the current sync-back status into the task-scoped planning files under `planning/active/<task-id>/`.',
+  'The companion plan must also point back to `planning/active/<task-id>/` so execution can move from summary to detail and back.'
 ].join('\n');
 
 export async function applySuperpowersWritingPlansPatch(targetDir) {

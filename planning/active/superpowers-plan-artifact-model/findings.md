@@ -5,6 +5,8 @@
 - 用户明确要求使用 `$subagent-driven-development`。
 - 最终必须检查并精确说明四个 supported targets 在哪些验证层已经适配了新的 companion-plan 范式，以及哪些 patch 是 target-specific。
 - 仓库 policy 要求 durable task state 仍由 `planning/active/<task-id>/` 承载。
+- 当前新增要求：只要实际使用了 Superpowers，详细 implementation plan 就必须落盘到 `docs/superpowers/plans/<date>-<task-id>.md`，不能只做 summary sync-back。
+- 当前新增要求：`planning/active/<task-id>/` 与 companion plan 之间必须可以相互定位，执行阶段不能只依赖 summary。
 
 ## Research Findings
 - 当前规则链条一致地把 `docs/superpowers/plans/**` 当作默认非 canonical 路径：
@@ -49,6 +51,19 @@
 - companion-plan reference scanning should be constrained to canonical task-scoped planning files only: `task_plan.md`, `findings.md`, and `progress.md`.
 - the path-match seam should stay explicit enough to reject loose free-text mentions; canonical files should record the path as a standalone path token, a backticked path, or a labeled `path:` style line.
 - unreadable canonical planning paths are a health problem, not absence of reference evidence.
+
+## Phase 6 Findings
+- 当前真正不对齐的点是措辞层：source policy、README 和 projected `writing-plans` 仍把 companion plan 写成 “may create / may additionally create”，这和用户要求的 mandatory persistence 冲突。
+- 现有 `Mandatory Sync-Back Rule` 只强调 summary 回填，没有同时强调“详细 superpowers implementation plan 必须落 companion plan 文件”，因此容易让执行阶段丢失详细计划。
+- 当前 health 机制已经能检查 `planning/active/<task-id>/` 是否引用 companion plan，因此最小可用链路已经具备；本轮主要是把 policy 和 patch 语义改成 mandatory，而不是再造一套新状态系统。
+- 双向引用里最关键的机械保障仍然是 `planning/active/<task-id>/` -> companion plan，因为执行时需要从 authoritative summary 反查详细实现计划；companion plan -> active task path 需要在规则文本中明确，供执行与 review 时遵守。
+- 为了避免规则和 doctor 脱节，本轮继续把 companion plan -> active task path 也纳入 `inspectPlanLocations()` 检查：缺少反向引用时给出 warning，而不是默默放过。
+
+## Phase 6 Durable Conclusions
+- 使用 Superpowers 时，companion plan 不是 optional artifact，而是 required artifact；summary sync-back 和 companion-plan persistence 必须同时发生。
+- `planning/active/<task-id>/` 继续承担 authoritative memory、lifecycle、phase status、verification summary；companion plan 承担详细 implementation plan、execution checklist 与细粒度执行备注。
+- authoritative planning files 必须记录 companion plan path、简短摘要和 sync-back 状态；companion plan 必须记录对应的 active task path，形成双向导航。
+- health 现在会区分三种 companion-plan 状态：双向引用完备的合法 companion plan、缺少反向引用的 warning、以及完全 orphan 的 warning。
 
 ## Issues Encountered
 | Issue | Resolution |
