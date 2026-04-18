@@ -188,6 +188,28 @@
   - `npm run verify`
   - 结果：119 tests passed, 0 failed
 
+## Session: 2026-04-18 IDE Recheck
+- **Status:** complete
+- Actions taken:
+  - 重新运行 cross-IDE focused verification，覆盖 metadata、rendered entry、skill projection、synced projected skills 和 installer health。
+  - 读取 `harness/core/metadata/platforms.json` 对应 loader 与 path resolver，确认当前 supported targets 仍为 `codex`、`copilot`、`cursor`、`claude-code`。
+  - 复核 `tests/adapters/skill-projection.test.mjs` 中的 target-specific 边界，确认 `writing-plans` patch 是四 target 共有，而 `planning-with-files` patch 仍然只有 Copilot 持有。
+- Verification:
+  - `node --test tests/installer/metadata.test.mjs tests/adapters/templates.test.mjs tests/adapters/skill-projection.test.mjs tests/adapters/sync-skills.test.mjs tests/installer/health.test.mjs`
+  - 结果：37 tests passed, 0 failed
+- Direct inspection:
+  - supported targets: `codex`, `copilot`, `cursor`, `claude-code`
+  - workspace entries:
+    - `codex` -> `AGENTS.md`
+    - `copilot` -> `.github/copilot-instructions.md`
+    - `cursor` -> `.cursor/rules/harness.mdc`
+    - `claude-code` -> `CLAUDE.md`
+  - workspace skill roots:
+    - `codex` -> `.agents/skills`
+    - `copilot` -> `.github/skills`
+    - `cursor` -> `.cursor/skills`
+    - `claude-code` -> `.claude/skills`
+
 ## Task 3 Evidence Chain
 - `renderEntry()` on `codex`, `copilot`, `cursor`, `claude-code` now renders the same companion-plan model and no longer matches the old “do not follow docs/superpowers/plans by default” wording.
 - `planSkillProjections()` now has explicit four-target assertions showing that `writing-plans` is projected and patched for `codex`, `copilot`, `cursor`, `claude-code`, with the expected per-target skill roots.
