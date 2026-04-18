@@ -1,0 +1,53 @@
+# 任务计划：Superpowers Companion Plan 跨 IDE 投射审计
+
+## Goal
+
+审计 `Superpowers Plans` 与 `Planning with Files` 的新关系模型是否已经从 `HarnessTemplate` 源策略、任务计划、投影实现、测试与 Jared 的跨 IDE / 跨 workspace 入口文件完整落地，重点核查 Copilot。
+
+## Current State
+Status: active
+Archive Eligible: no
+Close Reason:
+
+## Current Phase
+
+Phase 2
+
+## Phases
+
+### Phase 1: 范围恢复与历史上下文复核
+- [x] 读取用户请求与 `/Users/jared/AGENTS.md`
+- [x] 使用 `using-superpowers` 与 `planning-with-files` 的最小必要说明
+- [x] 读取目标文件与相关 active task 记录
+- **Status:** complete
+
+### Phase 2: 源策略与实现证据链审计
+- [ ] 审计 `harness/core/policy/base.md` 与 companion-plan 语义
+- [ ] 审计 installer/projection/tests/docs 中的落地状态
+- [ ] 审计 Jared 全局入口文件与模板输出是否同步
+- **Status:** in_progress
+
+### Phase 3: Copilot 重点核查
+- [ ] 核查 Copilot workspace/user-global instructions、skills、相关 patch 是否表达 companion-plan 新模型
+- [ ] 判断 Copilot 是否存在只更新模板、未更新投影结果的问题
+- **Status:** pending
+
+### Phase 4: 交付审计报告
+- [ ] 输出按严重级别排序的 findings
+- [ ] 记录证据、边界与剩余不确定项
+- **Status:** pending
+
+## Key Questions
+
+1. `base.md` 中新增的 companion-plan / memory-plan 双向同步与引用规则，是否已经进入真正被 IDE 消费的入口文件？
+2. `planning/active/superpowers-plan-artifact-model/task_plan.md` 描述的“已覆盖所有 supported targets”是否有实现与测试证据支持？
+3. Jared 的 user-global / workspace 入口与技能投影，是否已经把这套规则同步到 Copilot、Codex、Claude Code、Cursor？
+4. 是否仍存在旧规则残留，导致某些 IDE 继续把 `docs/superpowers/plans/**` 当作被禁止或非 canonical，而不是 required companion artifact？
+
+## Decisions Made
+
+| Decision | Rationale |
+| --- | --- |
+| 本轮是审计，不直接改实现 | 用户要求先做审计报告 |
+| 以 `HarnessTemplate` 为主审计仓库，同时检查 Jared 全局入口投影 | 用户要求看“整个 Jared 的所有 workspace、所有 IDE”，重点是投影结果是否真的生效 |
+| 优先相信实现与测试，其次才是 task plan 自述 | `task_plan.md` 可以宣称完成，但不能替代代码与实际投影证据 |
