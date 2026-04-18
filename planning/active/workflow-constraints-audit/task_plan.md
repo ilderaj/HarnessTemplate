@@ -33,6 +33,7 @@
 - 已确认 task classification、rule precedence、tracked task 触发条件、superpowers sync-back 约束与 companion plan 模型存在于共享 policy 源头，并通过 adapter/template/patch/test 链路覆盖到所有支持的 IDE。
 - 已补强规则文案，避免后续 agent 因 “straightforward work” 误绕过 `planning-with-files`，也避免把 superpowers 的详细 implementation plan 直接附着到 active task 的 `task_plan.md`。
 - 已完成自检，当前修改未破坏既有测试或健康检查。
+- 2026-04-18 当前复核再次确认：上述约束在 `dev` HEAD 仍然成立，相关 targeted tests、`verify`、`doctor` 全部通过；本轮为只读审计，无代码变更。
 
 ## 当前状态
 Status: active

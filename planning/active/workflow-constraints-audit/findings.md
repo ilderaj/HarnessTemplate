@@ -35,3 +35,30 @@
 - 明确写入：一旦任务被归类为 tracked task，不能再被 “straightforward work 直接执行” 的默认行为覆盖。
 - 明确写入：superpowers 的 sync-back 只能回填 durable summary，不能把完整 implementation plan 直接粘进 `planning/active/<task-id>/task_plan.md`。
 - 明确写入：存在 companion plan 时，详细 implementation checklist 属于 companion artifact；`task_plan.md` 只保留 lifecycle、phase、finishing criteria 与 durable decisions。
+
+## 2026-04-18 复核结论
+
+- 当前 `dev` HEAD 为 `74f342e (Tighten planning-with-files and superpowers policy)`；与本次问题直接相关的连续提交为：
+  - `c030cbe`：task classification / precedence / tracked-task 触发条件澄清。
+  - `37340d5`：deep-reasoning companion-plan model 与 plan-location/health 语义落地。
+  - `74f342e`：summary-only sync-back 与 companion-plan 边界进一步收紧。
+- 共享源头 `harness/core/policy/base.md` 已同时包含：
+  - `Rule Precedence`
+  - `Quick task` / `Tracked task` / `Deep-reasoning task`
+  - “tracked task 不会被 quick-work 默认行为覆盖”
+  - “sync-back is summary-only”
+  - `Companion Plan Model`
+- 四个支持目标并不是各自维护一份独立 policy，而是统一经过 `renderEntry()`：
+  - 读取 `harness/core/policy/base.md`
+  - 叠加各 target 的 `platformOverride`
+  - 渲染到各自 entry template
+- `writing-plans` 的上游默认保存位置会在 projection 阶段被 `harness/installer/lib/superpowers-writing-plans-patch.mjs` 覆盖；当前 patch 明确要求：
+  - durable task state 留在 `planning/active/<task-id>/`
+  - `docs/superpowers/plans/**` 只允许作为 Deep-reasoning companion artifact
+  - detailed implementation plan 留在 companion artifact
+  - active planning files 只回填 path / short summary / sync-back status
+- `plan-locations.mjs` 与 `health.test.mjs` 已把 companion plan 的运行语义固化为：
+  - 被 active task planning files 引用的 companion plan：`ok`
+  - 未被引用的 companion plan：`warning`
+  - canonical planning files 不可读时：`problem`
+- 当前“跨 IDE 同样效果”的证据链以“共享源头 + render/projection + tests/doctor/verify”为主，不是依赖仓库内已经 materialize 出来的四套目标文件。
