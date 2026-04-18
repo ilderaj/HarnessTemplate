@@ -157,6 +157,59 @@
   - 结果：118 tests passed, 0 failed
 - 本轮验证作为 commit / push / PR / local-merge 的新鲜证据，不复用上一轮结果。
 
+## Session: 2026-04-18
+
+### Phase 6: Companion Plan Mandatory Persistence 对齐
+- **Status:** complete
+- Actions taken:
+  - 复读现有 `superpowers-plan-artifact-model` planning 记录，确认此前实现已引入 companion-plan 路径与 health 检查，但规则文案仍保留 optional 语义。
+  - 审查 `harness/core/policy/base.md`、`AGENTS.md`、`README.md`、`docs/maintenance.md` 与 `harness/installer/lib/superpowers-writing-plans-patch.mjs`，定位出 `may create` / `may additionally create` 等与当前要求冲突的语句。
+  - 确认当前最需要修正的是规则与投影语义，而不是新增第三套 memory system。
+- 统一更新 source policy、Codex workspace entry、README、maintenance 文档与 projected `writing-plans` 文案，改为 “实际使用 Superpowers => 必须落盘 companion plan + 保持双向引用”。
+- 更新 `harness/installer/lib/plan-locations.mjs`，新增 companion plan -> `planning/active/<task-id>/` 的 back-reference 检查，缺少反向引用时输出 warning。
+- 运行受影响 adapter tests 与仓库级 verify，确认语义切换没有破坏现有 projection/health 行为。
+- Files changed in this phase:
+  - `harness/core/policy/base.md`
+  - `AGENTS.md`
+  - `README.md`
+  - `docs/maintenance.md`
+  - `harness/installer/lib/superpowers-writing-plans-patch.mjs`
+  - `tests/adapters/templates.test.mjs`
+  - `tests/adapters/sync-skills.test.mjs`
+  - `planning/active/superpowers-plan-artifact-model/task_plan.md`
+  - `planning/active/superpowers-plan-artifact-model/findings.md`
+  - `planning/active/superpowers-plan-artifact-model/progress.md`
+
+## Phase 6 Verification
+- Focused tests:
+  - `node --test tests/installer/health.test.mjs tests/adapters/templates.test.mjs tests/adapters/sync-skills.test.mjs`
+  - 结果：25 tests passed, 0 failed
+- Repo verify:
+  - `npm run verify`
+  - 结果：119 tests passed, 0 failed
+
+## Session: 2026-04-18 IDE Recheck
+- **Status:** complete
+- Actions taken:
+  - 重新运行 cross-IDE focused verification，覆盖 metadata、rendered entry、skill projection、synced projected skills 和 installer health。
+  - 读取 `harness/core/metadata/platforms.json` 对应 loader 与 path resolver，确认当前 supported targets 仍为 `codex`、`copilot`、`cursor`、`claude-code`。
+  - 复核 `tests/adapters/skill-projection.test.mjs` 中的 target-specific 边界，确认 `writing-plans` patch 是四 target 共有，而 `planning-with-files` patch 仍然只有 Copilot 持有。
+- Verification:
+  - `node --test tests/installer/metadata.test.mjs tests/adapters/templates.test.mjs tests/adapters/skill-projection.test.mjs tests/adapters/sync-skills.test.mjs tests/installer/health.test.mjs`
+  - 结果：37 tests passed, 0 failed
+- Direct inspection:
+  - supported targets: `codex`, `copilot`, `cursor`, `claude-code`
+  - workspace entries:
+    - `codex` -> `AGENTS.md`
+    - `copilot` -> `.github/copilot-instructions.md`
+    - `cursor` -> `.cursor/rules/harness.mdc`
+    - `claude-code` -> `CLAUDE.md`
+  - workspace skill roots:
+    - `codex` -> `.agents/skills`
+    - `copilot` -> `.github/skills`
+    - `cursor` -> `.cursor/skills`
+    - `claude-code` -> `.claude/skills`
+
 ## Task 3 Evidence Chain
 - `renderEntry()` on `codex`, `copilot`, `cursor`, `claude-code` now renders the same companion-plan model and no longer matches the old “do not follow docs/superpowers/plans by default” wording.
 - `planSkillProjections()` now has explicit four-target assertions showing that `writing-plans` is projected and patched for `codex`, `copilot`, `cursor`, `claude-code`, with the expected per-target skill roots.

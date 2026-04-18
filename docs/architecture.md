@@ -10,6 +10,7 @@ superpowering-with-files uses four layers:
 Core is the source of truth. Adapters translate core into platform-specific entry files. The installer manages state, safe writes, and entry + skills projection.
 
 Planning with Files is the only durable agent task-memory system. Active task state lives under `planning/active/<task-id>/`; closed task state may move to `planning/archive/<timestamp>-<task-id>/` only after the lifecycle guard passes. Documentation directories such as `docs/**`, `docs/superpowers/plans/**`, and `docs/plans/**` are not active task state unless the user explicitly asks for a human-facing documentation artifact.
+All supported IDE entry files render from the same core policy source, so tracked-task precedence and the companion-plan summary-only boundary are intended to stay consistent across Codex, GitHub Copilot, Cursor, and Claude Code.
 
 Projection operations:
 
@@ -67,7 +68,13 @@ Skill roots are platform metadata, not command-local constants:
 
 Harness materializes skill projections by default so the projected directory is the only discovery source each IDE sees during fresh install. Claude Code shared skill-root symlinks are intentionally unsupported. Harness expects each Claude skill target path to be projected individually under `.claude/skills` or `~/.claude/skills`; directory-level sharing such as `.claude/skills -> ~/.agents/skills` is reported as unhealthy.
 
-Some upstream skills carry default file-location guidance that conflicts with Harness. Harness keeps `harness/upstream/**` untouched, then applies projection-layer patches during `sync`. The Superpowers `writing-plans` projection is patched so durable plans are written to `planning/active/<task-id>/` instead of `docs/superpowers/plans/**`.
+Some upstream skills carry default file-location guidance that conflicts with Harness. Harness keeps `harness/upstream/**` untouched, then applies projection-layer patches during `sync`.
+
+- The Superpowers `writing-plans` projection is patched so durable plans are written to `planning/active/<task-id>/` instead of `docs/superpowers/plans/**`.
+- The `planning-with-files` projection is patched for every supported IDE so its lifecycle guidance requires the companion plan when Superpowers is actually used on a Deep-reasoning task.
+- Copilot receives that shared `planning-with-files` patch plus an extra Copilot-specific compatibility patch for skill-root resolution.
+
+These patches preserve the summary/detail split: the active planning files keep durable task state, while any detailed deep-reasoning implementation plan stays in the companion artifact.
 
 Health checks include plan-location diagnostics. Root-level `task_plan.md`, `findings.md`, `progress.md`, `docs/superpowers/plans/*.md`, and `docs/plans/*.md` are reported as warnings because they may be historical or human-facing documents. They are not treated as installation failures unless another health check fails.
 

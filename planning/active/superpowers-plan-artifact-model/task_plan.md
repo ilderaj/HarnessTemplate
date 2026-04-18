@@ -9,7 +9,7 @@ Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 5
+Phase 6
 
 ## Phases
 
@@ -42,6 +42,13 @@ Phase 5
 - [x] 更新 planning 文件中的最终结论与验证结果
 - [x] 准备交付说明，明确各验证层的 supported targets 覆盖状态
 - [x] 在 review 完成后执行最终提交、推送、PR 与本地 `dev` 合并流程
+- **Status:** complete
+
+### Phase 6: Companion Plan Mandatory Persistence 对齐
+- [x] 审查当前 policy、README、projection patch 与测试中仍保留的“optional companion plan”表述
+- [x] 更新规则，明确只要实际使用 Superpowers，就必须将详细 implementation plan 落盘到 `docs/superpowers/plans/<date>-<task-id>.md`
+- [x] 明确 `planning/active/<task-id>/` 与 companion plan 的双向引用关系，以及 execution / sync-back 的职责分工
+- [x] 更新测试与 planning 记录，验证新的 mandatory companion-plan 语义
 - **Status:** complete
 
 ## Key Questions
@@ -86,3 +93,6 @@ Phase 5
 - Task 3 completed: `tests/adapters/sync-skills.test.mjs` now proves the projected `writing-plans` content on synced workspace output keeps `planning/active/<task-id>/` authoritative while allowing deep-reasoning companion plans as secondary artifacts.
 - Task 3 completed: `tests/installer/health.test.mjs` now proves the four required health behaviors: referenced companion plan = no warning, orphan companion plan = warning, unreadable canonical planning path = problem, root-level/doc plans = warning.
 - Task 3 completed: focused adapter/health tests and `npm run verify` both passed, providing a layered evidence chain: four-target render coverage, four-target writing-plans projection coverage, Copilot-specific planning patch coverage, and adapter-agnostic installer health coverage.
+- Phase 6 opened: align policy so Superpowers usage requires a persisted companion plan, rather than leaving the detailed implementation plan implicit or optional.
+- Phase 6 completed: source policy, Codex entry, user-facing docs, projected `writing-plans`, and adapter tests now all require persisted companion plans plus bidirectional references when Superpowers is used.
+- Phase 6 completed: installer health now also warns when a companion plan is referenced by planning files but fails to point back to `planning/active/<task-id>/`.

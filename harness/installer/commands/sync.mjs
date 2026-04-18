@@ -3,6 +3,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { entriesForScope, loadAdapter, renderEntry } from '../lib/adapters.mjs';
 import { applyCopilotPlanningPatch } from '../lib/copilot-planning-patch.mjs';
+import { applyPlanningWithFilesCompanionPlanPatch } from '../lib/planning-with-files-companion-plan-patch.mjs';
 import { applySuperpowersWritingPlansPatch } from '../lib/superpowers-writing-plans-patch.mjs';
 import {
   linkDirectoryProjection,
@@ -45,6 +46,27 @@ function usage() {
   ].join('\n');
 }
 
+async function applySkillPatches(projection) {
+  for (const patch of projection.patches ?? []) {
+    if (patch.type === 'planning-with-files-companion-plan') {
+      await applyPlanningWithFilesCompanionPlanPatch(projection.targetPath);
+      continue;
+    }
+
+    if (patch.type === 'copilot-planning-with-files') {
+      await applyCopilotPlanningPatch(projection.targetPath);
+      continue;
+    }
+
+    if (patch.type === 'superpowers-writing-plans') {
+      await applySuperpowersWritingPlansPatch(projection.targetPath);
+      continue;
+    }
+
+    throw new Error(`Unsupported skill patch type: ${patch.type}`);
+  }
+}
+
 async function applySkillProjection(projection, ownedTargets, conflictMode, projectionMode) {
   const effectiveStrategy =
     projection.strategy === 'link' && projectionMode === 'portable' ? 'materialize' : projection.strategy;
@@ -66,12 +88,7 @@ async function applySkillProjection(projection, ownedTargets, conflictMode, proj
       ownedTargets,
       conflictMode
     });
-    if (projection.patch?.type === 'copilot-planning-with-files') {
-      await applyCopilotPlanningPatch(projection.targetPath);
-    }
-    if (projection.patch?.type === 'superpowers-writing-plans') {
-      await applySuperpowersWritingPlansPatch(projection.targetPath);
-    }
+    await applySkillPatches(projection);
     return effectiveStrategy;
   }
 

@@ -4,6 +4,19 @@ import { resolveSkillTargetPaths } from './paths.mjs';
 
 const strategies = new Set(['link', 'materialize']);
 
+function normalizePatches(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function resolvePatches(patchConfig, target) {
+  if (!patchConfig) return [];
+  return [
+    ...normalizePatches(patchConfig.default),
+    ...normalizePatches(patchConfig[target])
+  ];
+}
+
 async function loadSkillIndex(rootDir) {
   return JSON.parse(await readFile(path.join(rootDir, 'harness/core/skills/index.json'), 'utf8'));
 }
@@ -51,7 +64,7 @@ export async function projectionForSkill(rootDir, skillName, target) {
     target,
     strategy,
     source: path.join(rootDir, skill.baselinePath),
-    patch: skill.patches ? skill.patches[target] : undefined
+    patches: resolvePatches(skill.patches, target)
   };
 }
 
@@ -82,6 +95,7 @@ export async function planSkillProjections({ rootDir, homeDir, scope, target }) 
 
       for (const childName of childNames) {
         for (const targetPath of targetPaths.filter((candidate) => path.basename(candidate) === childName)) {
+          const patches = normalizePatches(skill.childPatches?.[childName]);
           projections.push({
             kind: 'skill',
             parentSkillName,
@@ -90,7 +104,7 @@ export async function planSkillProjections({ rootDir, homeDir, scope, target }) 
             strategy,
             sourcePath: path.join(sourceRoot, childName),
             targetPath,
-            patch: skill.childPatches ? skill.childPatches[childName] : undefined
+            patches
           });
         }
       }
@@ -99,6 +113,7 @@ export async function planSkillProjections({ rootDir, homeDir, scope, target }) 
 
     if (skill.layout === 'single') {
       for (const targetPath of resolveSkillTargetPaths(rootDir, homeDir, scope, target, skill)) {
+        const patches = resolvePatches(skill.patches, target);
         projections.push({
           kind: 'skill',
           parentSkillName,
@@ -107,7 +122,7 @@ export async function planSkillProjections({ rootDir, homeDir, scope, target }) 
           strategy,
           sourcePath: sourceRoot,
           targetPath,
-          patch: skill.patches ? skill.patches[target] : undefined
+          patches
         });
       }
       continue;

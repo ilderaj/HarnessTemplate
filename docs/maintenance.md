@@ -33,9 +33,10 @@ When changing orchestration policy:
 
 Future projection patches, health checks, and tests should be verified against the companion-plan semantics for rendered entry files, projected skills, and health warnings:
 
-- projection patches must render `docs/superpowers/plans/**` only as a deep-reasoning companion artifact path
+- projection patches must render `docs/superpowers/plans/**` as the required companion-artifact path whenever Superpowers is used on a deep-reasoning task
+- projected skill wording must preserve the summary/detail split and the bidirectional references between `planning/active/<task-id>/` and the companion plan
 - health checks must continue to treat `planning/active/<task-id>/` as authoritative and any companion plan as secondary
-- tests should validate the three-layer model consistently across policy, rendered entries, and health warnings
+- tests should validate mandatory companion-plan persistence consistently across policy, rendered entries, projected skills, and health warnings
 
 Worktree base selection is a Harness-owned guardrail. Maintain it in:
 

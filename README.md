@@ -40,8 +40,11 @@ Rules:
 
 1. `planning-with-files` is the only durable task-memory system.
 2. `docs/**` and `docs/plans/**` are documentation, not active task memory.
-3. Deep-reasoning tasks may also create a secondary companion plan under `docs/superpowers/plans/<date>-<task-id>.md`.
-4. Companion plans are secondary artifacts only; active task memory stays in `planning/active/<task-id>/`.
+3. Once a task is classified as tracked, `planning-with-files` is mandatory even if the implementation itself looks straightforward.
+4. If a Deep-reasoning task actually uses Superpowers, it must also create a secondary companion plan under `docs/superpowers/plans/<date>-<task-id>.md`.
+5. Companion plans are secondary artifacts only; active task memory stays in `planning/active/<task-id>/`.
+6. Keep detailed Superpowers implementation plans and execution checklists in the companion artifact; sync only durable summaries, references, and status back into `planning/active/<task-id>/`.
+7. The active task files must point to the companion plan, and the companion plan must point back to `planning/active/<task-id>/`.
 
 Recommended companion-plan name: `docs/superpowers/plans/<date>-<task-id>.md`.
 
@@ -51,7 +54,7 @@ Harness vendors two upstream systems and applies stricter local governance on to
 
 | Upstream | Original role | Upstream license | Harness usage |
 | --- | --- | --- | --- |
-| [`superpowers`](https://github.com/obra/superpowers) | agentic skills framework and software-development workflow | MIT | optional reasoning layer for complex planning, debugging, execution, and review phases; deep-reasoning tasks may emit `docs/superpowers/plans/<date>-<task-id>.md` as a secondary companion artifact |
+| [`superpowers`](https://github.com/obra/superpowers) | agentic skills framework and software-development workflow | MIT | optional reasoning layer for complex planning, debugging, execution, and review phases; when it is used on a deep-reasoning task, the detailed implementation plan must be written to `docs/superpowers/plans/<date>-<task-id>.md` as a secondary companion artifact |
 | [`planning-with-files`](https://github.com/OthmanAdi/planning-with-files) | persistent markdown planning and session-recovery skill | MIT | the only durable task-memory system, rooted in `planning/active/<task-id>/` |
 
 Thanks to the upstream authors and communities whose work this repository builds on:

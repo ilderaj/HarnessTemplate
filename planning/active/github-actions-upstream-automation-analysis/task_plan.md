@@ -9,7 +9,7 @@ Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 6
+Phase 7
 
 ## Phases
 
@@ -48,6 +48,12 @@ Phase 6
 - [x] 将任务状态切换为 `waiting_review`
 - **Status:** complete
 
+### Phase 7: 旧计划有效性复核与修订
+- [x] 结合仓库最新更新复核旧计划的技术与流程前提
+- [x] 标记旧计划中已失效或需替换的关键假设
+- [x] 产出一版修订后的可执行计划供 review
+- **Status:** complete
+
 ## Key Questions
 1. GitHub Actions 是否能定期检测两个 upstream 主源的变更？
 2. Actions 是否能安全触发本项目已有 `fetch` / `update` 流程？
@@ -77,6 +83,58 @@ Phase 6
 - 需要用中文输出分析；代码相关名称、命令、workflow 字段保持英文。
 - 不运行 frontend dev/build/start/serve；本次也不进行实现。
 - 本轮新增计划评审只给出方案修正，不创建 workflow、不推分支、不改 GitHub 设置。
+
+## Current Verdict
+
+- 旧计划的总体方向仍然成立：`main` 上的 schedule 触发、工作分支从 `origin/dev` 派生、执行 Harness refresh chain、通过 PR 而不是直推落到 `dev`。
+- 旧计划不能按原样直接执行，至少需要替换 3 处关键设计：
+  1. 旧计划把详细 implementation checklist 直接放进 `task_plan.md`，与当前仓库的 `summary-only sync-back` / `companion-plan` 边界不再完全一致。
+  2. 旧计划用 `git status --porcelain --untracked-files=no` 收集变化，会漏掉首次生成的 untracked projection files，因此首轮自动 PR 可能拿不到完整 diff。
+  3. 旧计划没有显式配置 bot commit identity，GitHub runner 上执行 `git commit` 存在直接失败风险。
+- 因此，本 task 的旧计划结论更新为：`usable as architecture, not usable as-is for implementation`。
+
+## Revised Execution Plan Summary
+
+### Phase A: Workflow Skeleton And Contracts
+- 建立 `.github/workflows/upstream-refresh.yml`，但先只接通 contract tests，不直接实现完整 PR 逻辑。
+- 新增 `tests/automation/` 合约测试，先锁定这些不变量：
+  - `schedule` 仍从默认分支 `main` 的 workflow 文件触发
+  - refresh 实际从 `origin/dev` 派生 automation branch
+  - workflow 只在 refresh 成功后进入 PR 步骤
+  - 结果文件写到 `.harness/upstream-refresh-result.json`
+- 更新 `package.json`，把 `tests/automation/*.test.mjs` 纳入 `npm run verify`。
+
+### Phase B: Refresh Runner
+- 用 `scripts/ci/lib/upstream-refresh.mjs` 和 `scripts/ci/run-upstream-refresh.mjs` 负责：
+  - `git fetch origin main dev`
+  - `git checkout -B automation/upstream-refresh origin/dev`
+  - `./scripts/harness install --scope=workspace --targets=all --projection=link`
+  - `./scripts/harness fetch`
+  - `./scripts/harness update`
+  - `npm run verify`
+  - `./scripts/harness worktree-preflight`
+  - `./scripts/harness sync --dry-run`
+  - `./scripts/harness sync`
+  - `./scripts/harness doctor`
+- 变化检测必须改成“包含 tracked + untracked repo-owned files”的实现，不能再忽略 untracked files。
+- `.harness/projections.json`、`.harness/state.json` 和其他运行态文件继续排除在 commit allowlist 外。
+
+### Phase C: PR Automation
+- 用 `scripts/ci/lib/upstream-pr.mjs` 和 `scripts/ci/open-upstream-pr.mjs` 负责：
+  - 固定 automation branch：`automation/upstream-refresh`
+  - 固定 PR title：`chore: refresh upstream baselines`
+  - 先配置 git user.name / user.email，再 commit
+  - force-push automation branch
+  - create or update 指向 `dev` 的 PR
+- v1 继续不做 auto-merge，也不允许 workflow 直推 `dev`。
+
+### Phase D: Docs And Operator Checklist
+- 更新 `docs/maintenance.md`，补充：
+  - schedule 在 `main` 上运行，但工作基线是 `origin/dev`
+  - v1 没有 auto-merge
+  - 失败时查看 workflow artifact 与 `.harness/upstream-refresh-result.json`
+  - merge 后需要人工确认的 repo settings
+- 如果实现后新增的 health/doctor 约束需要说明，再同步补充 README 或 compatibility docs，但不是先决改动。
 
 ## Implementation Plan
 

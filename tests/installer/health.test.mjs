@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { readHarnessHealth } from '../../harness/installer/lib/health.mjs';
 import { sync } from '../../harness/installer/commands/sync.mjs';
@@ -38,6 +38,41 @@ test('readHarnessHealth reports entry and skill status per target', async () => 
       'ok'
     );
     assert.equal(health.problems.length, 0);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('readHarnessHealth reports a problem when the planning-with-files companion-plan patch marker is missing', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] }
+      },
+      upstream: {}
+    });
+
+    await withCwd(root, () => sync([]));
+
+    const skillPath = path.join(root, '.agents/skills/planning-with-files/SKILL.md');
+    const original = await readFile(skillPath, 'utf8');
+    await writeFile(
+      skillPath,
+      original.replace('## Harness planning-with-files companion-plan patch\n\n', '')
+    );
+
+    const health = await readHarnessHealth(root, '/home/user');
+    const planning = health.targets.codex.skills.find((skill) => skill.skillName === 'planning-with-files');
+
+    assert.equal(planning.status, 'problem');
+    assert.match(
+      planning.message,
+      /Materialized skill is missing the Harness patch marker: Harness planning-with-files companion-plan patch/
+    );
   } finally {
     await removeHarnessFixture(root);
   }
@@ -407,7 +442,10 @@ test('readHarnessHealth keeps referenced companion plans out of warnings', async
     await writeFile(path.join(root, 'planning/active/task-a/findings.md'), '# Findings\n');
     await writeFile(path.join(root, 'planning/active/task-a/progress.md'), '# Progress\n');
     await mkdir(path.join(root, 'docs/superpowers/plans'), { recursive: true });
-    await writeFile(path.join(root, 'docs/superpowers/plans/feature-plan.md'), '# Companion plan\n');
+    await writeFile(
+      path.join(root, 'docs/superpowers/plans/feature-plan.md'),
+      '# Companion plan\n\nActive task path: planning/active/task-a/\n'
+    );
 
     const health = await readHarnessHealth(root, '/home/user');
 
@@ -417,6 +455,52 @@ test('readHarnessHealth keeps referenced companion plans out of warnings', async
       health.planLocations.some(
         (location) =>
           location.type === 'companion-plan' &&
+          location.path === 'docs/superpowers/plans/feature-plan.md' &&
+          location.referencedBy.includes('planning/active/task-a/task_plan.md') &&
+          location.pointsBackTo.includes('planning/active/task-a/')
+      )
+    );
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('readHarnessHealth warns when a companion plan does not point back to its active task', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      hookMode: 'off',
+      targets: {},
+      upstream: {}
+    });
+
+    await mkdir(path.join(root, 'planning/active/task-a'), { recursive: true });
+    await writeFile(
+      path.join(root, 'planning/active/task-a/task_plan.md'),
+      'Companion plan path: docs/superpowers/plans/feature-plan.md\n'
+    );
+    await writeFile(path.join(root, 'planning/active/task-a/findings.md'), '# Findings\n');
+    await writeFile(path.join(root, 'planning/active/task-a/progress.md'), '# Progress\n');
+    await mkdir(path.join(root, 'docs/superpowers/plans'), { recursive: true });
+    await writeFile(path.join(root, 'docs/superpowers/plans/feature-plan.md'), '# Companion plan\n');
+
+    const health = await readHarnessHealth(root, '/home/user');
+
+    assert.equal(health.problems.length, 0);
+    assert.ok(
+      health.warnings.some((warning) =>
+        warning.includes(
+          'docs/superpowers/plans/feature-plan.md: Companion plan is referenced by active task planning files but does not point back to planning/active/<task-id>/'
+        )
+      )
+    );
+    assert.ok(
+      health.planLocations.some(
+        (location) =>
+          location.type === 'companion-plan-missing-back-reference' &&
           location.path === 'docs/superpowers/plans/feature-plan.md' &&
           location.referencedBy.includes('planning/active/task-a/task_plan.md')
       )

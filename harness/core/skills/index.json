@@ -51,6 +51,10 @@
         "claude-code": "materialize"
       },
       "patches": {
+        "default": {
+          "type": "planning-with-files-companion-plan",
+          "marker": "Harness planning-with-files companion-plan patch"
+        },
         "copilot": {
           "type": "copilot-planning-with-files",
           "marker": "Harness Copilot planning-with-files patch"

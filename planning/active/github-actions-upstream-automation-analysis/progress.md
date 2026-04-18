@@ -142,3 +142,24 @@
 | Timestamp | Error | Attempt | Resolution |
 |-----------|-------|---------|------------|
 | 2026-04-17 | `gh repo view` 请求了不存在的 JSON field `autoMergeAllowed` | 1 | 改用 CLI 支持字段重新查询 |
+
+### Phase 7: 旧计划有效性复核与修订
+- **Status:** complete
+- Actions taken:
+  - 读取当前 `dev` HEAD 的 planning、maintenance、policy、health 相关文件，确认最近更新主要集中在 companion-plan、summary-only sync-back 和 workflow constraint 审计。
+  - 复核仓库结构，确认旧计划假定的 `.github/workflows/`、`scripts/ci/`、`tests/automation/` 仍未实际创建，说明旧计划尚未进入实现阶段。
+  - 再次查询 GitHub 端状态，确认默认分支仍是 `main`、`dev/main` 仍无 branch protection、也没有以 `dev` 为 base 的 open PR。
+  - 定位旧计划中的两处关键实现缺陷：忽略 untracked projection files、未配置 bot git identity。
+  - 基于最新 policy 和以上缺陷，输出“旧计划总体架构可保留，但不能按原样执行”的修订结论，并整理新的执行摘要。
+- Files created/modified:
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md` (updated)
+
+## Additional Test Results 2
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| 当前分支与最近提交检查 | `git log --oneline --decorate -n 12` | 判断近期是否已有 workflow 落地提交 | 只有 planning/policy/audit 更新，无 workflow 落地 | 通过 |
+| 仓库结构检查 | `fd . .github scripts tests -d 4` | 判断旧计划假定文件是否已存在 | `.github/workflows/`、`scripts/ci/`、`tests/automation/` 仍不存在 | 通过 |
+| GitHub 端前提复核 | `git remote show origin`、`gh repo view ...`、`gh api .../protection`、`gh pr list --base dev` | 判断旧计划外部前提是否改变 | 默认分支仍为 `main`，无保护，无 open PR | 通过 |
+| 旧计划缺陷复核 | 读取 `planning/active/github-actions-upstream-automation-analysis/task_plan.md` | 判断 refresh 逻辑是否会漏掉 untracked files | 会漏掉首次生成的 repo-owned projection files | 通过 |

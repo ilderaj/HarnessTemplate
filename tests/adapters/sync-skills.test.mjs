@@ -34,7 +34,20 @@ test('sync projects workspace entries and skills', async () => {
     );
 
     const copilotPlanning = await readFile(path.join(root, '.github/skills/planning-with-files/SKILL.md'), 'utf8');
+    assert.match(copilotPlanning, /Harness planning-with-files companion-plan patch/);
     assert.match(copilotPlanning, /Harness Copilot planning-with-files patch/);
+    assert.match(
+      copilotPlanning,
+      /If superpowers is used on a Deep-reasoning task, persist the detailed implementation plan/
+    );
+    assert.match(
+      copilotPlanning,
+      /docs\/superpowers\/plans\/<date>-<task-id>\.md/
+    );
+    assert.doesNotMatch(
+      copilotPlanning,
+      /Do not create a parallel long-lived superpowers plan unless the user explicitly requests that file\./
+    );
     assert.match(copilotPlanning, /tracked tasks/);
     assert.match(copilotPlanning, /Tool-call count is only a hint/);
 
@@ -42,9 +55,18 @@ test('sync projects workspace entries and skills', async () => {
     assert.match(writingPlans, /Harness Superpowers writing-plans location patch/);
     assert.match(writingPlans, /planning\/active\/<task-id>\/` as the primary task-memory location/);
     assert.match(writingPlans, /\*\*Save durable task state to:\*\* `planning\/active\/<task-id>\/task_plan\.md`/);
-    assert.match(writingPlans, /For Deep-reasoning tasks, you may additionally create a companion plan/);
+    assert.match(
+      writingPlans,
+      /If a Deep-reasoning task actually uses Superpowers, create a companion plan/
+    );
     assert.match(writingPlans, /secondary artifact for reasoning and review, not the primary task-memory record/);
+    assert.match(writingPlans, /Keep the detailed implementation plan and execution checklist in that companion artifact/);
     assert.match(writingPlans, /write its path, a short summary, and the current sync-back status/);
+    assert.match(
+      writingPlans,
+      /The companion plan must also point back to `planning\/active\/<task-id>\/`/
+    );
+    assert.doesNotMatch(writingPlans, /you may additionally create a companion plan/);
     assert.doesNotMatch(writingPlans, /\*\*Save plans to:\*\* `docs\/superpowers\/plans/);
   } finally {
     await removeHarnessFixture(root);
@@ -90,7 +112,57 @@ test('sync backs up non-owned skill target when requested', async () => {
     await withCwd(root, () => sync(['--conflict=backup']));
 
     const skill = await readFile(path.join(root, '.github/skills/planning-with-files/SKILL.md'), 'utf8');
+    assert.match(skill, /Harness planning-with-files companion-plan patch/);
     assert.match(skill, /Harness Copilot planning-with-files patch/);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('sync patches planning-with-files companion-plan semantics for every supported target', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] },
+        copilot: { enabled: true, paths: [path.join(root, '.github/copilot-instructions.md')] },
+        cursor: { enabled: true, paths: [path.join(root, '.cursor/rules/harness.mdc')] },
+        'claude-code': { enabled: true, paths: [path.join(root, 'CLAUDE.md')] }
+      },
+      upstream: {}
+    });
+
+    await withCwd(root, () => sync([]));
+
+    const targets = {
+      codex: path.join(root, '.agents/skills/planning-with-files/SKILL.md'),
+      copilot: path.join(root, '.github/skills/planning-with-files/SKILL.md'),
+      cursor: path.join(root, '.cursor/skills/planning-with-files/SKILL.md'),
+      'claude-code': path.join(root, '.claude/skills/planning-with-files/SKILL.md')
+    };
+
+    for (const [target, skillPath] of Object.entries(targets)) {
+      const skill = await readFile(skillPath, 'utf8');
+      assert.match(skill, /Harness planning-with-files companion-plan patch/, target);
+      assert.match(
+        skill,
+        /If superpowers is used on a Deep-reasoning task, persist the detailed implementation plan/,
+        target
+      );
+      assert.match(skill, /companion plan path, a short summary, and the current sync-back status/, target);
+      assert.match(skill, /The companion plan must also point back to `planning\/active\/<task-id>\/`/, target);
+      assert.doesNotMatch(
+        skill,
+        /Do not create a parallel long-lived superpowers plan unless the user explicitly requests that file\./,
+        target
+      );
+    }
+
+    const copilotSkill = await readFile(targets.copilot, 'utf8');
+    assert.match(copilotSkill, /Harness Copilot planning-with-files patch/);
   } finally {
     await removeHarnessFixture(root);
   }
