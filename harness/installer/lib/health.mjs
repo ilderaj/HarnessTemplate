@@ -78,13 +78,13 @@ async function inspectMaterializedSkill(projection) {
     return { ...projection, status: 'problem', message: 'Materialized skill is missing SKILL.md.' };
   }
 
-  if (projection.patch?.marker) {
+  for (const patch of projection.patches ?? []) {
     const text = await readFile(skillFile, 'utf8').catch(() => '');
-    if (!text.includes(projection.patch.marker)) {
+    if (!text.includes(patch.marker)) {
       return {
         ...projection,
         status: 'problem',
-        message: `Materialized skill is missing the Harness patch marker: ${projection.patch.marker}.`
+        message: `Materialized skill is missing the Harness patch marker: ${patch.marker}.`
       };
     }
   }

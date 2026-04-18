@@ -34,7 +34,20 @@ test('sync projects workspace entries and skills', async () => {
     );
 
     const copilotPlanning = await readFile(path.join(root, '.github/skills/planning-with-files/SKILL.md'), 'utf8');
+    assert.match(copilotPlanning, /Harness planning-with-files companion-plan patch/);
     assert.match(copilotPlanning, /Harness Copilot planning-with-files patch/);
+    assert.match(
+      copilotPlanning,
+      /If superpowers is used on a Deep-reasoning task, persist the detailed implementation plan/
+    );
+    assert.match(
+      copilotPlanning,
+      /docs\/superpowers\/plans\/<date>-<task-id>\.md/
+    );
+    assert.doesNotMatch(
+      copilotPlanning,
+      /Do not create a parallel long-lived superpowers plan unless the user explicitly requests that file\./
+    );
     assert.match(copilotPlanning, /tracked tasks/);
     assert.match(copilotPlanning, /Tool-call count is only a hint/);
 
@@ -99,7 +112,57 @@ test('sync backs up non-owned skill target when requested', async () => {
     await withCwd(root, () => sync(['--conflict=backup']));
 
     const skill = await readFile(path.join(root, '.github/skills/planning-with-files/SKILL.md'), 'utf8');
+    assert.match(skill, /Harness planning-with-files companion-plan patch/);
     assert.match(skill, /Harness Copilot planning-with-files patch/);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('sync patches planning-with-files companion-plan semantics for every supported target', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] },
+        copilot: { enabled: true, paths: [path.join(root, '.github/copilot-instructions.md')] },
+        cursor: { enabled: true, paths: [path.join(root, '.cursor/rules/harness.mdc')] },
+        'claude-code': { enabled: true, paths: [path.join(root, 'CLAUDE.md')] }
+      },
+      upstream: {}
+    });
+
+    await withCwd(root, () => sync([]));
+
+    const targets = {
+      codex: path.join(root, '.agents/skills/planning-with-files/SKILL.md'),
+      copilot: path.join(root, '.github/skills/planning-with-files/SKILL.md'),
+      cursor: path.join(root, '.cursor/skills/planning-with-files/SKILL.md'),
+      'claude-code': path.join(root, '.claude/skills/planning-with-files/SKILL.md')
+    };
+
+    for (const [target, skillPath] of Object.entries(targets)) {
+      const skill = await readFile(skillPath, 'utf8');
+      assert.match(skill, /Harness planning-with-files companion-plan patch/, target);
+      assert.match(
+        skill,
+        /If superpowers is used on a Deep-reasoning task, persist the detailed implementation plan/,
+        target
+      );
+      assert.match(skill, /companion plan path, a short summary, and the current sync-back status/, target);
+      assert.match(skill, /The companion plan must also point back to `planning\/active\/<task-id>\/`/, target);
+      assert.doesNotMatch(
+        skill,
+        /Do not create a parallel long-lived superpowers plan unless the user explicitly requests that file\./,
+        target
+      );
+    }
+
+    const copilotSkill = await readFile(targets.copilot, 'utf8');
+    assert.match(copilotSkill, /Harness Copilot planning-with-files patch/);
   } finally {
     await removeHarnessFixture(root);
   }

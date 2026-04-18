@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { readHarnessHealth } from '../../harness/installer/lib/health.mjs';
 import { sync } from '../../harness/installer/commands/sync.mjs';
@@ -38,6 +38,41 @@ test('readHarnessHealth reports entry and skill status per target', async () => 
       'ok'
     );
     assert.equal(health.problems.length, 0);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('readHarnessHealth reports a problem when the planning-with-files companion-plan patch marker is missing', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] }
+      },
+      upstream: {}
+    });
+
+    await withCwd(root, () => sync([]));
+
+    const skillPath = path.join(root, '.agents/skills/planning-with-files/SKILL.md');
+    const original = await readFile(skillPath, 'utf8');
+    await writeFile(
+      skillPath,
+      original.replace('## Harness planning-with-files companion-plan patch\n\n', '')
+    );
+
+    const health = await readHarnessHealth(root, '/home/user');
+    const planning = health.targets.codex.skills.find((skill) => skill.skillName === 'planning-with-files');
+
+    assert.equal(planning.status, 'problem');
+    assert.match(
+      planning.message,
+      /Materialized skill is missing the Harness patch marker: Harness planning-with-files companion-plan patch/
+    );
   } finally {
     await removeHarnessFixture(root);
   }

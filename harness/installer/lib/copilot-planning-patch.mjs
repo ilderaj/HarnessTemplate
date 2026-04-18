@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { applyPlanningWithFilesCompanionPlanPatch } from './planning-with-files-companion-plan-patch.mjs';
 
 const MARKER = 'Harness Copilot planning-with-files patch';
 
@@ -13,24 +14,28 @@ function copilotSkillRootSnippet() {
 }
 
 export async function applyCopilotPlanningPatch(targetDir) {
+  await applyPlanningWithFilesCompanionPlanPatch(targetDir);
+
   const skillPath = path.join(targetDir, 'SKILL.md');
   const original = await readFile(skillPath, 'utf8');
   const patched = original
     .replaceAll('${CLAUDE_PLUGIN_ROOT}', '$COPILOT_PLANNING_WITH_FILES_ROOT')
     .replace(
       '# Planning with Files',
-      [
-        `# ${MARKER}`,
-        '',
-        'This materialized copy is maintained by Harness for GitHub Copilot.',
-        'It keeps task state under `planning/active/<task-id>/` and resolves helper scripts from the Copilot skill directory.',
-        '',
-        '```bash',
-        copilotSkillRootSnippet(),
-        '```',
-        '',
-        '# Planning with Files'
-      ].join('\n')
+      original.includes(MARKER)
+        ? '# Planning with Files'
+        : [
+            `# ${MARKER}`,
+            '',
+            'This materialized copy is maintained by Harness for GitHub Copilot.',
+            'It keeps task state under `planning/active/<task-id>/` and resolves helper scripts from the Copilot skill directory.',
+            '',
+            '```bash',
+            copilotSkillRootSnippet(),
+            '```',
+            '',
+            '# Planning with Files'
+          ].join('\n')
     );
 
   await writeFile(skillPath, patched);

@@ -14,7 +14,9 @@ The materialized copy must also preserve the companion-plan boundary: detailed s
 
 The materialized copy must avoid incompatible hook assumptions.
 
-Harness materializes Copilot's `planning-with-files` copy instead of linking it. During `sync`, Harness copies `harness/upstream/planning-with-files` into the Copilot skill root and applies the `Harness Copilot planning-with-files patch` marker. `doctor` checks for that marker so a stale or manually edited copy is visible.
+Harness materializes Copilot's `planning-with-files` copy instead of linking it. During `sync`, Harness copies `harness/upstream/planning-with-files` into the Copilot skill root, applies the shared `Harness planning-with-files companion-plan patch`, and then applies the `Harness Copilot planning-with-files patch`.
+
+`doctor` checks for both markers so a stale or manually edited copy is visible.
 
 Target paths:
 

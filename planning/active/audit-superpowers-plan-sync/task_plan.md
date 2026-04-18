@@ -11,7 +11,7 @@ Close Reason:
 
 ## Current Phase
 
-Phase 2
+Complete
 
 ## Phases
 
@@ -22,20 +22,20 @@ Phase 2
 - **Status:** complete
 
 ### Phase 2: 源策略与实现证据链审计
-- [ ] 审计 `harness/core/policy/base.md` 与 companion-plan 语义
-- [ ] 审计 installer/projection/tests/docs 中的落地状态
-- [ ] 审计 Jared 全局入口文件与模板输出是否同步
-- **Status:** in_progress
+- [x] 审计 `harness/core/policy/base.md` 与 companion-plan 语义
+- [x] 审计 installer/projection/tests/docs 中的落地状态
+- [x] 审计 Jared 全局入口文件与模板输出是否同步
+- **Status:** complete
 
 ### Phase 3: Copilot 重点核查
-- [ ] 核查 Copilot workspace/user-global instructions、skills、相关 patch 是否表达 companion-plan 新模型
-- [ ] 判断 Copilot 是否存在只更新模板、未更新投影结果的问题
-- **Status:** pending
+- [x] 核查 Copilot workspace/user-global instructions、skills、相关 patch 是否表达 companion-plan 新模型
+- [x] 判断 Copilot 是否存在只更新模板、未更新投影结果的问题
+- **Status:** complete
 
 ### Phase 4: 交付审计报告
-- [ ] 输出按严重级别排序的 findings
-- [ ] 记录证据、边界与剩余不确定项
-- **Status:** pending
+- [x] 输出按严重级别排序的 findings
+- [x] 记录证据、边界与剩余不确定项
+- **Status:** complete
 
 ## Key Questions
 

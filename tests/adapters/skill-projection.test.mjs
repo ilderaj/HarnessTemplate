@@ -55,8 +55,8 @@ test('planSkillProjections marks Superpowers writing-plans for Harness plan-loca
 
   const writingPlans = plan.find((entry) => entry.skillName === 'writing-plans');
   assert.ok(writingPlans);
-  assert.equal(writingPlans.patch.type, 'superpowers-writing-plans');
-  assert.equal(writingPlans.patch.marker, 'Harness Superpowers writing-plans location patch');
+  assert.deepEqual(writingPlans.patches.map((patch) => patch.type), ['superpowers-writing-plans']);
+  assert.equal(writingPlans.patches[0].marker, 'Harness Superpowers writing-plans location patch');
 });
 
 test('planSkillProjections applies the writing-plans patch for every supported target', async () => {
@@ -79,8 +79,8 @@ test('planSkillProjections applies the writing-plans patch for every supported t
     assert.ok(writingPlans, target);
     assert.equal(writingPlans.parentSkillName, 'superpowers', target);
     assert.equal(writingPlans.strategy, 'materialize', target);
-    assert.equal(writingPlans.patch.type, 'superpowers-writing-plans', target);
-    assert.equal(writingPlans.patch.marker, 'Harness Superpowers writing-plans location patch', target);
+    assert.deepEqual(writingPlans.patches.map((patch) => patch.type), ['superpowers-writing-plans'], target);
+    assert.equal(writingPlans.patches[0].marker, 'Harness Superpowers writing-plans location patch', target);
     assert.match(writingPlans.sourcePath, /harness\/upstream\/superpowers\/skills\/writing-plans$/, target);
     assert.match(writingPlans.targetPath, targetPathPattern, target);
   }
@@ -96,11 +96,14 @@ test('planSkillProjections materializes Copilot planning-with-files', async () =
 
   const planning = plan.find((entry) => entry.skillName === 'planning-with-files');
   assert.equal(planning.strategy, 'materialize');
-  assert.equal(planning.patch.type, 'copilot-planning-with-files');
+  assert.deepEqual(
+    planning.patches.map((patch) => patch.type),
+    ['planning-with-files-companion-plan', 'copilot-planning-with-files']
+  );
   assert.match(planning.targetPath, /\.github\/skills\/planning-with-files$/);
 });
 
-test('planSkillProjections only applies the planning-with-files patch for Copilot', async () => {
+test('planSkillProjections applies the planning-with-files companion-plan patch for every supported target', async () => {
   const supportedTargets = ['codex', 'copilot', 'cursor', 'claude-code'];
 
   for (const target of supportedTargets) {
@@ -114,12 +117,30 @@ test('planSkillProjections only applies the planning-with-files patch for Copilo
     const planning = plan.find((entry) => entry.skillName === 'planning-with-files');
     assert.ok(planning, target);
     assert.equal(planning.strategy, 'materialize', target);
+    assert.ok(Array.isArray(planning.patches), target);
+    assert.ok(
+      planning.patches.some((patch) => patch.type === 'planning-with-files-companion-plan'),
+      target
+    );
+    assert.ok(
+      planning.patches.some((patch) => patch.marker === 'Harness planning-with-files companion-plan patch'),
+      target
+    );
 
     if (target === 'copilot') {
-      assert.equal(planning.patch.type, 'copilot-planning-with-files', target);
-      assert.equal(planning.patch.marker, 'Harness Copilot planning-with-files patch', target);
+      assert.ok(
+        planning.patches.some((patch) => patch.type === 'copilot-planning-with-files'),
+        target
+      );
+      assert.ok(
+        planning.patches.some((patch) => patch.marker === 'Harness Copilot planning-with-files patch'),
+        target
+      );
     } else {
-      assert.equal(planning.patch, undefined, target);
+      assert.ok(
+        planning.patches.every((patch) => patch.type !== 'copilot-planning-with-files'),
+        target
+      );
     }
   }
 });
@@ -138,7 +159,13 @@ test('applyCopilotPlanningPatch materializes Copilot-specific skill content', as
     await applyCopilotPlanningPatch(target);
     const skill = await readFile(path.join(target, 'SKILL.md'), 'utf8');
 
+    assert.match(skill, /Harness planning-with-files companion-plan patch/);
     assert.match(skill, /Harness Copilot planning-with-files patch/);
+    assert.match(skill, /If superpowers is used on a Deep-reasoning task, persist the detailed implementation plan/);
+    assert.doesNotMatch(
+      skill,
+      /Do not create a parallel long-lived superpowers plan unless the user explicitly requests that file\./
+    );
     assert.doesNotMatch(skill, /\$\{CLAUDE_PLUGIN_ROOT\}/);
     assert.match(skill, /\.github\/skills\/planning-with-files/);
   } finally {
