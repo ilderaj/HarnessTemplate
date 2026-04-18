@@ -31,6 +31,8 @@ test('renderEntry includes complex orchestration policy for every supported targ
     assert.match(rendered, /docs\/superpowers\/plans\/\*\*` is a deep-reasoning companion artifact path only/, target);
     assert.match(rendered, /Companion plans may be created only for Deep-reasoning tasks/, target);
     assert.match(rendered, /record the companion plan path, a short summary, and the current sync-back status/, target);
+    assert.match(rendered, /Do not paste the full superpowers implementation plan into/, target);
+    assert.match(rendered, /Detailed implementation checklists belong in the companion plan/, target);
     assert.match(
       rendered,
       /never treat the companion plan as a replacement for active task memory/,

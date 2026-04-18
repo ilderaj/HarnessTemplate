@@ -40,8 +40,10 @@ Rules:
 
 1. `planning-with-files` is the only durable task-memory system.
 2. `docs/**` and `docs/plans/**` are documentation, not active task memory.
-3. Deep-reasoning tasks may also create a secondary companion plan under `docs/superpowers/plans/<date>-<task-id>.md`.
-4. Companion plans are secondary artifacts only; active task memory stays in `planning/active/<task-id>/`.
+3. Once a task is classified as tracked, `planning-with-files` is mandatory even if the implementation itself looks straightforward.
+4. Deep-reasoning tasks may also create a secondary companion plan under `docs/superpowers/plans/<date>-<task-id>.md`.
+5. Companion plans are secondary artifacts only; active task memory stays in `planning/active/<task-id>/`.
+6. Keep detailed superpowers implementation plans in the companion artifact; sync only durable summaries, references, and status back into `planning/active/<task-id>/`.
 
 Recommended companion-plan name: `docs/superpowers/plans/<date>-<task-id>.md`.
 

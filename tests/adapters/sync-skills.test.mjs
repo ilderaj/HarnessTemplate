@@ -44,6 +44,7 @@ test('sync projects workspace entries and skills', async () => {
     assert.match(writingPlans, /\*\*Save durable task state to:\*\* `planning\/active\/<task-id>\/task_plan\.md`/);
     assert.match(writingPlans, /For Deep-reasoning tasks, you may additionally create a companion plan/);
     assert.match(writingPlans, /secondary artifact for reasoning and review, not the primary task-memory record/);
+    assert.match(writingPlans, /Keep detailed implementation plans in that companion artifact/);
     assert.match(writingPlans, /write its path, a short summary, and the current sync-back status/);
     assert.doesNotMatch(writingPlans, /\*\*Save plans to:\*\* `docs\/superpowers\/plans/);
   } finally {

@@ -30,6 +30,7 @@ When these rules overlap, apply them in this order:
 3. Heuristics from skills or prompts, such as tool-call count.
 
 If a task is classified as tracked, Planning with Files is mandatory even when the implementation itself feels straightforward.
+The default instruction to execute quick work directly never overrides a tracked-task classification.
 
 ## Task Classification
 
@@ -73,6 +74,8 @@ Whenever superpowers is used:
    - `planning/active/<task-id>/progress.md` if relevant
 3. Return to normal low-cost execution mode.
 
+Sync-back is summary-only. Do not paste the full superpowers implementation plan into `planning/active/<task-id>/task_plan.md`; record only durable decisions, phase changes, companion-plan references, and current status there.
+
 ## Plan Location Boundaries
 
 Harness uses one durable agent task-memory location:
@@ -99,6 +102,7 @@ The task-memory model has three layers:
 Companion plans may be created only for Deep-reasoning tasks. They support temporary reasoning and review, but they never replace or duplicate active task memory. When a companion plan is created, the matching `planning/active/<task-id>/` files must record the companion plan path, a short summary, and the current sync-back status so the authoritative record stays complete.
 
 Companion plans are secondary artifacts only and must remain tied back to the active task record.
+Detailed implementation checklists belong in the companion plan when one exists. Keep `task_plan.md` focused on lifecycle, phases, finishing criteria, and durable decisions.
 
 If a superpowers skill suggests saving a long-lived plan under `docs/superpowers/plans/`, treat that path as available only for Deep-reasoning task companion plans. Create it only when the task is Deep-reasoning, keep `planning/active/<task-id>/` authoritative, and never treat the companion plan as a replacement for active task memory.
 
