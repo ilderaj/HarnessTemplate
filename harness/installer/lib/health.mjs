@@ -1,5 +1,7 @@
+import { execFile } from 'node:child_process';
 import { access, lstat, readFile, readlink, realpath } from 'node:fs/promises';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { entriesForScope, loadAdapter } from './adapters.mjs';
 import { evaluateBudget, loadContextBudgets, measureText } from './context-budget.mjs';
 import { hookEntryMarker } from './hook-config.mjs';
@@ -7,6 +9,8 @@ import { planHookProjections } from './hook-projection.mjs';
 import { inspectPlanLocations } from './plan-locations.mjs';
 import { planSkillProjections } from './skill-projection.mjs';
 import { readState } from './state.mjs';
+
+const execFileAsync = promisify(execFile);
 
 async function exists(filePath) {
   try {
@@ -242,6 +246,83 @@ async function inspectHook(projection) {
   return { ...projection, ...hookEvidence(projection), status: 'ok' };
 }
 
+async function runHookPayloadScript(rootDir, scriptPath, args = []) {
+  const { stdout } = await execFileAsync('bash', [scriptPath, ...args], {
+    cwd: rootDir,
+    env: {
+      ...process.env,
+      HARNESS_PROJECT_ROOT: rootDir
+    },
+    maxBuffer: 1024 * 1024
+  });
+
+  return stdout;
+}
+
+async function inspectLocalHookPayloads(rootDir, hookPayloadBudget, hookMode, warnings, problems) {
+  if (hookMode !== 'on' || !hookPayloadBudget) {
+    return [];
+  }
+
+  const payloadSpecs = [
+    {
+      target: 'codex',
+      parentSkillName: 'superpowers',
+      eventName: 'SessionStart',
+      path: path.join(rootDir, 'harness/core/hooks/superpowers/scripts/session-start'),
+      args: []
+    },
+    {
+      target: 'codex',
+      parentSkillName: 'planning-with-files',
+      eventName: 'UserPromptSubmit',
+      path: path.join(rootDir, 'harness/core/hooks/planning-with-files/scripts/task-scoped-hook.sh'),
+      args: ['codex', 'user-prompt-submit']
+    }
+  ];
+
+  const measurements = [];
+
+  for (const spec of payloadSpecs) {
+    if (!(await exists(spec.path))) {
+      continue;
+    }
+
+    const payload = await runHookPayloadScript(rootDir, spec.path, spec.args).catch(() => null);
+    if (payload === null) {
+      continue;
+    }
+
+    const measurement = measureText(payload);
+    const evaluation = evaluateBudget(measurement, hookPayloadBudget);
+    const entry = {
+      target: spec.target,
+      parentSkillName: spec.parentSkillName,
+      eventName: spec.eventName,
+      path: spec.path,
+      measurement,
+      evaluation: toBudgetEvaluation(evaluation, hookPayloadBudget)
+    };
+
+    measurements.push(entry);
+
+    if (evaluation.verdict !== 'ok') {
+      const message = formatBudgetMessage(
+        `hook payload ${spec.target} ${spec.parentSkillName} ${spec.eventName}`,
+        measurement,
+        hookPayloadBudget,
+        evaluation.verdict
+      );
+      warnings.push(message);
+      if (evaluation.verdict === 'problem') {
+        problems.push(message);
+      }
+    }
+  }
+
+  return measurements;
+}
+
 export async function readHarnessHealth(rootDir, homeDir) {
   const state = await readState(rootDir);
   let budgets = null;
@@ -338,6 +419,14 @@ export async function readHarnessHealth(rootDir, homeDir) {
 
     targets[target] = { entries, skills, hooks };
   }
+
+  context.hooks = await inspectLocalHookPayloads(
+    rootDir,
+    budgets?.budgets?.hookPayload,
+    state.hookMode,
+    warnings,
+    problems
+  );
 
   if (entryBudget) {
     const evaluation = evaluateBudget(context.summary.entries, entryBudget);

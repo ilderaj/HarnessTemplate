@@ -337,6 +337,57 @@ test('readHarnessHealth reports hook status without failing unsupported adapters
   }
 });
 
+test('readHarnessHealth records measured hook payloads in context', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      hookMode: 'on',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] }
+      },
+      upstream: {}
+    });
+
+    await mkdir(path.join(root, 'planning/active/compact-task'), { recursive: true });
+    await writeFile(
+      path.join(root, 'planning/active/compact-task/task_plan.md'),
+      [
+        '# Compact Task',
+        '',
+        '## 任务目标',
+        '- Keep hook payload measurements visible.',
+        '',
+        '## Current State',
+        'Status: active',
+        'Archive Eligible: no'
+      ].join('\n')
+    );
+    await writeFile(path.join(root, 'planning/active/compact-task/findings.md'), '# Findings\n');
+    await writeFile(path.join(root, 'planning/active/compact-task/progress.md'), '# Progress\n');
+
+    await withCwd(root, () => sync([]));
+    const health = await readHarnessHealth(root, '/home/user');
+
+    const superpowersPayload = health.context.hooks.find(
+      (hook) => hook.parentSkillName === 'superpowers' && hook.eventName === 'SessionStart'
+    );
+    const planningPayload = health.context.hooks.find(
+      (hook) => hook.parentSkillName === 'planning-with-files' && hook.eventName === 'UserPromptSubmit'
+    );
+
+    assert.ok(superpowersPayload);
+    assert.ok(planningPayload);
+    assert.equal(superpowersPayload.evaluation.verdict, 'ok');
+    assert.equal(planningPayload.evaluation.verdict, 'ok');
+    assert.ok(health.problems.length === 0);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
 test('readHarnessHealth reports a problem when Codex hook config is missing a required event', async () => {
   const root = await createHarnessFixture();
   try {
