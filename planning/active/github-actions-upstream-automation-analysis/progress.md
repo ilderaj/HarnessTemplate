@@ -163,3 +163,45 @@
 | 仓库结构检查 | `fd . .github scripts tests -d 4` | 判断旧计划假定文件是否已存在 | `.github/workflows/`、`scripts/ci/`、`tests/automation/` 仍不存在 | 通过 |
 | GitHub 端前提复核 | `git remote show origin`、`gh repo view ...`、`gh api .../protection`、`gh pr list --base dev` | 判断旧计划外部前提是否改变 | 默认分支仍为 `main`，无保护，无 open PR | 通过 |
 | 旧计划缺陷复核 | 读取 `planning/active/github-actions-upstream-automation-analysis/task_plan.md` | 判断 refresh 逻辑是否会漏掉 untracked files | 会漏掉首次生成的 repo-owned projection files | 通过 |
+
+## Session: 2026-04-19
+
+### Phase 8: 计划 review 收口
+- **Status:** complete
+- Actions taken:
+  - 按 `using-superpowers` 先读取 `planning-with-files`、`writing-plans`、`brainstorming` 技能约束，并确认本轮只做 plan review、不执行实现。
+  - 读取当前 active task 的 `task_plan.md`、`findings.md`、`progress.md`，复用既有 tracked task，而不是再创建平行 planning 目录。
+  - 再次检查本地仓库状态与远端 GitHub 状态，确认默认分支仍为 `main`、`dev/main` 仍未启用 protection、base 为 `dev` 的 open PR 仍为空。
+  - 基于用户这次的三点目标，补充 plan review 结论：总体方向可行，但不能按口头三点直接进入实现；还缺 schedule UTC 时刻、冲突分流策略、branch protection 和 summary-only plan artifact 边界修正。
+- Files created/modified:
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md` (updated)
+
+## Additional Test Results 3
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| 远端默认分支复核 | `gh repo view ilderaj/superpowering-with-files --json nameWithOwner,defaultBranchRef,mergeCommitAllowed,rebaseMergeAllowed,squashMergeAllowed,viewerPermission` | 判断 schedule 入口前提是否变化 | 默认分支仍为 `main` | 通过 |
+| `dev` 分支保护复核 | `gh api repos/ilderaj/superpowering-with-files/branches/dev/protection` | 判断是否已具备 required checks 治理前提 | `404 Branch not protected` | 通过 |
+| `main` 分支保护复核 | `gh api repos/ilderaj/superpowering-with-files/branches/main/protection` | 判断默认分支是否已配置保护 | `404 Branch not protected` | 通过 |
+| `dev` 目标 PR 复核 | `gh pr list --base dev --state open --limit 20 --json number,title,headRefName,baseRefName` | 判断是否已有进行中的自动更新 PR | `[]` | 通过 |
+
+### Phase 9: 计划修订与 companion plan 收口
+- **Status:** complete
+- Actions taken:
+  - 读取当前 active task 的 `task_plan.md`、`findings.md` 与旧版内联 implementation plan，确认需要把详细 checklist 从 task memory 中拆出。
+  - 新建 companion plan：`docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md`。
+  - 在 companion plan 中固化修订后的关键假设：`Friday 21:00 UTC`、`dev` protection 前置、fail-fast 冲突分流、无 auto-merge。
+  - 重写 `planning/active/github-actions-upstream-automation-analysis/task_plan.md`，保留摘要级阶段、决策、结论和 companion plan 引用，移除残留的重复详细 checklist。
+  - 更新 `findings.md`，记录 companion plan 路径与 sync-back 状态。
+- Files created/modified:
+  - `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md` (created)
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md` (rewritten)
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md` (updated)
+
+## Additional Test Results 4
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| companion plan 创建检查 | `test -f docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md` | companion plan 存在 | 文件已创建 | 通过 |
+| task memory 收口检查 | `rg -n "Companion plan|Friday 21:00 UTC|branch protection|fail-fast" planning/active/github-actions-upstream-automation-analysis/task_plan.md -S` | `task_plan.md` 只保留摘要与引用 | 匹配到摘要级引用与关键决策 | 通过 |

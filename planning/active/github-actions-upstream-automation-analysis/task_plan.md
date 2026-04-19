@@ -1,7 +1,7 @@
 # Task Plan: GitHub Actions Upstream Automation Analysis
 
 ## Goal
-分析是否可以用 GitHub Actions 定期监测 Superpowers 和 Planning with Files 主源变更，并在本项目内自动更新、审查、验证、合并与处理 PR。
+分析并规划如何用 GitHub Actions 定期检测 Superpowers 和 Planning with Files 主源变更，在本项目内自动刷新 baseline、执行验证，并以 PR 方式把结果落到 `dev`。
 
 ## Current State
 Status: waiting_review
@@ -9,7 +9,7 @@ Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 7
+Phase 9
 
 ## Phases
 
@@ -54,25 +54,37 @@ Phase 7
 - [x] 产出一版修订后的可执行计划供 review
 - **Status:** complete
 
+### Phase 8: 计划 review 收口
+- [x] 复核当前 GitHub 远端前提是否仍与旧 review 一致
+- [x] 基于用户三点目标给出可执行与不可直接执行的边界
+- [x] 把最新 review 结论写回 task-scoped planning 文件
+- **Status:** complete
+
+### Phase 9: 计划修订与 companion plan 收口
+- [x] 按 review 结论重写实施计划
+- [x] 把详细执行清单迁移到 companion plan
+- [x] 在 task-scoped planning 文件中只保留摘要、决策和引用
+- **Status:** complete
+
 ## Key Questions
 1. GitHub Actions 是否能定期检测两个 upstream 主源的变更？
 2. Actions 是否能安全触发本项目已有 `fetch` / `update` 流程？
-3. 更新后自动代码审查、验证、自动合并和 PR 处理分别能做到什么程度？
+3. 更新后自动代码审查、验证、PR 创建/更新、合并分别能做到什么程度？
 4. 哪些环节必须设置权限、分支保护或人工审批，避免供应链和权限风险？
 
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|
-| 本次只做分析，不改源码 | 用户明确要求“不要动代码，先分析” |
-| 新建独立 planning 任务目录 | 相关旧任务已关闭，不应把新任务写入已关闭任务 |
-| 不自动归档旧任务 | 仓库规则要求不要自动移动历史 active 目录，除非明确要求 |
-| 推荐使用 PR + required checks + auto-merge，而不是直接推默认分支 | upstream 更新属于供应链变更，必须保留审查面和分支保护 |
-| 推荐用 GitHub App token 处理推分支/开 PR | `GITHUB_TOKEN` 触发的 push/pull_request 事件不会创建新的 workflow run，容易让 PR 检查链断掉 |
-| `planning-with-files` 已具备自动监测前提 | 已确认并配置 Git source：`https://github.com/OthmanAdi/planning-with-files` |
-| 复用现有 `github-actions-upstream-automation-analysis` 任务继续记录本轮评审 | 当前用户请求与既有 task goal 同域，重复新建 task 会制造平行 planning 状态 |
-| 计划必须以默认分支 `main` 上的 schedule workflow 为入口，再通过 PR 落到 `dev` | GitHub `schedule` 仅在默认分支运行；远端默认分支已核实为 `main` |
-| 计划中的“拉 upstream 更新”应映射为 Harness `fetch/update/sync/verify/doctor` 链路，而不是仓库 remote `upstream` pull | 当前仓库只配置了 `origin` remote；真正的 upstream 来源定义在 `harness/upstream/sources.json` |
-| 在 Actions 中必须先显式安装 workspace state，再跑 `sync/verify/doctor` | 当前仓库 `.harness/state.json` 为 `user-global` scope，不适合作为 CI 的隐式前提 |
+| 本次只做分析与计划修订，不改源码 | 用户先要求 review plan，不直接执行 |
+| 复用现有 `github-actions-upstream-automation-analysis` task | 避免制造平行 planning 状态 |
+| 自动化入口必须是默认分支 `main` 上的 workflow | GitHub `schedule` 仅在默认分支运行 |
+| 真正的 upstream 拉取应映射为 Harness `fetch/update/sync/verify/doctor` 链路 | 仓库没有 git remote `upstream`；上游来源定义在 `harness/upstream/sources.json` |
+| refresh 工作分支固定从 `origin/dev` 派生 | 用户目标是最终通过 PR 落到 `dev` |
+| 详细实施清单迁移到 companion plan `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md` | 保持 `planning/active/.../task_plan.md` 为 summary-only durable task memory |
+| 修订计划默认采用 `Friday 21:00 UTC` (`0 21 * * 5`) | 把“每周五”转成可实现、可 review 的具体 schedule 假设 |
+| v1 的“处理冲突”定义为 fail-fast + artifact/log + 人工接管 | 当前仓库没有安全的 bot 自动解冲突机制 |
+| 启用 weekly schedule 前先要求 `dev` branch protection / required checks 就位 | 否则“最终落到 origin dev”的自动化会绕过治理面 |
+| v1 不做 auto-merge，也不允许 workflow 直推 `dev` | 先保留审查面，降低供应链与误推风险 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -81,31 +93,34 @@ Phase 7
 
 ## Notes
 - 需要用中文输出分析；代码相关名称、命令、workflow 字段保持英文。
-- 不运行 frontend dev/build/start/serve；本次也不进行实现。
-- 本轮新增计划评审只给出方案修正，不创建 workflow、不推分支、不改 GitHub 设置。
+- 本轮只修订计划与 planning 文件，不创建 workflow、不改 GitHub 设置、不推分支。
+- Companion plan 与 task memory 已双向关联；task memory 保留摘要，companion plan 保存详细步骤。
 
 ## Current Verdict
 
-- 旧计划的总体方向仍然成立：`main` 上的 schedule 触发、工作分支从 `origin/dev` 派生、执行 Harness refresh chain、通过 PR 而不是直推落到 `dev`。
-- 旧计划不能按原样直接执行，至少需要替换 3 处关键设计：
-  1. 旧计划把详细 implementation checklist 直接放进 `task_plan.md`，与当前仓库的 `summary-only sync-back` / `companion-plan` 边界不再完全一致。
-  2. 旧计划用 `git status --porcelain --untracked-files=no` 收集变化，会漏掉首次生成的 untracked projection files，因此首轮自动 PR 可能拿不到完整 diff。
-  3. 旧计划没有显式配置 bot commit identity，GitHub runner 上执行 `git commit` 存在直接失败风险。
-- 因此，本 task 的旧计划结论更新为：`usable as architecture, not usable as-is for implementation`。
+- 原始方向仍成立：`main` 上 schedule 触发、工作分支从 `origin/dev` 派生、执行 Harness refresh chain、通过 PR 落到 `dev`。
+- 原始计划不能按原样执行，核心缺口是：
+  1. 缺少具体的 UTC schedule。
+  2. 把“处理冲突”描述得过于乐观，没有 fail-fast 分流。
+  3. 缺少 `dev` branch protection / required checks 前置条件。
+  4. 详细 checklist 直接写在 task memory，违反当前 summary-only sync-back 边界。
+- 修订后计划已经把这四点收口，并迁移到 companion plan。
+
+## Companion Plan Reference
+
+- Companion plan: `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md`
+- Companion plan role: 保存详细实施清单、rollout gates、文件级任务拆分和启用顺序。
+- Sync-back status: `2026-04-19` 已完成。
 
 ## Revised Execution Plan Summary
 
 ### Phase A: Workflow Skeleton And Contracts
-- 建立 `.github/workflows/upstream-refresh.yml`，但先只接通 contract tests，不直接实现完整 PR 逻辑。
-- 新增 `tests/automation/` 合约测试，先锁定这些不变量：
-  - `schedule` 仍从默认分支 `main` 的 workflow 文件触发
-  - refresh 实际从 `origin/dev` 派生 automation branch
-  - workflow 只在 refresh 成功后进入 PR 步骤
-  - 结果文件写到 `.harness/upstream-refresh-result.json`
-- 更新 `package.json`，把 `tests/automation/*.test.mjs` 纳入 `npm run verify`。
+- 建立 `.github/workflows/upstream-refresh.yml`，先接通 contract tests 和 `workflow_dispatch` 演练。
+- 定时入口默认锁定为 `Friday 21:00 UTC`，但只有在 `dev` protection 配好后才启用 schedule。
+- 新增 `tests/automation/` 合约测试，锁定 workflow trigger、branch source、result file 和 PR gate。
 
 ### Phase B: Refresh Runner
-- 用 `scripts/ci/lib/upstream-refresh.mjs` 和 `scripts/ci/run-upstream-refresh.mjs` 负责：
+- 用 `scripts/ci/lib/upstream-refresh.mjs` 和 `scripts/ci/run-upstream-refresh.mjs` 执行：
   - `git fetch origin main dev`
   - `git checkout -B automation/upstream-refresh origin/dev`
   - `./scripts/harness install --scope=workspace --targets=all --projection=link`
@@ -116,725 +131,21 @@ Phase 7
   - `./scripts/harness sync --dry-run`
   - `./scripts/harness sync`
   - `./scripts/harness doctor`
-- 变化检测必须改成“包含 tracked + untracked repo-owned files”的实现，不能再忽略 untracked files。
+- 变更检测必须覆盖 tracked + untracked repo-owned files。
 - `.harness/projections.json`、`.harness/state.json` 和其他运行态文件继续排除在 commit allowlist 外。
+- 冲突、verify 失败、allowlist 失败全部按 fail-fast 处理，不自动修复。
 
 ### Phase C: PR Automation
-- 用 `scripts/ci/lib/upstream-pr.mjs` 和 `scripts/ci/open-upstream-pr.mjs` 负责：
-  - 固定 automation branch：`automation/upstream-refresh`
-  - 固定 PR title：`chore: refresh upstream baselines`
-  - 先配置 git user.name / user.email，再 commit
-  - force-push automation branch
-  - create or update 指向 `dev` 的 PR
-- v1 继续不做 auto-merge，也不允许 workflow 直推 `dev`。
+- 用 `scripts/ci/lib/upstream-pr.mjs` 和 `scripts/ci/open-upstream-pr.mjs` 固定：
+  - branch：`automation/upstream-refresh`
+  - title：`chore: refresh upstream baselines`
+  - base：`dev`
+- commit 前显式配置 bot git identity。
+- 没有 eligible changes 时不创建空 PR。
 
 ### Phase D: Docs And Operator Checklist
-- 更新 `docs/maintenance.md`，补充：
+- 更新 `docs/maintenance.md`，说明：
   - schedule 在 `main` 上运行，但工作基线是 `origin/dev`
-  - v1 没有 auto-merge
+  - v1 没有 auto-merge，冲突处理是 fail-fast + 人工接管
   - 失败时查看 workflow artifact 与 `.harness/upstream-refresh-result.json`
-  - merge 后需要人工确认的 repo settings
-- 如果实现后新增的 health/doctor 约束需要说明，再同步补充 README 或 compatibility docs，但不是先决改动。
-
-## Implementation Plan
-
-# GitHub Upstream Refresh Automation Implementation Plan
-
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
-**Goal:** Build a GitHub Actions workflow that runs weekly from `main`, rebases work onto `origin/dev`, refreshes Harness upstream baselines, validates the result, and opens or updates a PR targeting `dev` when repo-owned files changed.
-
-**Architecture:** Keep v1 in a single scheduled workflow so validation happens before any PR is created, avoiding `GITHUB_TOKEN` recursion issues. Use repo-local Node scripts for branch preparation, refresh orchestration, diff allowlisting, and PR creation so the behavior is testable with the existing `node --test` suite. Land changes through a deterministic automation branch targeting `dev`; do not auto-merge in v1.
-
-**Tech Stack:** GitHub Actions, Node.js built-ins (`node:child_process`, `node:fs/promises`, `node:test`), Git CLI, GitHub CLI, existing Harness CLI commands
-
----
-
-## File Map
-
-- Create: `.github/workflows/upstream-refresh.yml` — scheduled/manual workflow entrypoint that runs on `main` but prepares a working branch from `origin/dev`.
-- Create: `scripts/ci/lib/upstream-refresh.mjs` — pure planning helpers for branch prep, command chain, and diff allowlist checks.
-- Create: `scripts/ci/run-upstream-refresh.mjs` — CLI entrypoint that executes the refresh chain and emits machine-readable status.
-- Create: `scripts/ci/lib/upstream-pr.mjs` — PR title/body/branch helpers for a deterministic automation PR.
-- Create: `scripts/ci/open-upstream-pr.mjs` — CLI entrypoint that commits changed files, force-pushes the automation branch, and creates or updates the PR to `dev`.
-- Create: `tests/automation/upstream-refresh-lib.test.mjs` — unit tests for command sequencing, base-branch prep, and diff allowlist logic.
-- Create: `tests/automation/upstream-pr-lib.test.mjs` — unit tests for PR metadata and changed-file filtering.
-- Create: `tests/automation/upstream-refresh-workflow.test.mjs` — repo contract test for workflow triggers, permissions, and script wiring.
-- Modify: `package.json` — extend `verify` coverage to include `tests/automation/*.test.mjs`.
-- Modify: `docs/maintenance.md` — document the scheduled refresh flow, manual recovery path, and v1 non-goals.
-
-## Rollout Gates
-
-- Gate 1: v1 does **not** auto-merge to `dev`.
-- Gate 2: v1 uses `GITHUB_TOKEN` because validation and PR creation happen in the same workflow run.
-- Gate 3: the workflow must branch from `origin/dev`, not from the checked-out `main` commit.
-- Gate 4: the PR may include only repo-owned upstream/projection/doc files; `.harness/projections.json` must be treated as runtime state and excluded from commits.
-- Gate 5: if refresh, sync, allowlist, commit, or PR operations fail, the workflow fails and leaves no direct branch update on `dev`.
-
-### Task 1: Add Automation Contract Tests
-
-**Files:**
-- Create: `tests/automation/upstream-refresh-workflow.test.mjs`
-- Create: `tests/automation/upstream-refresh-lib.test.mjs`
-- Create: `tests/automation/upstream-pr-lib.test.mjs`
-- Modify: `package.json`
-
-- [ ] **Step 1: Write the failing workflow contract test**
-
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-
-test('upstream refresh workflow exists with schedule and manual trigger', async () => {
-  const workflow = await readFile('.github/workflows/upstream-refresh.yml', 'utf8');
-  assert.match(workflow, /schedule:/);
-  assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /cron:\s*['"]0 21 \* \* 5['"]/);
-  assert.match(workflow, /permissions:\s*\n\s*contents:\s*write/);
-  assert.match(workflow, /pull-requests:\s*write/);
-  assert.match(workflow, /node scripts\/ci\/run-upstream-refresh\.mjs/);
-  assert.match(workflow, /node scripts\/ci\/open-upstream-pr\.mjs/);
-});
-
-test('package verify includes automation tests', async () => {
-  const pkg = JSON.parse(await readFile('package.json', 'utf8'));
-  assert.match(pkg.scripts.verify, /tests\/automation\/\*\.test\.mjs/);
-});
-```
-
-- [ ] **Step 2: Write the failing refresh helper test**
-
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import {
-  allowedCommitPaths,
-  buildRefreshCommands,
-  normalizeChangedFiles
-} from '../../scripts/ci/lib/upstream-refresh.mjs';
-
-test('buildRefreshCommands prepares branch from origin/dev before running Harness commands', () => {
-  const commands = buildRefreshCommands({ baseRef: 'origin/dev', branchName: 'automation/upstream-refresh' });
-  assert.deepEqual(commands[0], ['git', ['fetch', 'origin', 'main', 'dev']]);
-  assert.deepEqual(commands[1], ['git', ['checkout', '-B', 'automation/upstream-refresh', 'origin/dev']]);
-  assert.deepEqual(commands[2], ['./scripts/harness', ['install', '--scope=workspace', '--targets=all', '--projection=link']]);
-  assert.deepEqual(commands[3], ['./scripts/harness', ['fetch']]);
-  assert.deepEqual(commands.at(-1), ['./scripts/harness', ['doctor']]);
-});
-
-test('normalizeChangedFiles removes empty lines and runtime-only state files', () => {
-  assert.deepEqual(
-    normalizeChangedFiles('harness/upstream/superpowers/SKILL.md\n.harness/projections.json\n\nAGENTS.md\n'),
-    ['harness/upstream/superpowers/SKILL.md', 'AGENTS.md']
-  );
-});
-
-test('allowedCommitPaths matches repo-owned upstream and projection paths only', () => {
-  assert.equal(allowedCommitPaths('harness/upstream/superpowers/SKILL.md'), true);
-  assert.equal(allowedCommitPaths('.github/skills/planning-with-files/SKILL.md'), true);
-  assert.equal(allowedCommitPaths('.harness/projections.json'), false);
-  assert.equal(allowedCommitPaths('src/random.js'), false);
-});
-```
-
-- [ ] **Step 3: Write the failing PR helper test**
-
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { buildPrBody, buildPrTitle, hasCommitEligibleChanges } from '../../scripts/ci/lib/upstream-pr.mjs';
-
-test('buildPrTitle is stable and targets dev refreshes', () => {
-  assert.equal(buildPrTitle(), 'chore: refresh upstream baselines');
-});
-
-test('buildPrBody lists changed files and executed commands', () => {
-  const body = buildPrBody({
-    changedFiles: ['harness/upstream/superpowers/SKILL.md', 'AGENTS.md'],
-    commands: ['./scripts/harness fetch', './scripts/harness update', 'npm run verify']
-  });
-  assert.match(body, /Base branch: `dev`/);
-  assert.match(body, /harness\/upstream\/superpowers\/SKILL\.md/);
-  assert.match(body, /npm run verify/);
-});
-
-test('hasCommitEligibleChanges returns false for an empty diff', () => {
-  assert.equal(hasCommitEligibleChanges([]), false);
-  assert.equal(hasCommitEligibleChanges(['AGENTS.md']), true);
-});
-```
-
-- [ ] **Step 4: Run tests to verify they fail**
-
-Run: `node --test tests/automation/upstream-refresh-workflow.test.mjs tests/automation/upstream-refresh-lib.test.mjs tests/automation/upstream-pr-lib.test.mjs -v`
-
-Expected: FAIL with `ENOENT` for workflow/scripts or module resolution errors because the files do not exist yet.
-
-- [ ] **Step 5: Implement the minimal test scaffolding**
-
-```yaml
-# .github/workflows/upstream-refresh.yml
-name: Upstream Refresh
-
-on:
-  schedule:
-    - cron: '0 21 * * 5'
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  pull-requests: write
-
-jobs:
-  refresh:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: node scripts/ci/run-upstream-refresh.mjs
-      - run: node scripts/ci/open-upstream-pr.mjs
-```
-
-```js
-// scripts/ci/lib/upstream-refresh.mjs
-export function buildRefreshCommands({ baseRef, branchName }) {
-  return [
-    ['git', ['fetch', 'origin', 'main', 'dev']],
-    ['git', ['checkout', '-B', branchName, baseRef]],
-    ['./scripts/harness', ['install', '--scope=workspace', '--targets=all', '--projection=link']],
-    ['./scripts/harness', ['fetch']],
-    ['./scripts/harness', ['update']],
-    ['npm', ['run', 'verify']],
-    ['./scripts/harness', ['worktree-preflight']],
-    ['./scripts/harness', ['sync', '--dry-run']],
-    ['./scripts/harness', ['sync']],
-    ['./scripts/harness', ['doctor']]
-  ];
-}
-
-export function normalizeChangedFiles(stdout) {
-  return stdout
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => line !== '.harness/projections.json');
-}
-
-export function allowedCommitPaths(file) {
-  return [
-    /^harness\/upstream\//,
-    /^AGENTS\.md$/,
-    /^CLAUDE\.md$/,
-    /^\.github\/copilot-instructions\.md$/,
-    /^\.github\/skills\//,
-    /^\.agents\/skills\//,
-    /^\.cursor\/rules\//,
-    /^\.cursor\/skills\//,
-    /^\.claude\/skills\//,
-    /^docs\/maintenance\.md$/
-  ].some((pattern) => pattern.test(file));
-}
-```
-
-```js
-// scripts/ci/lib/upstream-pr.mjs
-export function buildPrTitle() {
-  return 'chore: refresh upstream baselines';
-}
-
-export function hasCommitEligibleChanges(files) {
-  return files.length > 0;
-}
-
-export function buildPrBody({ changedFiles, commands }) {
-  return [
-    '## Summary',
-    '',
-    'Automated upstream refresh targeting `dev`.',
-    '',
-    'Base branch: `dev`',
-    '',
-    '### Changed files',
-    ...changedFiles.map((file) => `- \`${file}\``),
-    '',
-    '### Validation',
-    ...commands.map((command) => `- \`${command}\``)
-  ].join('\n');
-}
-```
-
-```js
-// scripts/ci/run-upstream-refresh.mjs
-console.log('stub');
-```
-
-```js
-// scripts/ci/open-upstream-pr.mjs
-console.log('stub');
-```
-
-```json
-// package.json
-{
-  "scripts": {
-    "test": "node --test",
-    "test:core": "node --test tests/core/*.test.mjs",
-    "verify": "node --test tests/core/*.test.mjs tests/installer/*.test.mjs tests/adapters/*.test.mjs tests/automation/*.test.mjs"
-  }
-}
-```
-
-- [ ] **Step 6: Run tests to verify they pass**
-
-Run: `node --test tests/automation/upstream-refresh-workflow.test.mjs tests/automation/upstream-refresh-lib.test.mjs tests/automation/upstream-pr-lib.test.mjs -v`
-
-Expected: PASS
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add package.json .github/workflows/upstream-refresh.yml scripts/ci/lib/upstream-refresh.mjs scripts/ci/lib/upstream-pr.mjs scripts/ci/run-upstream-refresh.mjs scripts/ci/open-upstream-pr.mjs tests/automation/upstream-refresh-workflow.test.mjs tests/automation/upstream-refresh-lib.test.mjs tests/automation/upstream-pr-lib.test.mjs
-git commit -m "test: add upstream refresh automation contracts"
-```
-
-### Task 2: Implement the Refresh Runner
-
-**Files:**
-- Modify: `scripts/ci/lib/upstream-refresh.mjs`
-- Modify: `scripts/ci/run-upstream-refresh.mjs`
-- Modify: `tests/automation/upstream-refresh-lib.test.mjs`
-
-- [ ] **Step 1: Extend the failing refresh test to cover execution ordering and diff output**
-
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { runRefresh } from '../../scripts/ci/lib/upstream-refresh.mjs';
-
-test('runRefresh executes commands in order and returns changed files', async () => {
-  const calls = [];
-  const result = await runRefresh({
-    baseRef: 'origin/dev',
-    branchName: 'automation/upstream-refresh',
-    exec: async (command, args) => {
-      calls.push([command, args]);
-      if (command === 'git' && args[0] === 'status') {
-        return { stdout: 'harness/upstream/superpowers/SKILL.md\n.harness/projections.json\nAGENTS.md\n' };
-      }
-      return { stdout: '' };
-    }
-  });
-
-  assert.equal(calls[0][0], 'git');
-  assert.deepEqual(calls[0][1], ['fetch', 'origin', 'main', 'dev']);
-  assert.deepEqual(result.changedFiles, ['harness/upstream/superpowers/SKILL.md', 'AGENTS.md']);
-  assert.deepEqual(result.commands.at(-1), './scripts/harness doctor');
-});
-
-test('runRefresh throws when a changed file is outside the allowlist', async () => {
-  await assert.rejects(
-    runRefresh({
-      baseRef: 'origin/dev',
-      branchName: 'automation/upstream-refresh',
-      exec: async (command, args) => {
-        if (command === 'git' && args[0] === 'status') {
-          return { stdout: 'src/unexpected.js\n' };
-        }
-        return { stdout: '' };
-      }
-    }),
-    /Unexpected changed file: src\/unexpected\.js/
-  );
-});
-```
-
-- [ ] **Step 2: Run the test to verify it fails**
-
-Run: `node --test tests/automation/upstream-refresh-lib.test.mjs -v`
-
-Expected: FAIL because `runRefresh` does not exist yet.
-
-- [ ] **Step 3: Implement the refresh library and CLI**
-
-```js
-// scripts/ci/lib/upstream-refresh.mjs
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
-
-export function buildRefreshCommands({ baseRef, branchName }) {
-  return [
-    ['git', ['fetch', 'origin', 'main', 'dev']],
-    ['git', ['checkout', '-B', branchName, baseRef]],
-    ['./scripts/harness', ['install', '--scope=workspace', '--targets=all', '--projection=link']],
-    ['./scripts/harness', ['fetch']],
-    ['./scripts/harness', ['update']],
-    ['npm', ['run', 'verify']],
-    ['./scripts/harness', ['worktree-preflight']],
-    ['./scripts/harness', ['sync', '--dry-run']],
-    ['./scripts/harness', ['sync']],
-    ['./scripts/harness', ['doctor']]
-  ];
-}
-
-export function normalizeChangedFiles(stdout) {
-  return stdout
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => line !== '.harness/projections.json');
-}
-
-export function allowedCommitPaths(file) {
-  return [
-    /^harness\/upstream\//,
-    /^AGENTS\.md$/,
-    /^CLAUDE\.md$/,
-    /^\.github\/copilot-instructions\.md$/,
-    /^\.github\/skills\//,
-    /^\.agents\/skills\//,
-    /^\.cursor\/rules\//,
-    /^\.cursor\/skills\//,
-    /^\.claude\/skills\//,
-    /^docs\/maintenance\.md$/
-  ].some((pattern) => pattern.test(file));
-}
-
-export async function runRefresh({
-  baseRef = 'origin/dev',
-  branchName = 'automation/upstream-refresh',
-  exec = (command, args) => execFileAsync(command, args, { cwd: process.cwd() })
-} = {}) {
-  const commands = [];
-
-  for (const [command, args] of buildRefreshCommands({ baseRef, branchName })) {
-    commands.push([command, ...args].join(' '));
-    await exec(command, args);
-  }
-
-  const { stdout } = await exec('git', ['status', '--porcelain', '--untracked-files=no', '--', 'harness/upstream', 'AGENTS.md', 'CLAUDE.md', '.github', '.agents', '.cursor', '.claude', 'docs/maintenance.md']);
-  const changedFiles = normalizeChangedFiles(
-    stdout
-      .split('\n')
-      .map((line) => line.slice(3))
-      .join('\n')
-  );
-
-  for (const file of changedFiles) {
-    if (!allowedCommitPaths(file)) {
-      throw new Error(`Unexpected changed file: ${file}`);
-    }
-  }
-
-  return { changedFiles, commands };
-}
-```
-
-```js
-// scripts/ci/run-upstream-refresh.mjs
-import { writeFile } from 'node:fs/promises';
-import { runRefresh } from './lib/upstream-refresh.mjs';
-
-const result = await runRefresh();
-await writeFile('.harness/upstream-refresh-result.json', `${JSON.stringify(result, null, 2)}\n`);
-
-if (result.changedFiles.length === 0) {
-  console.log('No repo-owned changes detected.');
-  process.exit(0);
-}
-
-console.log(`Detected ${result.changedFiles.length} repo-owned changed file(s).`);
-```
-
-- [ ] **Step 4: Run the test to verify it passes**
-
-Run: `node --test tests/automation/upstream-refresh-lib.test.mjs -v`
-
-Expected: PASS
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add scripts/ci/lib/upstream-refresh.mjs scripts/ci/run-upstream-refresh.mjs tests/automation/upstream-refresh-lib.test.mjs
-git commit -m "feat: add upstream refresh runner"
-```
-
-### Task 3: Implement Deterministic PR Creation
-
-**Files:**
-- Modify: `scripts/ci/lib/upstream-pr.mjs`
-- Modify: `scripts/ci/open-upstream-pr.mjs`
-- Modify: `tests/automation/upstream-pr-lib.test.mjs`
-
-- [ ] **Step 1: Extend the failing PR helper test to cover branch and body generation**
-
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { automationBranchName, buildPrBody, buildPrTitle, createCommitMessage } from '../../scripts/ci/lib/upstream-pr.mjs';
-
-test('automationBranchName is stable', () => {
-  assert.equal(automationBranchName(), 'automation/upstream-refresh');
-});
-
-test('createCommitMessage is stable', () => {
-  assert.equal(createCommitMessage(), 'chore: refresh upstream baselines');
-});
-
-test('buildPrBody includes changed files and validation commands', () => {
-  const body = buildPrBody({
-    changedFiles: ['AGENTS.md'],
-    commands: ['./scripts/harness fetch', './scripts/harness update']
-  });
-  assert.match(body, /AGENTS\.md/);
-  assert.match(body, /Base branch: `dev`/);
-  assert.match(body, /\.\/scripts\/harness fetch/);
-});
-```
-
-- [ ] **Step 2: Run the test to verify it fails**
-
-Run: `node --test tests/automation/upstream-pr-lib.test.mjs -v`
-
-Expected: FAIL because the new helpers do not exist yet.
-
-- [ ] **Step 3: Implement the PR helper library and CLI**
-
-```js
-// scripts/ci/lib/upstream-pr.mjs
-export function automationBranchName() {
-  return 'automation/upstream-refresh';
-}
-
-export function buildPrTitle() {
-  return 'chore: refresh upstream baselines';
-}
-
-export function createCommitMessage() {
-  return 'chore: refresh upstream baselines';
-}
-
-export function hasCommitEligibleChanges(files) {
-  return files.length > 0;
-}
-
-export function buildPrBody({ changedFiles, commands }) {
-  return [
-    '## Summary',
-    '',
-    'Automated upstream refresh targeting `dev`.',
-    '',
-    'Base branch: `dev`',
-    '',
-    '### Changed files',
-    ...changedFiles.map((file) => `- \`${file}\``),
-    '',
-    '### Validation',
-    ...commands.map((command) => `- \`${command}\``)
-  ].join('\n');
-}
-```
-
-```js
-// scripts/ci/open-upstream-pr.mjs
-import { readFile } from 'node:fs/promises';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import {
-  automationBranchName,
-  buildPrBody,
-  buildPrTitle,
-  createCommitMessage,
-  hasCommitEligibleChanges
-} from './lib/upstream-pr.mjs';
-
-const execFileAsync = promisify(execFile);
-const result = JSON.parse(await readFile('.harness/upstream-refresh-result.json', 'utf8'));
-
-if (!hasCommitEligibleChanges(result.changedFiles)) {
-  console.log('No PR needed.');
-  process.exit(0);
-}
-
-const branch = automationBranchName();
-await execFileAsync('git', ['add', ...result.changedFiles]);
-await execFileAsync('git', ['commit', '-m', createCommitMessage()]);
-await execFileAsync('git', ['push', '--force-with-lease', 'origin', `${branch}:${branch}`]);
-
-const title = buildPrTitle();
-const body = buildPrBody(result);
-
-try {
-  await execFileAsync('gh', ['pr', 'create', '--base', 'dev', '--head', branch, '--title', title, '--body', body]);
-} catch {
-  await execFileAsync('gh', ['pr', 'edit', branch, '--title', title, '--body', body]);
-}
-```
-
-- [ ] **Step 4: Run the test to verify it passes**
-
-Run: `node --test tests/automation/upstream-pr-lib.test.mjs -v`
-
-Expected: PASS
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add scripts/ci/lib/upstream-pr.mjs scripts/ci/open-upstream-pr.mjs tests/automation/upstream-pr-lib.test.mjs
-git commit -m "feat: add upstream refresh PR automation"
-```
-
-### Task 4: Finish Workflow Wiring and Operator Docs
-
-**Files:**
-- Modify: `.github/workflows/upstream-refresh.yml`
-- Modify: `docs/maintenance.md`
-- Modify: `tests/automation/upstream-refresh-workflow.test.mjs`
-
-- [ ] **Step 1: Extend the workflow contract test to cover conditional PR creation and result artifact**
-
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-
-test('workflow persists refresh result and only opens PR after refresh step', async () => {
-  const workflow = await readFile('.github/workflows/upstream-refresh.yml', 'utf8');
-  assert.match(workflow, /id:\s*refresh/);
-  assert.match(workflow, /if:\s*always\(\)/);
-  assert.match(workflow, /\.harness\/upstream-refresh-result\.json/);
-  assert.match(workflow, /if:\s*steps\.refresh\.outcome == 'success'/);
-});
-```
-
-- [ ] **Step 2: Run the test to verify it fails**
-
-Run: `node --test tests/automation/upstream-refresh-workflow.test.mjs -v`
-
-Expected: FAIL because the workflow is still the stub version.
-
-- [ ] **Step 3: Implement the final workflow and maintenance docs**
-
-```yaml
-# .github/workflows/upstream-refresh.yml
-name: Upstream Refresh
-
-on:
-  schedule:
-    - cron: '0 21 * * 5'
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  pull-requests: write
-
-concurrency:
-  group: upstream-refresh
-  cancel-in-progress: false
-
-jobs:
-  refresh:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Run upstream refresh
-        id: refresh
-        run: node scripts/ci/run-upstream-refresh.mjs
-
-      - name: Upload refresh result
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: upstream-refresh-result
-          path: .harness/upstream-refresh-result.json
-
-      - name: Open or update PR
-        if: steps.refresh.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/ci/open-upstream-pr.mjs
-```
-
-```md
-## GitHub Actions Upstream Refresh
-
-The repository can run a scheduled refresh from the workflow stored on `main`.
-The workflow checks out the repo, rebases work onto `origin/dev`, runs:
-
-    ./scripts/harness install --scope=workspace --targets=all --projection=link
-    ./scripts/harness fetch
-    ./scripts/harness update
-    npm run verify
-    ./scripts/harness worktree-preflight
-    ./scripts/harness sync --dry-run
-    ./scripts/harness sync
-    ./scripts/harness doctor
-
-If repo-owned files changed, the workflow force-updates `automation/upstream-refresh` and opens or updates a PR targeting `dev`.
-The workflow does not auto-merge in v1. Merge remains a reviewer action.
-```
-
-- [ ] **Step 4: Run the test to verify it passes**
-
-Run: `node --test tests/automation/upstream-refresh-workflow.test.mjs -v`
-
-Expected: PASS
-
-- [ ] **Step 5: Run repository verification**
-
-Run: `npm run verify`
-
-Expected: PASS, including the new `tests/automation/*.test.mjs` suite.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add .github/workflows/upstream-refresh.yml docs/maintenance.md tests/automation/upstream-refresh-workflow.test.mjs
-git commit -m "docs: wire upstream refresh workflow"
-```
-
-### Task 5: Manual Repository Settings Checklist
-
-**Files:**
-- Modify: `docs/maintenance.md`
-
-- [ ] **Step 1: Document the repo settings that must be applied manually after merge**
-
-```md
-### Post-merge repository settings
-
-1. Keep `main` as the default branch so `schedule` remains active.
-2. Verify Actions workflow permissions allow `contents: write` and `pull-requests: write`.
-3. Optionally protect `dev` and add required checks before enabling any future auto-merge phase.
-4. Do not enable direct bot pushes to `dev`; keep the automation branch + PR path.
-```
-
-- [ ] **Step 2: Run a focused docs check**
-
-Run: `rg -n "auto-merge|automation/upstream-refresh|schedule" docs/maintenance.md`
-
-Expected: Matches show the new scheduled refresh section and the explicit v1 no-auto-merge note.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add docs/maintenance.md
-git commit -m "docs: add upstream refresh rollout checklist"
-```
-
-## Self-Review
-
-- Spec coverage: 覆盖了默认分支 `main` 上的定时触发、以 `origin/dev` 为工作基线、Harness 命令链刷新、repo-owned diff allowlist、PR 创建/更新、v1 不自动合并、以及手工仓库设置收尾。
-- Placeholder scan: 计划中没有 `TBD`、`TODO`、`implement later`、`similar to task N` 这类占位语；每个代码步骤都给出了完整片段和明确命令。
-- Type consistency: `automation/upstream-refresh`、`origin/dev`、`chore: refresh upstream baselines`、`.harness/upstream-refresh-result.json`、`runRefresh()` 等关键名字在各任务中保持一致。
+  - 启用 schedule 前需要人工确认 `dev` branch protection / required checks
