@@ -185,3 +185,23 @@
 | `dev` 分支保护复核 | `gh api repos/ilderaj/superpowering-with-files/branches/dev/protection` | 判断是否已具备 required checks 治理前提 | `404 Branch not protected` | 通过 |
 | `main` 分支保护复核 | `gh api repos/ilderaj/superpowering-with-files/branches/main/protection` | 判断默认分支是否已配置保护 | `404 Branch not protected` | 通过 |
 | `dev` 目标 PR 复核 | `gh pr list --base dev --state open --limit 20 --json number,title,headRefName,baseRefName` | 判断是否已有进行中的自动更新 PR | `[]` | 通过 |
+
+### Phase 9: 计划修订与 companion plan 收口
+- **Status:** complete
+- Actions taken:
+  - 读取当前 active task 的 `task_plan.md`、`findings.md` 与旧版内联 implementation plan，确认需要把详细 checklist 从 task memory 中拆出。
+  - 新建 companion plan：`docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md`。
+  - 在 companion plan 中固化修订后的关键假设：`Friday 21:00 UTC`、`dev` protection 前置、fail-fast 冲突分流、无 auto-merge。
+  - 重写 `planning/active/github-actions-upstream-automation-analysis/task_plan.md`，保留摘要级阶段、决策、结论和 companion plan 引用，移除残留的重复详细 checklist。
+  - 更新 `findings.md`，记录 companion plan 路径与 sync-back 状态。
+- Files created/modified:
+  - `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md` (created)
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md` (rewritten)
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md` (updated)
+
+## Additional Test Results 4
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| companion plan 创建检查 | `test -f docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md` | companion plan 存在 | 文件已创建 | 通过 |
+| task memory 收口检查 | `rg -n "Companion plan|Friday 21:00 UTC|branch protection|fail-fast" planning/active/github-actions-upstream-automation-analysis/task_plan.md -S` | `task_plan.md` 只保留摘要与引用 | 匹配到摘要级引用与关键决策 | 通过 |
