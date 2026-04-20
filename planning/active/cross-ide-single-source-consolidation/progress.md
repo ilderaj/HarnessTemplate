@@ -84,6 +84,22 @@
     - 显式 env override 生效
     - shared roots 缺失时回退到 legacy Copilot workspace root
 
+### Task 3 summary
+- **Status:** complete
+- Changed files:
+  - `harness/installer/lib/skill-projection.mjs`
+  - `harness/installer/commands/sync.mjs`
+  - `tests/adapters/sync-skills.test.mjs`
+- Review loop:
+  - Spec review 首轮指出 `coalesceSkillProjections()` 不应额外排序 `targets` 与 `patches`；已改为保留首次出现顺序，仅做去重。
+  - 修复后 spec review：approved。
+  - Code quality review：approved；仅记录未来扩展边界为低风险空白，不构成当前阻断。
+- Verification:
+  - Focused tests: `node --test tests/adapters/sync-skills.test.mjs` -> 9 pass, 0 fail
+  - 新增行为级测试覆盖：
+    - shared `.agents/skills/planning-with-files` 在 manifest 中只保留一条 `kind === 'skill'` entry
+    - `coalesceSkillProjections()` 在去重时保留 `targets` 与 `patches` 的首次出现顺序
+
 ## Errors
 
 | Timestamp | Error | Attempt | Resolution |

@@ -156,6 +156,46 @@ async function collectionChildNames(sourcePath) {
     .sort();
 }
 
+function patchKey(patch) {
+  return `${patch.type}:${patch.marker ?? ''}`;
+}
+
+export function coalesceSkillProjections(projections) {
+  const grouped = new Map();
+
+  for (const projection of projections) {
+    const key = path.resolve(projection.targetPath);
+    const existing = grouped.get(key);
+
+    if (!existing) {
+      grouped.set(key, {
+        ...projection,
+        targets: [projection.target]
+      });
+      continue;
+    }
+
+    if (existing.sourcePath !== projection.sourcePath) {
+      throw new Error(`Shared skill root conflict for ${projection.targetPath}`);
+    }
+
+    if (!existing.targets.includes(projection.target)) {
+      existing.targets.push(projection.target);
+    }
+
+    const seenPatches = new Set((existing.patches ?? []).map((patch) => patchKey(patch)));
+    for (const patch of projection.patches ?? []) {
+      const key = patchKey(patch);
+      if (seenPatches.has(key)) continue;
+      seenPatches.add(key);
+      existing.patches = existing.patches ?? [];
+      existing.patches.push(patch);
+    }
+  }
+
+  return [...grouped.values()].sort((left, right) => left.targetPath.localeCompare(right.targetPath));
+}
+
 export async function projectionForSkill(rootDir, skillName, target) {
   const [index, metadata] = await Promise.all([
     loadSkillIndex(rootDir),

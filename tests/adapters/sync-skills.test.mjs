@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { lstat, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { sync } from '../../harness/installer/commands/sync.mjs';
+import { coalesceSkillProjections } from '../../harness/installer/lib/skill-projection.mjs';
 import { writeState } from '../../harness/installer/lib/state.mjs';
 import {
   createHarnessFixture,
@@ -76,6 +77,76 @@ test('sync projects workspace entries and skills', async () => {
   } finally {
     await removeHarnessFixture(root);
   }
+});
+
+test('sync coalesces shared skill projections across codex and copilot', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] },
+        copilot: { enabled: true, paths: [path.join(root, '.github/copilot-instructions.md')] }
+      },
+      upstream: {}
+    });
+
+    await withCwd(root, () => sync([]));
+
+    const realRoot = await realpath(root);
+    const manifest = JSON.parse(
+      await readFile(path.join(root, '.harness/projections.json'), 'utf8')
+    );
+    const planningEntries = manifest.entries.filter(
+      (entry) =>
+        entry.kind === 'skill' &&
+        path.relative(realRoot, entry.targetPath) === '.agents/skills/planning-with-files'
+    );
+
+    assert.equal(planningEntries.length, 1);
+    assert.deepEqual(planningEntries[0].targets, ['codex', 'copilot']);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('coalesceSkillProjections preserves first-seen order while deduping targets and patches', async () => {
+  const projections = coalesceSkillProjections([
+    {
+      targetPath: '/tmp/shared-skill',
+      sourcePath: '/tmp/source',
+      target: 'copilot',
+      patches: [
+        { type: 'beta', marker: '2' },
+        { type: 'alpha', marker: '1' }
+      ]
+    },
+    {
+      targetPath: '/tmp/shared-skill',
+      sourcePath: '/tmp/source',
+      target: 'codex',
+      patches: [
+        { type: 'alpha', marker: '1' },
+        { type: 'gamma', marker: '3' }
+      ]
+    }
+  ]);
+
+  assert.deepEqual(projections, [
+    {
+      targetPath: '/tmp/shared-skill',
+      sourcePath: '/tmp/source',
+      target: 'copilot',
+      patches: [
+        { type: 'beta', marker: '2' },
+        { type: 'alpha', marker: '1' },
+        { type: 'gamma', marker: '3' }
+      ],
+      targets: ['copilot', 'codex']
+    }
+  ]);
 });
 
 test('sync rejects non-owned skill target by default', async () => {
