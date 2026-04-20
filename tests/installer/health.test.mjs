@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { readHarnessHealth } from '../../harness/installer/lib/health.mjs';
 import { sync } from '../../harness/installer/commands/sync.mjs';
@@ -135,6 +136,129 @@ test('readHarnessHealth includes entry context measurements and warning verdicts
     assert.ok(health.context.summary.entries.evaluation);
     assert.ok(health.context.warnings.some((warning) => warning.includes('context entry codex')));
     assert.equal(health.problems.length, 0);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('readHarnessHealth summarizes entry context by worst target session', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] },
+        copilot: { enabled: true, paths: [path.join(root, '.github/copilot-instructions.md')] },
+        cursor: { enabled: true, paths: [path.join(root, '.cursor/rules/harness.mdc')] },
+        'claude-code': { enabled: true, paths: [path.join(root, 'CLAUDE.md')] }
+      },
+      upstream: {}
+    });
+
+    await withCwd(root, () => sync([]));
+    await writeFile(
+      path.join(root, 'harness/core/context-budgets.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          budgets: {
+            entry: {
+              warn: { chars: 100000, lines: 300, tokens: 100000 },
+              problem: { chars: 200000, lines: 400, tokens: 200000 }
+            },
+            hookPayload: {
+              warn: { chars: 1, lines: 1, tokens: 1 },
+              problem: { chars: 2, lines: 2, tokens: 2 }
+            },
+            planningHotContext: {
+              warn: { chars: 1, lines: 1, tokens: 1 },
+              problem: { chars: 2, lines: 2, tokens: 2 }
+            },
+            skillProfile: {
+              warn: { chars: 1, lines: 1, tokens: 1 },
+              problem: { chars: 2, lines: 2, tokens: 2 }
+            }
+          }
+        },
+        null,
+        2
+      )}\n`
+    );
+
+    const health = await readHarnessHealth(root, '/home/user');
+    const crossTargetLines = health.context.entries.reduce(
+      (sum, entry) => sum + entry.measurement.lines,
+      0
+    );
+
+    assert.equal(health.context.entries.length, 4);
+    assert.ok(crossTargetLines >= 400);
+    assert.equal(health.context.summary.entries.verdict, 'ok');
+    assert.equal(health.context.summary.entries.targets.length, 4);
+    assert.ok(health.context.summary.entries.lines < crossTargetLines);
+    assert.ok(!health.context.warnings.some((warning) => warning.includes('entry summary')));
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('readHarnessHealth fails when a target session aggregate exceeds the entry budget', async (t) => {
+  const root = await createHarnessFixture();
+  try {
+    const home = path.join(root, 'home');
+    await mkdir(home, { recursive: true });
+    t.mock.method(os, 'homedir', () => home);
+
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'both',
+      projectionMode: 'portable',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] },
+        cursor: { enabled: true, paths: [path.join(root, '.cursor/rules/harness.mdc')] }
+      },
+      upstream: {}
+    });
+
+    await withCwd(root, () => sync([]));
+    await writeFile(
+      path.join(root, 'harness/core/context-budgets.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          budgets: {
+            entry: {
+              warn: { chars: 100000, lines: 180, tokens: 100000 },
+              problem: { chars: 200000, lines: 220, tokens: 200000 }
+            },
+            hookPayload: {
+              warn: { chars: 1, lines: 1, tokens: 1 },
+              problem: { chars: 2, lines: 2, tokens: 2 }
+            },
+            planningHotContext: {
+              warn: { chars: 1, lines: 1, tokens: 1 },
+              problem: { chars: 2, lines: 2, tokens: 2 }
+            },
+            skillProfile: {
+              warn: { chars: 1, lines: 1, tokens: 1 },
+              problem: { chars: 2, lines: 2, tokens: 2 }
+            }
+          }
+        },
+        null,
+        2
+      )}\n`
+    );
+
+    const health = await readHarnessHealth(root, home);
+    const summaryProblem = 'context entry summary codex problem';
+
+    assert.equal(health.context.summary.entries.target, 'codex');
+    assert.equal(health.context.summary.entries.verdict, 'problem');
+    assert.ok(health.context.warnings.some((warning) => warning.includes(summaryProblem)));
+    assert.ok(health.problems.some((problem) => problem.includes(summaryProblem)));
   } finally {
     await removeHarnessFixture(root);
   }

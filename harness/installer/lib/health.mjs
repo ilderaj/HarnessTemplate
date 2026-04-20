@@ -14,6 +14,12 @@ const execFileAsync = promisify(execFile);
 const HOOK_PAYLOAD_TIMEOUT_MS = 2000;
 const MEASURED_HOOK_PAYLOAD_SKILLS = new Set(['superpowers', 'planning-with-files']);
 const MEASURED_HOOK_PAYLOAD_TARGETS = new Set(['codex']);
+const VERDICT_RANK = {
+  unknown: -1,
+  ok: 0,
+  warning: 1,
+  problem: 2
+};
 
 async function exists(filePath) {
   try {
@@ -195,6 +201,8 @@ function createEmptyContextTotals() {
     chars: 0,
     lines: 0,
     approxTokens: 0,
+    target: null,
+    targets: [],
     verdict: 'ok',
     evaluation: null
   };
@@ -232,6 +240,42 @@ function addUniqueMessage(collection, message) {
   if (!collection.includes(message)) {
     collection.push(message);
   }
+}
+
+function addMeasurement(targets, target, measurement) {
+  const current = targets.get(target) ?? {
+    target,
+    chars: 0,
+    lines: 0,
+    approxTokens: 0
+  };
+
+  current.chars += measurement.chars;
+  current.lines += measurement.lines;
+  current.approxTokens += measurement.approxTokens;
+  targets.set(target, current);
+}
+
+function chooseWorstEntryTotal(totals) {
+  return totals.reduce((current, candidate) => {
+    if (!current) return candidate;
+
+    const currentRank = VERDICT_RANK[current.verdict] ?? 0;
+    const candidateRank = VERDICT_RANK[candidate.verdict] ?? 0;
+    if (candidateRank !== currentRank) {
+      return candidateRank > currentRank ? candidate : current;
+    }
+
+    if (candidate.approxTokens !== current.approxTokens) {
+      return candidate.approxTokens > current.approxTokens ? candidate : current;
+    }
+
+    if (candidate.chars !== current.chars) {
+      return candidate.chars > current.chars ? candidate : current;
+    }
+
+    return candidate.lines > current.lines ? candidate : current;
+  }, null);
 }
 
 function buildHookPayloadEnv(rootDir, homeDir) {
@@ -540,6 +584,7 @@ export async function readHarnessHealth(rootDir, homeDir) {
   const context = createEmptyContext();
   let budgetLoadProblem = null;
   const activeTaskDir = await findSingleActiveTaskDir(rootDir);
+  const entryTotalsByTarget = new Map();
 
   try {
     budgets = await loadContextBudgets(rootDir);
@@ -580,9 +625,7 @@ export async function readHarnessHealth(rootDir, homeDir) {
           evaluation: null
         };
 
-        context.summary.entries.chars += measurement.chars;
-        context.summary.entries.lines += measurement.lines;
-        context.summary.entries.approxTokens += measurement.approxTokens;
+        addMeasurement(entryTotalsByTarget, target, measurement);
 
         if (entryBudget) {
           const evaluation = evaluateBudget(measurement, entryBudget);
@@ -648,14 +691,45 @@ export async function readHarnessHealth(rootDir, homeDir) {
     );
   }
 
-  if (entryBudget) {
-    const evaluation = evaluateBudget(context.summary.entries, entryBudget);
-    context.summary.entries.verdict = evaluation.verdict;
-    context.summary.entries.evaluation = toBudgetEvaluation(evaluation, entryBudget);
+  const entryTargetTotals = [...entryTotalsByTarget.values()].map((measurement) => {
+    if (!entryBudget) {
+      return {
+        ...measurement,
+        verdict: 'unknown',
+        evaluation: null
+      };
+    }
 
-    if (evaluation.verdict !== 'ok') {
-      const message = formatBudgetMessage('entry summary', context.summary.entries, entryBudget, evaluation.verdict);
+    const evaluation = evaluateBudget(measurement, entryBudget);
+    return {
+      ...measurement,
+      verdict: evaluation.verdict,
+      evaluation: toBudgetEvaluation(evaluation, entryBudget)
+    };
+  });
+  const worstEntryTotal = chooseWorstEntryTotal(entryTargetTotals);
+
+  context.summary.entries.targets = entryTargetTotals;
+  if (worstEntryTotal) {
+    context.summary.entries.target = worstEntryTotal.target;
+    context.summary.entries.chars = worstEntryTotal.chars;
+    context.summary.entries.lines = worstEntryTotal.lines;
+    context.summary.entries.approxTokens = worstEntryTotal.approxTokens;
+  }
+
+  if (entryBudget) {
+    context.summary.entries.verdict = worstEntryTotal?.verdict ?? 'ok';
+    context.summary.entries.evaluation = worstEntryTotal?.evaluation ?? toBudgetEvaluation(evaluateBudget(context.summary.entries, entryBudget), entryBudget);
+
+    if (context.summary.entries.verdict !== 'ok') {
+      const label = context.summary.entries.target
+        ? `entry summary ${context.summary.entries.target}`
+        : 'entry summary';
+      const message = formatBudgetMessage(label, context.summary.entries, entryBudget, context.summary.entries.verdict);
       addUniqueMessage(context.warnings, message);
+      if (context.summary.entries.verdict === 'problem') {
+        addUniqueMessage(problems, message);
+      }
     }
   } else {
     context.summary.entries.verdict = 'unknown';

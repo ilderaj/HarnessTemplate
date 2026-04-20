@@ -92,6 +92,19 @@ Skill projections use the `full` profile by default. If you are adopting Harness
 
 The default does not flip to `minimal-global`; omit `--skills-profile` to keep `full`.
 
+### Context Governance
+
+Harness treats context size as a product constraint. Verification reports include `health.context` with entry, hook, planning, skill-profile, summary, and warning data. Entry summaries are measured as the worst target session, not as a cross-IDE total. Use this gate before changing policy rendering, skill projection, or hooks:
+
+```bash
+npm run verify
+./scripts/harness verify --output=.harness/verification
+./scripts/harness sync --dry-run
+./scripts/harness doctor --check-only
+```
+
+The expected default remains thin rendered entry files, `full` skill projection, and hooks off. For user-global adoption trials, use the opt-in `minimal-global` profile in an isolated profile before writing real user-global files.
+
 ### Integration Modes
 
 | Mode | Use when | Result |

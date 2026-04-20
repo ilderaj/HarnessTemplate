@@ -906,9 +906,9 @@ Run:
 Then manually inspect:
 
 ```bash
-sed -n '1,200p' /Users/jared/.codex/AGENTS.md
-sed -n '1,200p' /Users/jared/.copilot/instructions/harness.instructions.md
-sed -n '1,200p' /Users/jared/.claude/CLAUDE.md
+sed -n '1,200p' ~/.codex/AGENTS.md
+sed -n '1,200p' ~/.copilot/instructions/harness.instructions.md
+sed -n '1,200p' ~/.claude/CLAUDE.md
 ```
 
 Expected:

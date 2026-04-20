@@ -37,7 +37,8 @@ function renderMarkdown(report) {
     '',
     `Context entries: ${context?.entries?.length ?? 0}`,
     `Context entry verdict: ${summary?.verdict ?? 'unknown'}`,
-    `Context entry size: ${summary?.chars ?? 0} chars, ${summary?.lines ?? 0} lines, ${summary?.approxTokens ?? 0} approx tokens`,
+    `Context entry target: ${summary?.target ?? 'none'}`,
+    `Context entry size: ${summary?.chars ?? 0} chars, ${summary?.lines ?? 0} lines, ${summary?.approxTokens ?? 0} approx tokens (worst target session)`,
     `Context warnings: ${context?.warnings?.length ?? 0}`
   ].join('\n') + '\n';
 }
