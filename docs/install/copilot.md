@@ -14,14 +14,16 @@ User-global scope writes:
 ~/.copilot/instructions/harness.instructions.md
 ```
 
-Copilot must not be assumed to read Codex global configuration. `planning-with-files` is materialized for Copilot when required.
+GitHub Copilot uses the shared Harness skill roots `.agents/skills` and `~/.agents/skills`. `planning-with-files` is materialized there when required.
 
 Skill roots:
 
 ```text
-.github/skills
-~/.copilot/skills
+.agents/skills
+~/.agents/skills
 ```
+
+The Copilot entry stays thin: it renders the always-on core policy plus Copilot-specific notes, but not the tracked-task or deep-reasoning sections.
 
 Optional hooks:
 

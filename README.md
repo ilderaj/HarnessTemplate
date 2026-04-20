@@ -165,9 +165,11 @@ flowchart LR
 | Target | Workspace skill root | User-global skill root | Strategy |
 | --- | --- | --- | --- |
 | Codex | `.agents/skills` | `~/.agents/skills` | materialized |
-| GitHub Copilot | `.github/skills` | `~/.copilot/skills` | materialized |
+| GitHub Copilot | `.agents/skills` | `~/.agents/skills` | materialized |
 | Cursor | `.cursor/skills` | `~/.cursor/skills` | materialized |
 | Claude Code | `.claude/skills` | `~/.claude/skills` | materialized |
+
+Shared skill roots are limited to Codex and GitHub Copilot. Claude Code stays on `.claude/skills`, and Cursor stays on `.cursor/skills` until the official skill-directory contract is re-verified. Hooks and entry files remain platform-native.
 
 Projected skills are materialized by default. Claude Code shared skill-root symlinks are intentionally unsupported.
 

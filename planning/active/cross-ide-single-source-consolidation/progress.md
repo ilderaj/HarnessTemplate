@@ -100,6 +100,26 @@
     - shared `.agents/skills/planning-with-files` 在 manifest 中只保留一条 `kind === 'skill'` entry
     - `coalesceSkillProjections()` 在去重时保留 `targets` 与 `patches` 的首次出现顺序
 
+### Task 4 summary
+- **Status:** complete
+- Changed files:
+  - `harness/core/policy/platform-overrides/copilot.md`
+  - `README.md`
+  - `docs/architecture.md`
+  - `docs/install/copilot.md`
+  - `docs/install/codex.md`
+  - `tests/adapters/templates.test.mjs`
+  - `tests/installer/policy-render.test.mjs`
+- Review loop:
+  - Spec review 通过，确认 Copilot override、docs、以及 thin-profile 边界都已切到 shared `.agents/skills` 叙述，且未改动 `harness/core/policy/base.md` / `harness/core/policy/entry-profiles.json`。
+  - Code quality review 首轮指出新增测试仍对固定措辞有依赖，且没有反向断言旧 Copilot roots 已清理；已收敛为语义断言并补上旧 `.github/skills` / `~/.copilot/skills` 的排他检查。
+  - 修复后 code quality review：approved。
+- Verification:
+  - Focused tests: `node --test tests/adapters/templates.test.mjs tests/installer/policy-render.test.mjs tests/core/no-personal-paths.test.mjs` -> 11 pass, 0 fail
+  - 新增行为级测试覆盖：
+    - Copilot rendered entry 继续保持 thin，同时指向 shared `.agents/skills` roots
+    - README / architecture / install docs 同步声明 Codex + Copilot shared roots，并反向防止旧 Copilot skill roots 回流
+
 ## Errors
 
 | Timestamp | Error | Attempt | Resolution |
