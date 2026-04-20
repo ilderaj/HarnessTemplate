@@ -33,7 +33,7 @@ test('sync projects workspace entries and skills', async () => {
       /name: using-superpowers/
     );
 
-    const copilotPlanning = await readFile(path.join(root, '.github/skills/planning-with-files/SKILL.md'), 'utf8');
+    const copilotPlanning = await readFile(path.join(root, '.agents/skills/planning-with-files/SKILL.md'), 'utf8');
     assert.match(copilotPlanning, /Harness planning-with-files companion-plan patch/);
     assert.match(copilotPlanning, /Harness Copilot planning-with-files patch/);
     assert.match(
@@ -44,6 +44,11 @@ test('sync projects workspace entries and skills', async () => {
       copilotPlanning,
       /docs\/superpowers\/plans\/<date>-<task-id>\.md/
     );
+    assert.match(
+      copilotPlanning,
+      /\$\{HARNESS_AGENT_SKILL_ROOT:-\$\{GITHUB_COPILOT_SKILL_ROOT:-\.agents\/skills\/planning-with-files\}\}[\s\S]*\$HOME\/\.agents\/skills\/planning-with-files[\s\S]*\.github\/skills\/planning-with-files[\s\S]*\$HOME\/\.copilot\/skills\/planning-with-files/
+    );
+    await assert.rejects(lstat(path.join(root, '.github/skills/planning-with-files/SKILL.md')), /ENOENT/);
     assert.doesNotMatch(
       copilotPlanning,
       /Do not create a parallel long-lived superpowers plan unless the user explicitly requests that file\./
@@ -85,8 +90,8 @@ test('sync rejects non-owned skill target by default', async () => {
       },
       upstream: {}
     });
-    await mkdir(path.join(root, '.github/skills'), { recursive: true });
-    await writeFile(path.join(root, '.github/skills/planning-with-files'), 'user file');
+    await mkdir(path.join(root, '.agents/skills'), { recursive: true });
+    await writeFile(path.join(root, '.agents/skills/planning-with-files'), 'user file');
 
     await assert.rejects(withCwd(root, () => sync([])), /Refusing to overwrite non-Harness-owned path/);
   } finally {
@@ -106,12 +111,12 @@ test('sync backs up non-owned skill target when requested', async () => {
       },
       upstream: {}
     });
-    await mkdir(path.join(root, '.github/skills'), { recursive: true });
-    await writeFile(path.join(root, '.github/skills/planning-with-files'), 'user file');
+    await mkdir(path.join(root, '.agents/skills'), { recursive: true });
+    await writeFile(path.join(root, '.agents/skills/planning-with-files'), 'user file');
 
     await withCwd(root, () => sync(['--conflict=backup']));
 
-    const skill = await readFile(path.join(root, '.github/skills/planning-with-files/SKILL.md'), 'utf8');
+    const skill = await readFile(path.join(root, '.agents/skills/planning-with-files/SKILL.md'), 'utf8');
     assert.match(skill, /Harness planning-with-files companion-plan patch/);
     assert.match(skill, /Harness Copilot planning-with-files patch/);
   } finally {
@@ -139,7 +144,7 @@ test('sync patches planning-with-files companion-plan semantics for every suppor
 
     const targets = {
       codex: path.join(root, '.agents/skills/planning-with-files/SKILL.md'),
-      copilot: path.join(root, '.github/skills/planning-with-files/SKILL.md'),
+      copilot: path.join(root, '.agents/skills/planning-with-files/SKILL.md'),
       cursor: path.join(root, '.cursor/skills/planning-with-files/SKILL.md'),
       'claude-code': path.join(root, '.claude/skills/planning-with-files/SKILL.md')
     };
@@ -163,6 +168,7 @@ test('sync patches planning-with-files companion-plan semantics for every suppor
 
     const copilotSkill = await readFile(targets.copilot, 'utf8');
     assert.match(copilotSkill, /Harness Copilot planning-with-files patch/);
+    await assert.rejects(lstat(path.join(root, '.github/skills/planning-with-files/SKILL.md')), /ENOENT/);
   } finally {
     await removeHarnessFixture(root);
   }
@@ -189,7 +195,7 @@ test('sync refreshes materialized Copilot skill after upstream changes', async (
     await withCwd(root, () => sync([]));
 
     assert.equal(
-      await readFile(path.join(root, '.github/skills/planning-with-files/UPSTREAM_REFRESH_MARKER.md'), 'utf8'),
+      await readFile(path.join(root, '.agents/skills/planning-with-files/UPSTREAM_REFRESH_MARKER.md'), 'utf8'),
       'refreshed baseline'
     );
   } finally {

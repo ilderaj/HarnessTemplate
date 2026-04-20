@@ -67,6 +67,23 @@
   - Code quality review: approved
   - Focused tests: `node --test tests/installer/paths.test.mjs tests/adapters/skill-profile.test.mjs tests/adapters/skill-projection.test.mjs` -> 31 pass, 0 fail
 
+### Task 2 summary
+- **Status:** complete
+- Changed files:
+  - `harness/installer/lib/copilot-planning-patch.mjs`
+  - `tests/adapters/skill-projection.test.mjs`
+  - `tests/adapters/sync-skills.test.mjs`
+  - `docs/compatibility/copilot-planning-with-files.md`
+- Review loop:
+  - Spec review 首轮指出 shared-root-first 顺序与测试约束不足；已修正。
+  - Code quality review 首轮指出 env override 被降级为 fallback；已改为显式 override 继续优先，同时保留 shared root 作为默认路径。
+  - 最终终局 review：approved。
+- Verification:
+  - Focused tests: `node --test tests/adapters/skill-projection.test.mjs tests/adapters/sync-skills.test.mjs` -> 19 pass, 0 fail
+  - 新增行为级测试覆盖：
+    - 显式 env override 生效
+    - shared roots 缺失时回退到 legacy Copilot workspace root
+
 ## Errors
 
 | Timestamp | Error | Attempt | Resolution |
