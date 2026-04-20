@@ -120,6 +120,12 @@
     - Copilot rendered entry 继续保持 thin，同时指向 shared `.agents/skills` roots
     - README / architecture / install docs 同步声明 Codex + Copilot shared roots，并反向防止旧 Copilot skill roots 回流
 
+### Implementation verification
+- Shared-root projection suite: PASS
+- Entry/hook/command invariant suite: PASS
+- `npm run verify`: PASS
+- Decision-path drift check: no change to `harness/core/policy/base.md`, `harness/core/policy/entry-profiles.json`, `harness/installer/lib/hook-projection.mjs`, or `harness/installer/lib/hook-config.mjs`
+
 ## Errors
 
 | Timestamp | Error | Attempt | Resolution |
