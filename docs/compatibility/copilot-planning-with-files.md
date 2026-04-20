@@ -20,5 +20,7 @@ Harness materializes Copilot's `planning-with-files` copy instead of linking it.
 
 Target paths:
 
-- Workspace: `.github/skills/planning-with-files`
-- User-global: `~/.copilot/skills/planning-with-files`
+- Workspace: `.agents/skills/planning-with-files`
+- User-global: `~/.agents/skills/planning-with-files`
+
+Explicit env overrides and legacy Copilot roots remain supported for compatibility: `HARNESS_AGENT_SKILL_ROOT`, `GITHUB_COPILOT_SKILL_ROOT`, `.github/skills/planning-with-files`, and `~/.copilot/skills/planning-with-files`.

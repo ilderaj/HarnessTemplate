@@ -6,9 +6,15 @@ const MARKER = 'Harness Copilot planning-with-files patch';
 
 function copilotSkillRootSnippet() {
   return [
-    'COPILOT_PLANNING_WITH_FILES_ROOT="${GITHUB_COPILOT_SKILL_ROOT:-.github/skills/planning-with-files}"',
+    'COPILOT_PLANNING_WITH_FILES_ROOT="${HARNESS_AGENT_SKILL_ROOT:-${GITHUB_COPILOT_SKILL_ROOT:-.agents/skills/planning-with-files}}"',
     'if [ ! -f "$COPILOT_PLANNING_WITH_FILES_ROOT/scripts/session-catchup.py" ] && [ -n "${HOME:-}" ]; then',
-    '  COPILOT_PLANNING_WITH_FILES_ROOT="$HOME/.copilot/skills/planning-with-files"',
+    '  COPILOT_PLANNING_WITH_FILES_ROOT="$HOME/.agents/skills/planning-with-files"',
+    'fi',
+    'if [ ! -f "$COPILOT_PLANNING_WITH_FILES_ROOT/scripts/session-catchup.py" ]; then',
+      '  COPILOT_PLANNING_WITH_FILES_ROOT=".github/skills/planning-with-files"',
+    '  if [ ! -f "$COPILOT_PLANNING_WITH_FILES_ROOT/scripts/session-catchup.py" ] && [ -n "${HOME:-}" ]; then',
+    '    COPILOT_PLANNING_WITH_FILES_ROOT="$HOME/.copilot/skills/planning-with-files"',
+    '  fi',
     'fi'
   ].join('\n');
 }

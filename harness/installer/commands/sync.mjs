@@ -20,7 +20,7 @@ import {
   readProjectionManifest,
   writeProjectionManifest
 } from '../lib/projection-manifest.mjs';
-import { planSkillProjections } from '../lib/skill-projection.mjs';
+import { coalesceSkillProjections, planSkillProjections } from '../lib/skill-projection.mjs';
 import { readState, updateState } from '../lib/state.mjs';
 import { removeManagedHookConfig, removeManagedHookSettings } from '../lib/hook-config.mjs';
 
@@ -197,7 +197,7 @@ async function applyHookProjection(projection, ownedTargets, conflictMode) {
 async function planSyncOperations({ rootDir, homeDir, state }) {
   const targets = Object.keys(state.targets).filter((target) => state.targets[target].enabled);
   const entryWrites = [];
-  const skillWrites = [];
+  const rawSkillWrites = [];
   const hookWrites = [];
   const manifestEntries = [];
 
@@ -226,15 +226,7 @@ async function planSyncOperations({ rootDir, homeDir, state }) {
     });
 
     for (const projection of skillProjections) {
-      const strategy =
-        projection.strategy === 'link' && state.projectionMode === 'portable'
-          ? 'materialize'
-          : projection.strategy;
-      skillWrites.push(projection);
-      manifestEntries.push({
-        ...projection,
-        strategy
-      });
+      rawSkillWrites.push(projection);
     }
 
     const hookProjections = await planHookProjections({
@@ -266,6 +258,19 @@ async function planSyncOperations({ rootDir, homeDir, state }) {
         });
       }
     }
+  }
+
+  const skillWrites = coalesceSkillProjections(rawSkillWrites);
+
+  for (const projection of skillWrites) {
+    const strategy =
+      projection.strategy === 'link' && state.projectionMode === 'portable'
+        ? 'materialize'
+        : projection.strategy;
+    manifestEntries.push({
+      ...projection,
+      strategy
+    });
   }
 
   return {

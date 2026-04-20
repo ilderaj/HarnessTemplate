@@ -64,11 +64,13 @@ Skill roots are platform metadata, not command-local constants:
 | Target | Workspace skill root | User-global skill root |
 | --- | --- | --- |
 | Codex | `.agents/skills` | `~/.agents/skills` |
-| GitHub Copilot | `.github/skills` | `~/.copilot/skills` |
+| GitHub Copilot | `.agents/skills` | `~/.agents/skills` |
 | Cursor | `.cursor/skills` | `~/.cursor/skills` |
 | Claude Code | `.claude/skills` | `~/.claude/skills` |
 
-Harness materializes skill projections by default so the projected directory is the only discovery source each IDE sees during fresh install. Claude Code shared skill-root symlinks are intentionally unsupported. Harness expects each Claude skill target path to be projected individually under `.claude/skills` or `~/.claude/skills`; directory-level sharing such as `.claude/skills -> ~/.agents/skills` is reported as unhealthy.
+Shared skill roots are limited to Codex and GitHub Copilot. Claude Code stays on `.claude/skills`, and Cursor stays on `.cursor/skills` until the official skill-directory contract is re-verified. Hooks and entry files remain platform-native.
+
+Harness materializes skill projections by default so the projected directory is the only discovery source each IDE sees during fresh install. Harness expects each Claude skill target path to be projected individually under `.claude/skills` or `~/.claude/skills`; directory-level sharing such as `.claude/skills -> ~/.agents/skills` is reported as unhealthy.
 
 Some upstream skills carry default file-location guidance that conflicts with Harness. Harness keeps `harness/upstream/**` untouched, then applies projection-layer patches during `sync`.
 

@@ -41,6 +41,91 @@
   - 生成 companion artifact：`/Users/jared/HarnessTemplate/docs/superpowers/plans/2026-04-20-cross-ide-single-source-consolidation.md`
   - 将 companion-plan path、summary、sync-back status 写回本 task 的 planning files。
 
+### Phase 5: Subagent-Driven execution
+- **Status:** in_progress
+- Worktree base:
+  - Worktree base: dev @ 536772e56070dbb8dd10556db48edef69d4cbdf8
+- Actions taken:
+  - 创建隔离 worktree：`$HOME/.config/superpowers/worktrees/HarnessTemplate/codex-cross-ide-single-source-exec`
+  - 基线 `npm run verify` 初次因 companion plan 含绝对用户路径触发 `tests/core/no-personal-paths.test.mjs` 失败。
+  - 将 companion plan 中的 worktree 命令改为使用 `$HOME/...`，避免 author-specific absolute path。
+  - 修正后重新运行 `npm run verify`，结果：154 pass, 0 fail。
+  - Task 1 implementer 完成 Copilot shared skill roots 的 metadata 与 focused tests 改动。
+  - Task 1 spec review 首轮指出缺少 Copilot user-global skill-root 断言；修复后复审通过。
+  - Task 1 code quality review 首轮指出 `scope=both` 覆盖缺失与一个过度放松的断言；修复后复审通过。
+  - 主执行 worktree 独立复跑 `node --test tests/installer/paths.test.mjs tests/adapters/skill-profile.test.mjs tests/adapters/skill-projection.test.mjs`，结果：31 pass, 0 fail。
+
+### Task 1 summary
+- **Status:** complete
+- Changed files:
+  - `harness/core/metadata/platforms.json`
+  - `tests/installer/paths.test.mjs`
+  - `tests/adapters/skill-profile.test.mjs`
+  - `tests/adapters/skill-projection.test.mjs`
+- Verification:
+  - Spec review: approved
+  - Code quality review: approved
+  - Focused tests: `node --test tests/installer/paths.test.mjs tests/adapters/skill-profile.test.mjs tests/adapters/skill-projection.test.mjs` -> 31 pass, 0 fail
+
+### Task 2 summary
+- **Status:** complete
+- Changed files:
+  - `harness/installer/lib/copilot-planning-patch.mjs`
+  - `tests/adapters/skill-projection.test.mjs`
+  - `tests/adapters/sync-skills.test.mjs`
+  - `docs/compatibility/copilot-planning-with-files.md`
+- Review loop:
+  - Spec review 首轮指出 shared-root-first 顺序与测试约束不足；已修正。
+  - Code quality review 首轮指出 env override 被降级为 fallback；已改为显式 override 继续优先，同时保留 shared root 作为默认路径。
+  - 最终终局 review：approved。
+- Verification:
+  - Focused tests: `node --test tests/adapters/skill-projection.test.mjs tests/adapters/sync-skills.test.mjs` -> 19 pass, 0 fail
+  - 新增行为级测试覆盖：
+    - 显式 env override 生效
+    - shared roots 缺失时回退到 legacy Copilot workspace root
+
+### Task 3 summary
+- **Status:** complete
+- Changed files:
+  - `harness/installer/lib/skill-projection.mjs`
+  - `harness/installer/commands/sync.mjs`
+  - `tests/adapters/sync-skills.test.mjs`
+- Review loop:
+  - Spec review 首轮指出 `coalesceSkillProjections()` 不应额外排序 `targets` 与 `patches`；已改为保留首次出现顺序，仅做去重。
+  - 修复后 spec review：approved。
+  - Code quality review：approved；仅记录未来扩展边界为低风险空白，不构成当前阻断。
+- Verification:
+  - Focused tests: `node --test tests/adapters/sync-skills.test.mjs` -> 9 pass, 0 fail
+  - 新增行为级测试覆盖：
+    - shared `.agents/skills/planning-with-files` 在 manifest 中只保留一条 `kind === 'skill'` entry
+    - `coalesceSkillProjections()` 在去重时保留 `targets` 与 `patches` 的首次出现顺序
+
+### Task 4 summary
+- **Status:** complete
+- Changed files:
+  - `harness/core/policy/platform-overrides/copilot.md`
+  - `README.md`
+  - `docs/architecture.md`
+  - `docs/install/copilot.md`
+  - `docs/install/codex.md`
+  - `tests/adapters/templates.test.mjs`
+  - `tests/installer/policy-render.test.mjs`
+- Review loop:
+  - Spec review 通过，确认 Copilot override、docs、以及 thin-profile 边界都已切到 shared `.agents/skills` 叙述，且未改动 `harness/core/policy/base.md` / `harness/core/policy/entry-profiles.json`。
+  - Code quality review 首轮指出新增测试仍对固定措辞有依赖，且没有反向断言旧 Copilot roots 已清理；已收敛为语义断言并补上旧 `.github/skills` / `~/.copilot/skills` 的排他检查。
+  - 修复后 code quality review：approved。
+- Verification:
+  - Focused tests: `node --test tests/adapters/templates.test.mjs tests/installer/policy-render.test.mjs tests/core/no-personal-paths.test.mjs` -> 11 pass, 0 fail
+  - 新增行为级测试覆盖：
+    - Copilot rendered entry 继续保持 thin，同时指向 shared `.agents/skills` roots
+    - README / architecture / install docs 同步声明 Codex + Copilot shared roots，并反向防止旧 Copilot skill roots 回流
+
+### Implementation verification
+- Shared-root projection suite: PASS
+- Entry/hook/command invariant suite: PASS
+- `npm run verify`: PASS
+- Decision-path drift check: no change to `harness/core/policy/base.md`, `harness/core/policy/entry-profiles.json`, `harness/installer/lib/hook-projection.mjs`, or `harness/installer/lib/hook-config.mjs`
+
 ## Errors
 
 | Timestamp | Error | Attempt | Resolution |

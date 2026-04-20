@@ -58,3 +58,29 @@ test('renderPolicyProfile fails clearly when a profile references a missing sect
     /references missing sections: Missing Heading/
   );
 });
+
+test('project docs keep Codex and Copilot on shared .agents skill roots while preserving platform boundaries', async () => {
+  const [readme, architecture, copilotInstall, codexInstall] = await Promise.all([
+    readFile(path.join(process.cwd(), 'README.md'), 'utf8'),
+    readFile(path.join(process.cwd(), 'docs/architecture.md'), 'utf8'),
+    readFile(path.join(process.cwd(), 'docs/install/copilot.md'), 'utf8'),
+    readFile(path.join(process.cwd(), 'docs/install/codex.md'), 'utf8')
+  ]);
+
+  assert.match(readme, /GitHub Copilot \| `\.agents\/skills` \| `~\/\.agents\/skills` \| materialized/);
+  assert.match(readme, /Claude Code \| `\.claude\/skills` \| `~\/\.claude\/skills` \| materialized/);
+  assert.match(readme, /Cursor \| `\.cursor\/skills` \| `~\/\.cursor\/skills` \| materialized/);
+  assert.doesNotMatch(readme, /GitHub Copilot \| `\.github\/skills` \| `~\/\.copilot\/skills` \| materialized/);
+  assert.match(architecture, /shared skill roots are limited to Codex and GitHub Copilot/i);
+  assert.match(architecture, /`\.claude\/skills`/);
+  assert.match(architecture, /`\.cursor\/skills`/);
+  assert.match(architecture, /platform-native/);
+  assert.doesNotMatch(architecture, /GitHub Copilot \| `\.github\/skills` \| `~\/\.copilot\/skills`/);
+  assert.match(copilotInstall, /`\.agents\/skills`/);
+  assert.match(copilotInstall, /`~\/\.agents\/skills`/);
+  assert.match(copilotInstall, /tracked-task/);
+  assert.doesNotMatch(copilotInstall, /\.github\/skills/);
+  assert.doesNotMatch(copilotInstall, /~\/\.copilot\/skills/);
+  assert.match(codexInstall, /`\.agents\/skills`/);
+  assert.match(codexInstall, /`~\/\.agents\/skills`/);
+});

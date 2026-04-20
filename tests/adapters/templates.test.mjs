@@ -29,6 +29,17 @@ test('renderEntry emits Copilot instructions frontmatter for file-based user pro
   assert.match(rendered, /^---\napplyTo: "\*\*"\n---\n/);
 });
 
+test('renderEntry keeps Copilot entry thin while pointing to shared .agents skill roots', async () => {
+  const rendered = await renderEntry(process.cwd(), 'copilot');
+
+  assert.match(rendered, /# Copilot Override/);
+  assert.match(rendered, /\.agents\/skills/);
+  assert.match(rendered, /~\/\.agents\/skills/);
+  assert.doesNotMatch(rendered, /Complex Task Orchestration/);
+  assert.doesNotMatch(rendered, /Companion Plan Model/);
+  assert.doesNotMatch(rendered, /Planning-With-Files Lifecycle Rule/);
+});
+
 test('entriesForScope uses installer path metadata instead of adapter entry arrays', () => {
   const adapter = {
     target: 'codex',
