@@ -14,7 +14,7 @@ User-global scope writes:
 ~/.codex/AGENTS.md
 ```
 
-Harness currently projects Codex skills into the official Codex skill roots and materializes them there to keep discovery stable and avoid symlink-specific duplication.
+Codex projects skills into the shared Harness roots `.agents/skills` and `~/.agents/skills` to keep discovery stable and avoid symlink-specific duplication.
 
 Skill roots:
 
@@ -22,6 +22,8 @@ Skill roots:
 .agents/skills
 ~/.agents/skills
 ```
+
+These are the same shared Harness skill roots used by GitHub Copilot.
 
 Codex hooks are experimental and require `codex_hooks = true` in Codex `config.toml`.
 Harness projects Codex hooks only when `--hooks=on` is selected.
