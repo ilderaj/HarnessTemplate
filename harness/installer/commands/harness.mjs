@@ -10,8 +10,10 @@ import { worktreePreflight } from './worktree-preflight.mjs';
 import { adoptGlobal } from './adopt-global.mjs';
 import { adoptionStatus } from './adoption-status.mjs';
 import { checkpointCommand } from './checkpoint.mjs';
+import { checkpointPushCommand } from './checkpoint-push.mjs';
 import { cloudBootstrap } from './cloud-bootstrap.mjs';
 import { linkPersonal } from './link-personal.mjs';
+import { summary } from './summary.mjs';
 
 const commands = {
   install,
@@ -22,6 +24,8 @@ const commands = {
   update: updateCommand,
   verify,
   checkpoint: checkpointCommand,
+  'checkpoint-push': checkpointPushCommand,
+  summary,
   'cloud-bootstrap': cloudBootstrap,
   'link-personal': linkPersonal,
   'worktree-preflight': worktreePreflight,
@@ -41,7 +45,9 @@ function usage() {
     '  fetch    Fetch upstream candidates',
     '  update   Apply fetched upstream candidates',
     '  verify   Print or write verification reports',
+    '  summary  Print structured session summary for the active task',
     '  checkpoint  Create a safety checkpoint',
+    '  checkpoint-push  Verify, record review evidence, commit, and push a recovery branch',
     '  cloud-bootstrap  Generate safety bootstrap files for cloud workspaces',
     '  link-personal    Link personal user-managed config into the global install',
     '  adopt-global     Apply the current repo baseline to the user-global install',

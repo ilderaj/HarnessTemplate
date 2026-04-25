@@ -159,3 +159,10 @@
 
 - 详细方案比较和执行清单保存在 `docs/superpowers/plans/2026-04-20-global-auto-apply-adoption.md`。
 - 此文件只保留 durable findings、决策与结论摘要。
+
+## 2026-04-25 运行时收敛结果
+
+- 当前 repo HEAD 为 `97ff47da1a6ee3e00cfb93258e4bd0b5cac206e0` 时，`adoption-status` 首次检查返回 `state_mismatch`。
+- 直接原因不是命令失效，而是四个 target 都缺少新引入的 skill projection：`risk-assessment-before-destructive-changes` 与 `safe-bypass-flow`。
+- 旧 receipt 还缺少 `policyProfile`，因此在新 schema / policy 模型下会额外显示 `Receipt policyProfile undefined does not match current state always-on-core.`。
+- 重新执行 `./scripts/harness adopt-global` 后，系统通过 `create=6` 完成缺失 projection 与 receipt 收敛，并恢复到 `in_sync`。

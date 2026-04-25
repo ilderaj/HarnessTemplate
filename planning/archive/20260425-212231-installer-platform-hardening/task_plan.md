@@ -5,9 +5,10 @@
 在不触碰 Jared 全局目录的前提下，收紧 HarnessTemplate 自身的 installer、status/doctor、CLI help/preview、Claude shared skill root 语义和 Gemini 支持表述，并补齐最小必要测试与文档。
 
 ## Current State
-Status: active
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Completed and verified during archive eligibility review.
+Closed At: 2026-04-25T21:22:16
 
 ## Current Phase
 

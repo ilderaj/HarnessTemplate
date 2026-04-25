@@ -5,7 +5,7 @@
 全面审计 HarnessTemplate 的 installation structure、entry files、skills/hooks 投影，以及 upstream/updates 相关实现；对照 Codex、GitHub Copilot、Cursor、Claude Code 官方文档确认路径、命名、分类与链接格式是否正确，并先产出优化 Plans，不直接执行实现更新。
 
 ## Current State
-Status: active
+Status: waiting_review
 Archive Eligible: no
 Close Reason:
 

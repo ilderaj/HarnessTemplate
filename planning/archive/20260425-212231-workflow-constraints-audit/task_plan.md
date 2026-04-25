@@ -36,6 +36,8 @@
 - 2026-04-18 当前复核再次确认：上述约束在 `dev` HEAD 仍然成立，相关 targeted tests、`verify`、`doctor` 全部通过；本轮为只读审计，无代码变更。
 
 ## Current State
-Status: active
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Completed and verified during archive eligibility review.
+Closed At: 2026-04-25T21:22:16
+

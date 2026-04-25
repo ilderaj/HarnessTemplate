@@ -5,9 +5,10 @@
 检查并修复 HarnessTemplate 中 `planning-with-files` 的 companion-plan 语义投影缺口，重点覆盖 Copilot 的现有 patch，并确认 Codex、Cursor、Claude Code 是否存在同类问题；完成代码、测试与文档一致性验证。
 
 ## Current State
-Status: active
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Completed and verified during archive eligibility review.
+Closed At: 2026-04-25T21:22:16
 
 ## Current Phase
 
