@@ -1,9 +1,9 @@
 # Agent Safety Harness — Task Plan
 
 ## Current State
-Status: waiting_review
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: 安全 harness 第一阶段已完成交付；safety profile、hook、checkpoint、Risk Assessment、worktree safety、cloud bootstrap、personal linking、文档与验证链路均已落地。
 
 ## Goal
 
@@ -40,16 +40,16 @@ Close Reason:
 
 | # | Phase | Status | 简述 |
 |---|---|---|---|
-| 0 | Recover repo & baseline verify | not-started | `git pull`、`npm i`、`scripts/harness verify`，确认现状 |
-| 1 | Safety policy + hooks 内核 | not-started | `harness/core/policy/safety.md`、`core/hooks/safety/pretool-guard.{sh,test}`、`session-checkpoint.sh`、配置三件套（protected/dangerous/safe） |
-| 2 | Checkpoint 子系统 | not-started | `core/safety/bin/checkpoint`（git bundle + diff + tarball），并接 `harness checkpoint` CLI |
-| 3 | Profile 与 installer 接入 | not-started | 新增 `entry-profiles.json` 中的 `safety` profile；`install --profile=safety` 投影 hooks + 配置；`doctor` 加 safety section |
-| 4 | planning-with-files 风险评估扩展 | not-started | 给 task_plan 模板加 `## Risk Assessment` 块；新 skill `risk-assessment-before-destructive-changes`；hook 检测 active task 中是否存在该块 |
-| 5 | Worktree/branch 工作流强约束 | not-started | hook 规则 + 扩展 `using-git-worktrees` skill；`worktree-preflight` 增 safety 检查；新 skill `safe-bypass-flow` |
-| 6 | Cloud / devcontainer bootstrap | not-started | `harness cloud-bootstrap --target=codespaces` 生成 `.devcontainer/*` + repo-local hooks，profile=cloud-safe |
-| 7 | 个人配置同步：`harness link-personal` | not-started | clone 私有 repo 到 `~/.agent-config/`、合并 user-level AGENTS.md/skills，sync 时不覆盖 user-managed 内容 |
-| 8 | 文档与手册 | not-started | `docs/safety/architecture.md`、`vibe-coding-safety-manual.md`、`recovery-playbook.md` |
-| 9 | Verify & rollout | not-started | `tests/safety/*` + `scripts/harness verify --output=...`；先 workspace projection self-test，再 user-global，最后接入业务 repo |
+| 0 | Recover repo & baseline verify | complete | 已在当前隔离 worktree 完成 `npm install --ignore-scripts`、`./scripts/harness doctor --check-only`、`./scripts/harness verify --output=reports/verification/2026-04-25-baseline`；报告已落盘，顺手清理了 npm 自动生成的 `package-lock.json` |
+| 1 | Safety policy + hooks 内核 | complete | `safety` / `cloud-safe` policy、profile-aware safety hooks、`pretool-guard.sh`、`session-checkpoint.sh`、危险命令与 worktree 约束已全部落地并覆盖 fixture tests |
+| 2 | Checkpoint 子系统 | complete | 已完成 `core/safety/bin/checkpoint`、`harness checkpoint` CLI、git/non-git/skip-if-clean 测试；SessionStart wrapper 现在可调用真实 checkpoint |
+| 3 | Profile 与 installer 接入 | complete | `install --profile=safety` 现会直接投影 safety assets；`.agent-config/` safety/docs/template/bin projection 与 `doctor` safety section 全部完成 |
+| 4 | planning-with-files 风险评估扩展 | complete | projected `planning-with-files` 模板已补 `## Risk Assessment` 与 destructive log；新 skill `risk-assessment-before-destructive-changes` 已接入 full profile；hook/preflight 均要求非空表格行 |
+| 5 | Worktree/branch 工作流强约束 | complete | 新 skill `safe-bypass-flow`、`worktree-preflight --safety`、main repo `dev` branch `git reset --hard` deny、无 upstream ask 等约束均已落地 |
+| 6 | Cloud / devcontainer bootstrap | complete | `harness cloud-bootstrap --target=codespaces` 会生成或建议 `.devcontainer/devcontainer.json` 与 `postCreateCommand.sh`，并补 `.gitignore` |
+| 7 | 个人配置同步：`harness link-personal` | complete | `link-personal`、`user-managed.json`、`sync`/`adopt-global` skip 逻辑与冲突保护均已实现 |
+| 8 | 文档与手册 | complete | `docs/safety/architecture.md`、`vibe-coding-safety-manual.md`、`recovery-playbook.md` 已新增，并跟随 safety profile 投影到 `.agent-config/docs/safety/` |
+| 9 | Verify & rollout | complete | `npm run verify`、额外 safety tests、`./scripts/harness verify --output=reports/verification/2026-04-25-safety`、临时 HOME 的 workspace/user-global install + doctor 自检均已通过 |
 
 每个 phase 的 finishing criteria、文件清单、代码骨架与测试，全部在 companion plan 中。
 
@@ -57,6 +57,12 @@ Close Reason:
 
 - 用户是否已有/愿意建一个私有 `agent-personal-config` repo？（影响 Phase 7 的接入步骤，但不影响 Phase 1–6 的实施）
 - 是否需要把 checkpoint 自动 push 到一个 GitHub `agent-checkpoints` 私有 repo（作为远端兜底）？默认不做，留作 v2 选项。
+
+## Completion Notes
+
+- 最终验证报告：`reports/verification/2026-04-25-safety/latest.md`
+- 额外 safety 测试覆盖：`tests/hooks/pretool-guard.test.mjs`、`tests/installer/worktree-preflight.test.mjs`、`tests/safety/*.test.mjs`
+- 环境未提供 `shellcheck`，因此 shell 脚本语法验证停留在仓库测试与实际命令执行层
 
 ## Risk Assessment
 
