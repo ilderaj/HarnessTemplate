@@ -1,9 +1,10 @@
 # HarnessTemplate 初始化 Skill 投影审计与优化计划
 
 ## Current State
-Status: waiting_review
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Completed and verified during archive eligibility review.
+Closed At: 2026-04-25T21:22:16
 
 ## 任务目标
 

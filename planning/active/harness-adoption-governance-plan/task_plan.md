@@ -5,7 +5,7 @@
 基于前一轮审计结果，为 Jared 全局与重点 workspace 制定一份不改 `HarnessTemplate` 代码的治理方案，明确 adoption 的优先级、可行/不可行边界、存量兼容策略，以及 projection 相关处置原则。
 
 ## Current State
-Status: active
+Status: waiting_review
 Archive Eligible: no
 Close Reason:
 

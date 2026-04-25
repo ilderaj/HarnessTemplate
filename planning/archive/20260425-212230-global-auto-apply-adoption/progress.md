@@ -76,3 +76,20 @@
   - `repoHead`: `f7ae5ac1affc048c8cfb84bf4f8baf59fa029913`
   - `receiptPath`: `.harness/adoption/global.json`
   - `health.problems`: `[]`
+
+## 2026-04-25 Harness 更新后的再次 adoption
+
+- 执行前检查：
+  - `./scripts/harness adoption-status`
+  - 结果：`state_mismatch`
+  - 直接原因：四个 target 均缺少 `risk-assessment-before-destructive-changes` 与 `safe-bypass-flow` skill projection
+  - 附加原因：旧 receipt 缺少 `policyProfile`，与当前 `always-on-core` 状态不一致
+- 执行：
+  - `./scripts/harness adopt-global`
+  - 输出：`Synced 4 target(s): codex, copilot, cursor, claude-code (create=6, update=0, stale=0)`
+  - 输出：`Verification report written to .harness/adoption/verification/latest.md`
+- 执行后即时验证：
+  - `adopt-global` 内联状态输出：`in_sync`
+  - `repoHead`: `97ff47da1a6ee3e00cfb93258e4bd0b5cac206e0`
+  - `receiptPath`: `.harness/adoption/global.json`
+  - `health.problems`: `[]`

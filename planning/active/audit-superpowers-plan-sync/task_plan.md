@@ -5,7 +5,7 @@
 审计 `Superpowers Plans` 与 `Planning with Files` 的新关系模型是否已经从 `HarnessTemplate` 源策略、任务计划、投影实现、测试与 Jared 的跨 IDE / 跨 workspace 入口文件完整落地，重点核查 Copilot。
 
 ## Current State
-Status: active
+Status: waiting_review
 Archive Eligible: no
 Close Reason:
 

@@ -5,9 +5,10 @@
 分析当 `HarnessTemplate` 更新后，如何把最新规则自动 apply 到当前机器的 user-global 环境，并给出一个可执行、可验证、不会误伤存量 workspace 的落地方案。
 
 ## Current State
-Status: waiting_review
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Completed and verified during archive eligibility review.
+Closed At: 2026-04-25T21:22:16
 
 ## Current Phase
 

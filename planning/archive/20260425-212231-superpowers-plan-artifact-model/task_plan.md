@@ -4,9 +4,10 @@
 实现 Harness 的计划产物模型调整：保留 `planning/active/<task-id>/` 作为唯一 authoritative task memory，同时让 deep-reasoning task 可以产出独立的 Superpowers companion plan，并确保所有 IDE projection、health/doctor 与测试都适配这一范式。
 
 ## Current State
-Status: active
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Completed and verified during archive eligibility review.
+Closed At: 2026-04-25T21:22:16
 
 ## Current Phase
 Phase 6
