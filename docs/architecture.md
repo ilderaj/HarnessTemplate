@@ -57,7 +57,7 @@ Hook roots are platform metadata, not command-local constants:
 
 Claude Code stores hook configuration in `.claude/settings.json` and `~/.claude/settings.json`; helper scripts live under `.claude/hooks/*` and `~/.claude/hooks/*`.
 
-The planning-with-files hook helper reads only task-scoped active plans under `planning/active/<task-id>/`. It does not read or create project-root planning files, and it does not archive tasks. Stop-style hooks only remind the agent to update `progress.md` and confirm the task lifecycle block.
+The planning-with-files hook helper reads only task-scoped active plans under `planning/active/<task-id>/`. It does not read or create project-root planning files, and it does not archive tasks. `session-start` writes a per-task `.session-start` sidecar, and stop-style hooks emit a structured session summary built from `planning/active/<task-id>/{task_plan.md,progress.md,findings.md}` plus that sidecar. `./scripts/harness summary` reproduces the same summary when hooks are unavailable or disabled.
 
 Skill roots are platform metadata, not command-local constants:
 
