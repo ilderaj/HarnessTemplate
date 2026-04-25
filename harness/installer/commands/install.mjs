@@ -4,6 +4,7 @@ import { loadPolicyProfiles } from '../lib/policy-render.mjs';
 import { resolveTargetPaths } from '../lib/paths.mjs';
 import { loadSkillProfiles } from '../lib/skill-projection.mjs';
 import { writeState } from '../lib/state.mjs';
+import { sync } from './sync.mjs';
 
 function readOption(args, name, fallback) {
   const prefix = `--${name}=`;
@@ -18,8 +19,12 @@ export async function install(args = []) {
   const skillProfiles = await loadSkillProfiles(rootDir);
   const scope = normalizeScope(readOption(args, 'scope', metadata.defaultScope));
   const projectionMode = readOption(args, 'projection', 'link');
-  const hookMode = readOption(args, 'hooks', 'off');
   const policyProfile = readOption(args, 'profile', policyProfiles.defaultProfile);
+  const hookMode = readOption(
+    args,
+    'hooks',
+    ['safety', 'cloud-safe'].includes(policyProfile) ? 'on' : 'off'
+  );
   const skillProfile = readOption(args, 'skills-profile', skillProfiles.defaultProfile);
   const targetArg = readOption(args, 'targets', 'all');
   const targets = normalizeTargets(metadata, targetArg.split(',').filter(Boolean));
@@ -63,5 +68,6 @@ export async function install(args = []) {
   }
 
   await writeState(rootDir, state);
+  await sync([]);
   console.log(`Installed Harness state for ${targets.join(', ')} using ${scope} scope.`);
 }

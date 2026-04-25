@@ -415,3 +415,30 @@ test('doctor prints context warnings without failing the installation', async ()
     await removeHarnessFixture(root);
   }
 });
+
+test('doctor prints safety checks for safety profile installs', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      hookMode: 'on',
+      policyProfile: 'safety',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] }
+      },
+      upstream: {}
+    });
+
+    await harnessCommand(root, 'sync');
+    const { stdout } = await harnessCommand(root, 'doctor', '--check-only');
+
+    assert.match(stdout, /Safety checks:/);
+    assert.match(stdout, /checkpointExecutable: ok/);
+    assert.match(stdout, /riskAssessmentTemplatePatched: ok/);
+    assert.match(stdout, /Harness check passed\./);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});

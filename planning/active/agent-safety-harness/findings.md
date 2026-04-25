@@ -146,3 +146,30 @@ allow:
   - 输出目录里的 checkpoint 文件不能提前出现在 `git status` / untracked 列表里，所以脚本必须先采集 repo 状态，再创建 `out_dir`。
   - macOS 系统 Bash 还是 3.2，不能用 `mapfile`；已改成兼容的 `while read -d ''` 方案。
   - manifest/sourcePath 在 macOS tmpdir 上可能出现 `/var` 与 `/private/var` 的 canonical 差异；测试使用 realpath 比对，避免假红。
+
+## 9. 2026-04-26 最终实现收口（Phase 3–8）
+
+- **safety profile 现已真正 materialize**：`install --profile=safety` 不再只写 state，而是立即触发 `sync`，把 `.agent-config/` 下的 safety catalogs、checkpoint binary、VS Code safety template、投影文档一起落到 workspace / user-global scope。
+- **doctor 拥有独立 safety section**：health 现在会聚合 `hooksInstalled`、`pretoolGuardExecutable`、`checkpointExecutable`、`protectedPathsConfigured`、`dangerousPatternsConfigured`、`logsWritable`、`checkpointDirWritable`、`riskAssessmentTemplatePatched`、`workspaceInICloud`。
+- **planning-with-files 模板补丁已闭环**：projected `planning-with-files` 模板会注入 `## Risk Assessment` 与 `## Destructive Operations Log`；doctor 会检查 patch marker，`pretool-guard` 与 `worktree-preflight --safety` 都要求非空表格行，空占位行不再被视为已落盘。
+- **新 skill 已接入 full profile**：
+  - `risk-assessment-before-destructive-changes`
+  - `safe-bypass-flow`
+  两者都通过 subagent baseline/green 验证：前者补齐 checkpoint + Risk Assessment 落盘，后者补齐 preflight/worktree/push 闭环。
+- **Cloud bootstrap 已落地**：`harness cloud-bootstrap --target=codespaces` 会创建或生成 `.harness.suggested` 版本的 `.devcontainer/devcontainer.json` 与 `postCreateCommand.sh`，并确保 `.gitignore` 拥有 checkpoint/log entries。
+- **Personal config integration 已落地**：`harness link-personal --repo=...` clone/update `~/.agent-config/personal/`，按 manifest 投影到 HOME 内目标路径，并通过 `user-managed.json` 让 `sync` / `adopt-global` 永久跳过这些目标。
+- **安全文档现随 profile 投影**：`docs/safety/{architecture,vibe-coding-safety-manual,recovery-playbook}.md` 会被投影到 `.agent-config/docs/safety/`，把运行期文档和 policy assets 保持同根。
+
+## 10. 最终验证与收尾结论
+
+- 正式仓库验证入口 `npm run verify` 已通过。
+- 额外 safety 回归已通过：
+  - `tests/hooks/pretool-guard.test.mjs`
+  - `tests/installer/worktree-preflight.test.mjs`
+  - `tests/safety/*.test.mjs`
+- `./scripts/harness verify --output=reports/verification/2026-04-25-safety` 已产出最终报告。
+- 使用临时 HOME 的 fixture 自检已通过：
+  - `install --scope=workspace --profile=safety` → `doctor --check-only`
+  - `install --scope=user-global --profile=safety` → `doctor --check-only`
+- `shellcheck` 在当前环境不可用；保留为非阻塞工具缺失，不视为实现缺口。
+- 最后一轮 code review only surfaced one substantive bug：空的 Risk Assessment 占位行会被误判为有效，现已在 `pretool-guard` 与 `worktree-preflight --safety` 两处修正，并补了回归测试。

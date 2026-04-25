@@ -52,6 +52,28 @@ async function writeTaskPlan(rootDir, withRiskAssessment) {
   await writeFile(path.join(taskDir, 'task_plan.md'), `${lines.join('\n')}\n`);
 }
 
+async function writePlaceholderRiskAssessment(rootDir) {
+  const taskDir = path.join(rootDir, 'planning/active/safety-test');
+  await mkdir(taskDir, { recursive: true });
+  await writeFile(
+    path.join(taskDir, 'task_plan.md'),
+    [
+      '# Safety test',
+      '',
+      '## Current State',
+      'Status: active',
+      'Archive Eligible: no',
+      'Close Reason:',
+      '',
+      '## Risk Assessment',
+      '',
+      '| 风险 | 触发条件 | 影响范围 | 缓解 / 已落盘的回退方案 |',
+      '|---|---|---|---|',
+      '|    |          |          |                          |'
+    ].join('\n')
+  );
+}
+
 test('pretool-guard denies destructive commands from HOME-like directories', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'harness-pretool-home-'));
   try {
@@ -123,6 +145,26 @@ test('pretool-guard asks for destructive commands without a recorded risk assess
   }
 });
 
+test('pretool-guard treats placeholder risk assessment rows as missing', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'harness-pretool-placeholder-'));
+  try {
+    await writeFile(path.join(root, 'README.md'), '# fixture\n');
+    await writePlaceholderRiskAssessment(root);
+    initGitRepo(root);
+
+    const scriptPath = path.join(process.cwd(), 'harness/core/hooks/safety/scripts/pretool-guard.sh');
+    const result = runGuard(scriptPath, root, {
+      cwd: root,
+      tool: 'Bash',
+      command: 'rm -rf ./DerivedData'
+    });
+
+    assert.equal(result.permissionDecision, 'ask');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('pretool-guard allows destructive commands with risk assessment and upstream branch', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'harness-pretool-allow-'));
   const remote = await mkdtemp(path.join(os.tmpdir(), 'harness-pretool-remote-'));
@@ -143,6 +185,47 @@ test('pretool-guard allows destructive commands with risk assessment and upstrea
   } finally {
     await rm(root, { recursive: true, force: true });
     await rm(remote, { recursive: true, force: true });
+  }
+});
+
+test('pretool-guard asks for dangerous commands outside a worktree when no upstream is configured', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'harness-pretool-no-upstream-'));
+  try {
+    await writeFile(path.join(root, 'README.md'), '# fixture\n');
+    await writeTaskPlan(root, true);
+    initGitRepo(root);
+
+    const scriptPath = path.join(process.cwd(), 'harness/core/hooks/safety/scripts/pretool-guard.sh');
+    const result = runGuard(scriptPath, root, {
+      cwd: root,
+      tool: 'Bash',
+      command: 'rm -rf ./DerivedData'
+    });
+
+    assert.equal(result.permissionDecision, 'ask');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('pretool-guard denies git reset --hard on the main repo dev branch', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'harness-pretool-dev-deny-'));
+  try {
+    await writeFile(path.join(root, 'README.md'), '# fixture\n');
+    await writeTaskPlan(root, true);
+    initGitRepo(root);
+    execFileSync('git', ['checkout', '-b', 'dev'], { cwd: root });
+
+    const scriptPath = path.join(process.cwd(), 'harness/core/hooks/safety/scripts/pretool-guard.sh');
+    const result = runGuard(scriptPath, root, {
+      cwd: root,
+      tool: 'Bash',
+      command: 'git reset --hard'
+    });
+
+    assert.equal(result.permissionDecision, 'deny');
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });
 

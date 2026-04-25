@@ -132,6 +132,19 @@ function currentBranchHasUpstream(cwd) {
   }
 }
 
+function currentBranchName(cwd) {
+  return commandOutput('git branch --show-current', cwd);
+}
+
+function isWorktreeCheckout(cwd) {
+  const gitDir = commandOutput('git rev-parse --absolute-git-dir', cwd);
+  const gitCommonDir =
+    commandOutput('git rev-parse --path-format=absolute --git-common-dir', cwd) ||
+    commandOutput('git rev-parse --git-common-dir', cwd);
+  if (!gitDir || !gitCommonDir) return false;
+  return path.resolve(gitDir) !== path.resolve(cwd, gitCommonDir);
+}
+
 function isInside(child, parent) {
   const resolvedChild = path.resolve(child);
   const resolvedParent = path.resolve(parent);
@@ -179,7 +192,12 @@ function hasRiskAssessment(rootDir) {
       (line) =>
         !/^\|\s*-/.test(line) &&
         !line.includes('风险 |') &&
-        !line.includes('---|---')
+        !line.includes('---|---') &&
+        line
+          .split('|')
+          .map((cell) => cell.trim())
+          .filter(Boolean)
+          .some((cell) => cell !== '')
     );
     if (meaningfulRow) return true;
   }
@@ -270,6 +288,13 @@ if (repoRoot && safePatterns.some((pattern) => pattern.test(command)) && isInsid
 }
 
 if (dangerousPatterns.some((pattern) => pattern.test(command))) {
+  const currentBranch = currentBranchName(cwd);
+  const isWorktree = isWorktreeCheckout(cwd);
+  if (!isWorktree && currentBranch === 'dev' && /^\s*git\s+reset\s+--hard\b/.test(command)) {
+    emit('deny', 'git reset --hard is denied on the main repo dev branch.', cwd, command);
+    process.exit(0);
+  }
+
   const upstream = currentBranchHasUpstream(cwd);
   const riskAssessment = hasRiskAssessment(repoRoot ?? projectRoot);
   if (!upstream || !riskAssessment) {

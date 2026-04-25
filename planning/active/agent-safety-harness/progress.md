@@ -147,3 +147,52 @@
 - A `harness/installer/commands/checkpoint.mjs`
 - M `harness/installer/commands/harness.mjs`
 - M `tests/installer/{commands,checkpoint}.test.mjs`
+
+## Session 2026-04-26 — Phase 3–9 completion sweep
+
+**Goal of session**：完成剩余 Phase 3–8 实现，并跑完最终 verify / install self-check，把任务推进到 closed。
+
+**Done**：
+
+- 完成 safety profile 的 `.agent-config/` projection：catalogs、checkpoint binary、VS Code safety template、projected docs 全部接入 `sync`。
+- `install` 现已在写入 state 后立即执行 `sync`，使 `install --profile=safety` 具备真正的“装完可 doctor”语义。
+- `doctor` 新增 safety section；`readHarnessHealth()` 聚合 safety checks、user-managed consistency 与 planning template patch 状态。
+- 为 projected `planning-with-files` 模板新增 `## Risk Assessment` / `## Destructive Operations Log` patch，并把检查逻辑接到 `pretool-guard` 与 `worktree-preflight --safety`。
+- 新增并投影两个 skill：
+  - `harness/core/skills/risk-assessment-before-destructive-changes/SKILL.md`
+  - `harness/core/skills/safe-bypass-flow/SKILL.md`
+- 完成 `worktree-preflight --safety`、main repo `dev` branch 上 `git reset --hard` deny、placeholder Risk Assessment row 视为 missing 的修正。
+- 新增 `harness cloud-bootstrap --target=codespaces`，支持 `.harness.suggested` 输出与 `.gitignore` 补丁。
+- 新增 `harness link-personal --repo=...`、`user-managed.json`、`sync` / `adopt-global` skip 逻辑与冲突保护。
+- 新增 safety 文档：
+  - `docs/safety/architecture.md`
+  - `docs/safety/vibe-coding-safety-manual.md`
+  - `docs/safety/recovery-playbook.md`
+- 运行 code review，修复一个实质性问题：空的 Risk Assessment placeholder row 会被误判为有效。
+
+**Verification**：
+
+- `npm run verify` → pass
+- `node --test tests/hooks/pretool-guard.test.mjs tests/installer/worktree-preflight.test.mjs tests/safety/*.test.mjs` → pass
+- `./scripts/harness verify --output=reports/verification/2026-04-25-safety` → `reports/verification/2026-04-25-safety/latest.md`
+- 临时 HOME fixture：
+  - `install --scope=workspace --profile=safety` + `doctor --check-only` → pass
+  - `install --scope=user-global --profile=safety` + `doctor --check-only` → pass
+- `shellcheck`：环境缺失，未执行
+
+**Files touched**：
+
+- M `.gitignore`
+- A `docs/safety/**`
+- A `harness/core/skills/{risk-assessment-before-destructive-changes,safe-bypass-flow}/SKILL.md`
+- A `harness/core/templates/safety/{vscode-settings.safety.jsonc,devcontainer.json,postCreateCommand.sh}`
+- A `harness/installer/commands/{cloud-bootstrap,link-personal}.mjs`
+- A `harness/installer/lib/{planning-with-files-risk-assessment-patch,safety-projection,user-managed}.mjs`
+- M `harness/installer/commands/{adopt-global,doctor,harness,install,sync,worktree-preflight}.mjs`
+- M `harness/installer/lib/{fs-ops,health,planning-with-files-companion-plan-patch}.mjs`
+- M `harness/core/hooks/safety/{claude,copilot,cursor}-hooks.json`
+- M `harness/core/hooks/safety/scripts/pretool-guard.sh`
+- M `harness/core/skills/{index.json,profiles.json}`
+- A `tests/safety/{projection,link-personal}.test.mjs`
+- A `tests/installer/worktree-preflight.test.mjs`
+- M `tests/{adapters/sync-skills,helpers/harness-fixture,hooks/pretool-guard,installer/{commands,health}}.test.mjs`

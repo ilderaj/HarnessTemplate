@@ -16,6 +16,6 @@
         "timeout": 5,
         "description": "Harness-managed safety hook"
       }
-    }
+    ]
   }
 }
