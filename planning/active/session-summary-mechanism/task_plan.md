@@ -4,12 +4,12 @@
 让一轮 session 结束时输出一个**结构化、精炼、可复现**的总结，主要数据源是 harness 已有的 planning files（`task_plan.md` / `progress.md` / `findings.md`）与 hook lifecycle 信号，而不是模型自由发挥。
 
 ## Current State
-Status: active
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Session summary hook + CLI delivered, verified, merged into local dev, and ready for push.
 
 ## Current Phase
-Phase 1
+Closed
 
 ## Phases
 
@@ -21,25 +21,25 @@ Phase 1
 - **Status:** complete
 
 ### Phase 2: MVP Renderer
-- [ ] Implement `session-summary.mjs` pure function reusing planning-hot-context parsing helpers
-- [ ] Implement `render-session-summary.mjs` thin CLI shim
-- [ ] Add `installer/lib/session-summary.mjs` re-export shim
-- [ ] Unit tests for renderer (phases → checklist, duration math, fallbacks)
-- **Status:** pending
+- [x] Implement `session-summary.mjs` pure function reusing planning-hot-context parsing helpers
+- [x] Implement `render-session-summary.mjs` thin CLI shim
+- [x] Add `installer/lib/session-summary.mjs` re-export shim
+- [x] Unit tests for renderer (phases → checklist, duration math, fallbacks)
+- **Status:** complete
 
 ### Phase 3: Hook & CLI Wiring
-- [ ] Extend `task-scoped-hook.sh`: `session-start` writes `.session-start` sidecar; `stop|agent-stop|session-end` emits structured summary
-- [ ] Add `harness summary` CLI command
-- [ ] Extend `tests/hooks/task-scoped-hook.test.mjs` with stop-event case
-- [ ] Verify hook payload stays under `hookPayload.warn` budget
-- **Status:** pending
+- [x] Extend `task-scoped-hook.sh`: `session-start` writes `.session-start` sidecar; `stop|agent-stop|session-end` emits structured summary
+- [x] Add `harness summary` CLI command
+- [x] Extend `tests/hooks/task-scoped-hook.test.mjs` with stop-event case
+- [x] Verify hook payload stays under `hookPayload.warn` budget
+- **Status:** complete
 
 ### Phase 4: Verification & Sync-back
-- [ ] `npm test` green
-- [ ] Manual fixture run for each adapter (codex/cursor/copilot/claude-code) JSON shape
-- [ ] Update `findings.md` and `progress.md` with concrete results
-- [ ] Decide lifecycle close
-- **Status:** pending
+- [x] `npm test` green
+- [x] Manual fixture run for each adapter (codex/cursor/copilot/claude-code) JSON shape
+- [x] Update `findings.md` and `progress.md` with concrete results
+- [x] Decide lifecycle close
+- **Status:** complete
 
 ## Key Questions
 1. 是否新增持久状态？— 不新增。仅 `.session-start` 临时 sidecar（per-task，session 结束清理）。
@@ -60,7 +60,7 @@ Phase 1
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-|       | 1       |            |
+| Root `npm test` initially failed because `ws` was not installed for the upstream brainstorm-server tests | 1 | Installed the upstream test dependency with `npm ci` in `harness/upstream/superpowers/tests/brainstorm-server`, then re-ran `npm test` successfully |
 
 ## Notes
 - Companion plan: [docs/superpowers/plans/2026-04-25-session-summary-mechanism.md](../../../docs/superpowers/plans/2026-04-25-session-summary-mechanism.md)

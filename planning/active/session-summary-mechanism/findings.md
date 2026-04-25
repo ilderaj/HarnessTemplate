@@ -41,6 +41,23 @@
 - **Hook 模式关闭时**：CLI `harness summary` 仍可工作，给出相同输出，便于在 hookMode=off 的 IDE 下手动获取。
 - **Sidecar 残留**：Stop hook 应在读完后 `rm -f .session-start`；多次 SessionStart 仅以最近一次为准（覆盖写入）。
 
+## 4.1 执行阶段新增事实
+
+- `session-summary.mjs` 已实现 `extractPhases`、`formatDuration`、`buildSessionSummary`，并保持输入只来自 `task_plan.md` / `findings.md` / `progress.md` 与显式传入的 `sessionStartEpoch`。
+- 渲染契约已被 fixture-driven 单测固定：状态行采用 `Status: <status>  Phases: <c>/<t>  Duration: <duration>`；`Conclusion` / `Next` 使用下一行 bullet；`Sources` 为单行路径列表。
+- `extractPhases` 现同时支持 `### Phase ... [pending]` 内联状态和后续 `**Status:** in_progress` 行，且该状态行不要求前置 bullet。
+- Checklist 标记已确认使用 `[x]` / `[~]` / `[ ]` 对应 `complete` / `in_progress` / `pending`。
+- 仓库根级 `npm test` 当前存在基线环境问题：`harness/upstream/superpowers/tests/brainstorm-server/server.test.js` 缺少 `ws` 依赖，导致全量测试在本任务改动前即失败；因此本阶段先以 targeted tests 验证 renderer 相关行为。
+- `task-scoped-hook.sh` 已把 `.session-start` sidecar 生命周期收口在 task 目录中：`session-start` 写入，`stop|agent-stop|session-end` 读取后立即删除，不引入新的 durable 状态。
+- Stop 类事件继续完全复用 `emit_context()`，因此 codex/copilot/claude-code 仍走 `hookSpecificOutput.additionalContext`，cursor 仍走 `additional_context`。
+- 当脚本被投影到目标 hook 根目录时，stop summary 路径还依赖 `render-session-summary.mjs` 与 `session-summary.mjs`；测试 fixture 需要连同这两个新文件一起复制，才能保持投影场景完整。
+- 空 sidecar 参数不能被解释为 `0`；CLI 包装层已改为把空字符串归一成 `NaN`，从而可靠触发 `Duration: unavailable`。
+- installer 侧采用与 `planning-hot-context` 相同的薄 shim 模式：`harness/installer/lib/session-summary.mjs` 只 re-export 核心脚本导出的三个函数，不复制逻辑。
+- `harness summary` 以 `process.cwd()/planning/active` 为权威扫描根：默认要求恰好一个 active task，多个 active task 时强制用户显式传 `--task <id>`，避免 CLI 主观挑选任务。
+- `harness summary --task <id>` 允许在多 active task 场景下直接定位目标任务；若 `.session-start` 缺失或为空，CLI 读取层会把它归一成 `NaN`，继续复用 renderer 的 `Duration: unavailable` 回退。
+- hook shell 与 CLI 现在对 `Status:` 行采用一致的宽松空白匹配：shell 使用 `grep -Eq '^Status:[[:space:]]*active$'`，CLI 使用 `/^Status:\s*active$/m`。这样 `Status:  active` 这类手工编辑输入不会再造成 hook 与 CLI 的可见行为分叉。
+- 文档落点更新为 `docs/architecture.md` 与 `docs/compatibility/hooks.md`，因为两处都曾明确描述 stop-style hooks 只输出提醒；这两处都需要同步为真实的 session summary 行为。
+
 ## 5. 输出契约（草案）
 
 ```
