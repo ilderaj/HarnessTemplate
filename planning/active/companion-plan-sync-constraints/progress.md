@@ -67,6 +67,9 @@
   - detached 临时 worktree 上的 `node --test tests/core/companion-plan-lifecycle.test.mjs && npm run verify` 已通过。
   - 已运行 `./scripts/harness checkpoint . --quiet`，checkpoint 路径为 `~/.agent-config/checkpoints/SuperpoweringWithFiles/2026-04-26T07-54-50Z`，准备执行 worktree / branch cleanup。
   - 已移除 worktree `/Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-task-execution-update`，并删除本地分支 `copilot/superpowers-task-execution-update`。
+  - 在当前收尾 worktree `/Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-execution-merge-commit` 删除前再次运行 `./scripts/harness checkpoint . --quiet`；最新 checkpoint 为 `/Users/jared/.agent-config/checkpoints/SuperpoweringWithFiles/2026-04-26T07-54-50Z`。
+  - 记录 workspace boundary：后续 `git -C /Users/jared/SuperpoweringWithFiles worktree remove /Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-execution-merge-commit` 只删除当前隔离 worktree 路径，不触碰主 checkout `/Users/jared/SuperpoweringWithFiles` 与已推送的 `origin/dev`。
+  - 已执行 `git -C /Users/jared/SuperpoweringWithFiles worktree remove /Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-execution-merge-commit`，并确认 `git worktree list` 不再包含该路径。
 - Files created/modified:
   - `planning/active/companion-plan-sync-constraints/task_plan.md` (updated)
   - `planning/active/companion-plan-sync-constraints/findings.md` (updated)

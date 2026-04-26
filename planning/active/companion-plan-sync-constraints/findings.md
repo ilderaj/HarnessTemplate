@@ -38,6 +38,7 @@
 | Command | Target | Checkpoint | Rollback |
 |---------|--------|------------|----------|
 | `git worktree remove /Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-task-execution-update && git branch -d copilot/superpowers-task-execution-update` | feature worktree path 与本地 feature branch | `~/.agent-config/checkpoints/SuperpoweringWithFiles/2026-04-26T07-54-50Z` | merge commit `52c61a4` 已保留在 `dev`；如需回看删除前状态，使用 checkpoint 路径 |
+| `git -C /Users/jared/SuperpoweringWithFiles worktree remove /Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-execution-merge-commit` | 当前收尾 worktree 路径 | `/Users/jared/.agent-config/checkpoints/SuperpoweringWithFiles/2026-04-26T07-54-50Z` | 保留本地分支 `copilot/superpowers-execution-merge-commit @ 9d3f55a`；如需恢复，重新 `git worktree add` 到新路径，或直接从 `dev @ e4229fa` 建干净 checkout |
 
 ## Resources
 - `docs/superpowers/plans/2026-04-26-companion-plan-sync-constraints.md`

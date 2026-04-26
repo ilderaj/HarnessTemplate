@@ -55,6 +55,7 @@ Phase 5
 | close / archive 同步覆盖错误字段 | metadata replace 逻辑匹配范围过宽 | active task / companion plan markdown | 用最小替换函数并在 close / archive 测试中断言最终文本 |
 | merge / cleanup 操作误伤未提交内容 | 分支或 worktree 状态判断错误 | 本地开发分支 | 完成实现后先核对 git 状态，再按记录的 worktree 分支回合并并清理 |
 | `git worktree remove /Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-task-execution-update && git branch -d copilot/superpowers-task-execution-update` | cleanup 前 worktree 或分支仍含唯一状态 | 当前 feature worktree、本地分支引用 | checkpoint: `~/.agent-config/checkpoints/SuperpoweringWithFiles/2026-04-26T07-54-50Z`；如失败，从 `dev` 保留的 merge commit `52c61a4` 恢复，必要时用 checkpoint 回看删除前状态 |
+| `git -C /Users/jared/SuperpoweringWithFiles worktree remove /Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-execution-merge-commit` | 删除当前收尾 worktree 前仍需保留其独立 checkout 与未推送 closeout 分支引用 | 仅影响当前隔离工作区路径 `/Users/jared/SuperpoweringWithFiles.worktrees/copilot-superpowers-execution-merge-commit`；不触碰主 checkout `/Users/jared/SuperpoweringWithFiles` 或 `origin/dev` | checkpoint: `/Users/jared/.agent-config/checkpoints/SuperpoweringWithFiles/2026-04-26T07-54-50Z`；如需回滚，可用本地分支 `copilot/superpowers-execution-merge-commit @ 9d3f55a` 重新创建 worktree，或从已推送的 `dev @ e4229fa` 补建 clean checkout |
 
 ## Key Questions
 1. 现有 planning-with-files 脚本与测试模式如何最小侵入扩展 close/archive companion lifecycle？
