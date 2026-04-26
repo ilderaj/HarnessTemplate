@@ -6,6 +6,8 @@
 >
 > **Sync-back status:** drafted on `2026-04-26`; awaiting user review before execution.
 
+- Active task path: `planning/active/cross-ide-hook-capability-alignment/`
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让 Harness 基于 2026-04 官方 upstream 文档，修正 Codex / GitHub Copilot / Cursor / Claude Code 的 hooks 事实与投影，使 session summary / planning-with-files / superpowers session-start 在四个目标上都有一致、可验证、文档正确的行为表达。
