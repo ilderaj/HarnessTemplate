@@ -468,7 +468,18 @@ test('readHarnessHealth detects legacy sibling backups under user-global roots',
 
     // Create a legacy sibling backup under a user-global root
     await mkdir(path.join(home, '.claude/skills'), { recursive: true });
-    await writeFile(path.join(home, '.claude/skills/using-superpowers.harness-backup-20260426T044458'), 'legacy');
+    const legacyBackup = path.join(home, '.claude/skills/using-superpowers.harness-backup-20260426T044458');
+    await mkdir(legacyBackup, { recursive: true });
+    await writeFile(
+      path.join(legacyBackup, 'SKILL.md'),
+      `---
+name: using-superpowers
+description: Legacy backup of a materialized skill
+---
+
+# using-superpowers
+`
+    );
 
     await withCwd(root, () => sync([]));
     const health = await readHarnessHealth(root, home);
