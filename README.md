@@ -106,6 +106,8 @@ The default does not flip to `minimal-global`; omit `--skills-profile` to keep `
 
 Harness treats context size as a product constraint. Verification reports include `health.context` with entry, hook, planning, skill-profile, summary, and warning data. Entry summaries are measured as the worst target session, not as a cross-IDE total. Use this gate before changing policy rendering, skill projection, or hooks:
 
+When planning hooks are enabled, Harness keeps hot context summary-first instead of replaying raw planning files. Use `./scripts/harness summary` to print the same compact `SESSION SUMMARY` view for the active task, or pass `--task <task-id>` when multiple active tasks exist.
+
 ```bash
 npm run verify
 ./scripts/harness verify --output=.harness/verification
@@ -204,6 +206,8 @@ Hooks are opt-in:
 ./scripts/harness sync
 ./scripts/harness doctor --check-only
 ```
+
+When projected, the `planning-with-files` hook renders a compact `SESSION SUMMARY` block for the active task so agents recover state from task status, phases, findings, progress, and recent verification without loading the raw markdown files.
 
 Support matrix:
 
@@ -327,11 +331,14 @@ npm run verify
 ./scripts/harness verify --output=.harness/verification
 ./scripts/harness adopt-global
 ./scripts/harness adoption-status
+./scripts/harness summary
+./scripts/harness summary --task <task-id>
 ./scripts/harness worktree-preflight
 ./scripts/harness worktree-preflight --task <task-id>
 ./scripts/harness worktree-preflight --safety
 ./scripts/harness worktree-name --task <task-id> --namespace <prefix>
 ./scripts/harness checkpoint <path>
+./scripts/harness checkpoint-push --message="..."
 ./scripts/harness cloud-bootstrap --target=codespaces
 ./scripts/harness link-personal --repo=<git-url>
 ```
