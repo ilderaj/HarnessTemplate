@@ -44,19 +44,30 @@ Worktree base selection is a Harness-owned guardrail. Maintain it in:
 - `harness/installer/lib/git-base.mjs` for base recommendation logic.
 - `harness/installer/commands/worktree-preflight.mjs` for the CLI entry point.
 
+Worktree naming is a Harness-owned contract. Maintain it in:
+
+- `harness/installer/lib/worktree-name.mjs` for canonical label resolution.
+- `harness/installer/commands/worktree-name.mjs` for the operator-facing CLI.
+- `harness/installer/lib/superpowers-using-git-worktrees-patch.mjs` for the projected skill guidance.
+
 Run this before creating a manual or Superpowers-driven worktree:
 
 ```bash
-./scripts/harness worktree-preflight
+./scripts/harness worktree-preflight --task <task-id>
+./scripts/harness worktree-name --task <task-id> --namespace <agent-prefix>
+git worktree add <path>/<canonical-label> -b <suggested-branch> <base-ref>
 ```
+
+Treat `./scripts/harness worktree-name` as the source of truth for worktree basenames and branch names. Do not derive them from prompt summaries or skill names.
 
 When you need a remote recovery point for a risky session, use this operator flow:
 
-1. Run `./scripts/harness worktree-preflight --safety`.
-2. Move the work into a dedicated worktree branch.
-3. Run `./scripts/harness checkpoint-push --message="..."`.
-4. Review the generated review artifact directory, including `review.md` and `result.json`.
-5. Treat PR creation and merge as separate manual actions.
+1. Run `./scripts/harness worktree-preflight --task <task-id> --safety` when the repo has multiple active tasks.
+2. Run `./scripts/harness worktree-name --task <task-id> --namespace <agent-prefix>`.
+3. Move the work into a dedicated worktree branch using the suggested basename and branch name.
+4. Run `./scripts/harness checkpoint-push --message="..."`.
+5. Review the generated review artifact directory, including `review.md` and `result.json`.
+6. Treat PR creation and merge as separate manual actions.
 
 ## Upstream Skill Updates
 

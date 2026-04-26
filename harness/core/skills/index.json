@@ -13,6 +13,10 @@
         "claude-code": "materialize"
       },
       "childPatches": {
+        "using-git-worktrees": {
+          "type": "superpowers-using-git-worktrees",
+          "marker": "Harness Superpowers using-git-worktrees naming patch"
+        },
         "writing-plans": {
           "type": "superpowers-writing-plans",
           "marker": "Harness Superpowers writing-plans location patch"

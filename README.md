@@ -113,6 +113,18 @@ npm run verify
 
 The expected default remains thin rendered entry files, `full` skill projection, and hooks off. For user-global adoption trials, use the opt-in `minimal-global` profile in an isolated profile before writing real user-global files.
 
+### Worktree Naming
+
+Harness treats `./scripts/harness worktree-name` as the repo-owned source of truth for manual or skill-driven worktree names. It returns a canonical label in the form `YYYYMMDDHHMM-<task-slug>-NNN`, where `task-slug` comes from planning task identity rather than prompt text.
+
+```bash
+./scripts/harness worktree-preflight --task worktree-naming-governance --safety
+./scripts/harness worktree-name --task worktree-naming-governance --namespace copilot
+git worktree add "$HOME/.config/superpowers/worktrees/superpowering-with-files/<canonical-label>" -b "<suggested-branch>" dev
+```
+
+`worktree-preflight` reuses the same helper when it can resolve the active task; pass `--task <task-id>` when the repo has multiple active tasks. If the host already owns workspace isolation (for example, Codex App), use `worktree-name` as a supplementary naming tool for manual branches or extra worktrees rather than as a host override.
+
 ### Integration Modes
 
 | Mode | Use when | Result |
@@ -237,16 +249,16 @@ Checkpoints land in `~/.agent-config/checkpoints/<workspace>/<timestamp>/`. Logs
 ### Worktree safety
 
 ```bash
-./scripts/harness worktree-preflight --safety
+./scripts/harness worktree-preflight --task <task-id> --safety
 ```
 
-Reports remote status, recommended base ref, checkpoint guidance, and whether the active task plan has a non-placeholder `## Risk Assessment` block. Destructive commands without an upstream branch and without a recorded risk assessment are downgraded to `ask` by the hook.
+Reports remote status, recommended base ref, checkpoint guidance, naming suggestions, and whether the active task plan has a non-placeholder `## Risk Assessment` block. Destructive commands without an upstream branch and without a recorded risk assessment are downgraded to `ask` by the hook.
 
 ### Recommended recovery-point flow
 
 When you need an off-machine recovery point for risky work, use this order:
 
-1. Run `./scripts/harness worktree-preflight --safety`.
+1. Run `./scripts/harness worktree-preflight --task <task-id> --safety` when multiple active tasks exist.
 2. Work from a dedicated worktree branch.
 3. Run `./scripts/harness checkpoint-push --message="..."`.
 4. Review the generated review artifact directory, especially `review.md` and `result.json`.
@@ -314,7 +326,9 @@ npm run verify
 ./scripts/harness adopt-global
 ./scripts/harness adoption-status
 ./scripts/harness worktree-preflight
+./scripts/harness worktree-preflight --task <task-id>
 ./scripts/harness worktree-preflight --safety
+./scripts/harness worktree-name --task <task-id> --namespace <prefix>
 ./scripts/harness checkpoint <path>
 ./scripts/harness cloud-bootstrap --target=codespaces
 ./scripts/harness link-personal --repo=<git-url>
