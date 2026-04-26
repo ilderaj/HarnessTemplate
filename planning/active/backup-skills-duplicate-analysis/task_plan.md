@@ -4,14 +4,15 @@
 在隔离 worktree 中执行 `docs/superpowers/plans/2026-04-26-backup-conflict-governance-plan.md`，把 `sync --conflict=backup` 从 live-root sibling backup 改为 home-scoped archive，并在完成验证后合并回本地 `dev`。
 
 ## Current State
-Status: waiting_integration
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Task completed, verified, merged into local dev, and execution worktree cleaned up.
+Closed At: 2026-04-26T14:13:51Z
 
 ## Companion Plan
 - Companion plan: `docs/superpowers/plans/2026-04-26-backup-conflict-governance-plan.md`
 - Companion summary: 把冲突备份迁移到 `~/.harness/backups` + `~/.harness/backup-index.json`，并在 `sync` 中自动归并 legacy sibling backups、维持 health/adoption 可观测性。
-- Sync-back status: implementation complete on 2026-04-26; active task is waiting for local `dev` merge and final closeout.
+- Sync-back status: closed at 2026-04-26T14:13:51Z: Task completed, verified, merged into local dev, and execution worktree cleaned up.
 
 ## Current Phase
 Phase 3
@@ -44,10 +45,10 @@ Phase 3
 - **Status:** complete
 
 ### Phase 5: 收尾验证、合并回本地 dev、清理 worktree
-- [ ] 更新 authoritative planning closeout
-- [ ] 从主仓库 checkout 合并执行分支回本地 `dev`
-- [ ] 完成必要提交 / cleanup
-- **Status:** in_progress
+- [x] 更新 authoritative planning closeout
+- [x] 从主仓库 checkout 合并执行分支回本地 `dev`
+- [x] 完成必要提交 / cleanup
+- **Status:** complete
 
 ## Constraints
 - 只在新建的隔离 worktree 中执行实现与验证，不在当前 checkout 直接改代码。

@@ -2,8 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 > **Active task path:** `planning/active/backup-skills-duplicate-analysis/`
-> **Lifecycle state:** waiting_integration
-> **Sync-back status:** implementation complete on `2026-04-26`; Task 1-5 finished, full repo verification passed, and the branch is waiting to merge into local `dev`.
+> **Lifecycle state:** closed
+> **Sync-back status:** closed on `2026-04-26T14:13:51Z`; Task 1-5 finished, full repo verification passed, the branch was merged into local `dev`, and the execution worktree was cleaned up.
 
 **Goal:** 修复当前 user-global `*.harness-backup-*` 重复残留，并把后续 `sync --conflict=backup` 从“目标目录旁边生成 sibling 备份”改成“保留冲突备份但不再制造 live-root 重复”。
 
