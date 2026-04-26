@@ -61,7 +61,9 @@ function taskScopedPlanningProjection({ rootDir, root, target, parentSkillName, 
     scriptSourcePaths: [
       path.join(sourceRoot, 'scripts/task-scoped-hook.sh'),
       path.join(sourceRoot, 'scripts/render-hot-context.mjs'),
-      path.join(sourceRoot, 'scripts/planning-hot-context.mjs')
+      path.join(sourceRoot, 'scripts/planning-hot-context.mjs'),
+      path.join(sourceRoot, 'scripts/render-session-summary.mjs'),
+      path.join(sourceRoot, 'scripts/session-summary.mjs')
     ],
     scriptTargetRoot: scriptTargetRoot(root, target),
     status: 'planned'
