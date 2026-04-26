@@ -103,3 +103,19 @@
   - 数据层：closed/archived task 的 companion plan 仍被活跃审计任务顺手提及，触发误关联。
   - 检测层：引用与 back-reference 解析规则过宽/过窄，不能区分 canonical companion metadata 与普通文本提及，也不识别 markdown link。
 - 修复顺序应先收紧 canonical 引用模式，再回头清理活跃任务中的 incidental mentions；否则 warning 会被分析文本持续“污染”。
+
+## 2026-04-26 Warning execution result
+
+- `harness/installer/lib/plan-locations.mjs` 已完成两项实现修正：
+  - `referencesForCompanionPlan()` 不再把 active planning file 中任意 backtick/path 提及都当作 canonical companion 引用。
+  - `companionPlanBackReferences()` 现在支持 markdown link 形式的回指。
+- `tests/installer/health.test.mjs` 新增了两个回归测试：
+  - markdown link back-reference 应被识别为有效双向链接
+  - triage/notes 中的 incidental path mention 不应把 orphan 误判成 referenced companion
+- 当前 active companion 中，以下文件已补充 parser 可稳定识别的显式回指：
+  - `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md`
+  - `docs/superpowers/plans/2026-04-20-cross-ide-single-source-consolidation.md`
+  - `docs/superpowers/plans/2026-04-25-checkpoint-push-automation-plan.md`
+  - `docs/superpowers/plans/2026-04-25-session-summary-mechanism.md`
+- 复跑后，原本由误判造成的 `missing back-reference` warning 已消失；剩余 warning 全部是 `orphan-companion-plan`。
+- 这些剩余 warning 与仓库现有文档语义一致：`docs/architecture.md` / `docs/compatibility/hooks.md` 明确说明 `docs/superpowers/plans/*.md` 里的历史/人类文档仍会作为 warning 显示，但不会导致 health failure。
