@@ -4,9 +4,9 @@
 为 Harness 设计一套 repo-owned、cross-IDE、upstream-safe 的 worktree / branch naming contract，让隔离工作区的名称稳定体现任务语义，并避免因 prompt 首句或 skill 调用模板而重复。
 
 ## Current State
-Status: waiting_integration
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: Merged into local dev after repository verification.
 
 ## Current Phase
 Phase 5
@@ -41,8 +41,8 @@ Phase 5
 - [x] 让 `worktree-preflight` 复用 naming helper，但保持 base recommendation 归属不变
 - [x] 给 projected `using-git-worktrees` 增加 Harness-owned child patch，并补齐 projection / sync coverage
 - [x] 同步 policy / operator docs / install docs 的 naming contract
-- [ ] 完成仓库级验证、更新 planning files、合并回本地 `dev`、commit、push
-- **Status:** in_progress
+- [x] 完成仓库级验证、更新 planning files、合并回本地 `dev`、commit、push
+- **Status:** complete
 
 ## Key Questions
 1. 如何让 worktree / branch 名称不再依赖 agent 对 prompt 的临时摘要？
