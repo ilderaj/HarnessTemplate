@@ -4,12 +4,12 @@
 为 Harness 设计一套 repo-owned、cross-IDE、upstream-safe 的 worktree / branch naming contract，让隔离工作区的名称稳定体现任务语义，并避免因 prompt 首句或 skill 调用模板而重复。
 
 ## Current State
-Status: waiting_review
+Status: waiting_integration
 Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 4
+Phase 5
 
 ## Phases
 
@@ -36,6 +36,14 @@ Phase 4
 - [x] 将任务状态切到 `waiting_review`
 - **Status:** complete
 
+### Phase 5: Implementation + Verification + Integration
+- [x] 先补齐 `worktree-name` helper / CLI / test contracts，并按 TDD 执行 focused slices
+- [x] 让 `worktree-preflight` 复用 naming helper，但保持 base recommendation 归属不变
+- [x] 给 projected `using-git-worktrees` 增加 Harness-owned child patch，并补齐 projection / sync coverage
+- [x] 同步 policy / operator docs / install docs 的 naming contract
+- [ ] 完成仓库级验证、更新 planning files、合并回本地 `dev`、commit、push
+- **Status:** in_progress
+
 ## Key Questions
 1. 如何让 worktree / branch 名称不再依赖 agent 对 prompt 的临时摘要？
 2. 如何利用 `planning/active/<task-id>/` 的持久语义，使同一任务下的多 worktree 可区分且可追溯？
@@ -61,9 +69,10 @@ Phase 4
 - Design spec: `docs/superpowers/specs/2026-04-26-worktree-naming-governance-design.md`
 - Companion plan: `docs/superpowers/plans/2026-04-26-worktree-naming-governance.md`
 - Companion summary: repo-owned naming helper + projected `using-git-worktrees` patch + policy/docs/test sync，统一生成基于 planning task id 的 canonical worktree label。
-- Sync-back status: draft complete, waiting for user review on 2026-04-26.
+- Sync-back status: implementation complete on 2026-04-26; final integration into `dev` and push are in progress.
 
 ## Notes
 - 当前仓库的 `worktree-preflight` 只推荐 base，示例命令中的 `<new-branch>` 仍是占位符，没有 naming logic。
 - 当前 `using-git-worktrees` skill 只消费 `BRANCH_NAME`，并没有定义生成规则；感知上的“拿 prompt 第一话命名”更像 agent 的临时启发式，不是 Harness code path。
 - 当前 skill projection 体系已经支持 child patch；`writing-plans` 就是现成先例，说明可用同一路径给 `using-git-worktrees` 注入 Harness-specific naming contract。
+- live repo verification 证明多 active task 仓库需要为 `worktree-preflight` 提供显式 `--task` 通道；该通道现已补齐并写回 docs/policy。

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { entriesForScope, loadAdapter, renderEntry } from '../lib/adapters.mjs';
 import { applyCopilotPlanningPatch } from '../lib/copilot-planning-patch.mjs';
 import { applyPlanningWithFilesCompanionPlanPatch } from '../lib/planning-with-files-companion-plan-patch.mjs';
+import { applySuperpowersUsingGitWorktreesPatch } from '../lib/superpowers-using-git-worktrees-patch.mjs';
 import { applySuperpowersWritingPlansPatch } from '../lib/superpowers-writing-plans-patch.mjs';
 import {
   ensureDirectoryProjection,
@@ -63,6 +64,11 @@ async function applySkillPatches(projection) {
 
     if (patch.type === 'superpowers-writing-plans') {
       await applySuperpowersWritingPlansPatch(projection.targetPath);
+      continue;
+    }
+
+    if (patch.type === 'superpowers-using-git-worktrees') {
+      await applySuperpowersUsingGitWorktreesPatch(projection.targetPath);
       continue;
     }
 

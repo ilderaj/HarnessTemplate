@@ -75,6 +75,15 @@ test('sync projects workspace entries and skills', async () => {
     assert.doesNotMatch(writingPlans, /you may additionally create a companion plan/);
     assert.doesNotMatch(writingPlans, /\*\*Save plans to:\*\* `docs\/superpowers\/plans/);
 
+    const usingGitWorktrees = await readFile(path.join(root, '.agents/skills/using-git-worktrees/SKILL.md'), 'utf8');
+    assert.match(usingGitWorktrees, /Harness Superpowers using-git-worktrees naming patch/);
+    assert.match(usingGitWorktrees, /Before creating a manual worktree, run \.\/scripts\/harness worktree-name/);
+    assert.match(usingGitWorktrees, /Use the suggested worktree basename and branch name/);
+    assert.match(
+      usingGitWorktrees,
+      /If the host already manages the worktree \(for example, Codex App\), treat this helper as a supplementary naming tool rather than a host override/
+    );
+
     const riskSkill = await readFile(
       path.join(root, '.agents/skills/risk-assessment-before-destructive-changes/SKILL.md'),
       'utf8'

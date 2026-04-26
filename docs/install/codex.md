@@ -46,6 +46,14 @@ Run:
 ./scripts/harness sync
 ```
 
+For manual branches or extra worktrees created from inside the repo, resolve the name with:
+
+```bash
+./scripts/harness worktree-name --task <task-id> --namespace codex
+```
+
+Codex App may already provide an isolated workspace or its own worktree model. Treat the helper as a supplementary naming tool for manual branch or worktree creation inside that workspace, not as a replacement for host-owned workspace identity.
+
 For user-global adoption, keep the default `full` profile unless you explicitly want the smaller `minimal-global` projection:
 
 ```bash

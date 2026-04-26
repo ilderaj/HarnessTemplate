@@ -47,6 +47,12 @@ Run:
 ./scripts/harness sync
 ```
 
+When you create a manual branch or worktree for Copilot-driven work, resolve the name from the repo-owned helper instead of a prompt summary:
+
+```bash
+./scripts/harness worktree-name --task <task-id> --namespace copilot
+```
+
 For user-global adoption, keep the default `full` profile unless you explicitly want the smaller `minimal-global` projection:
 
 ```bash

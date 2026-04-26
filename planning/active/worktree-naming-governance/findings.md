@@ -8,6 +8,8 @@
 - `docs/maintenance.md` 已明确规定：如果规则需要 mechanical support，应落在 `harness/installer`，而不是 patch vendored upstream skills；`harness/upstream/**` 视为 upstream baseline，会在 update 时被替换。
 - Harness 当前 projection 体系支持对 materialized skill 做 repo-owned patch：`harness/core/skills/index.json` 可声明 `childPatches`，`harness/installer/commands/sync.mjs` 根据 patch type 调用本地 patch helper。这给 `using-git-worktrees` 增加本地 naming guidance 提供了稳定落点。
 - 当前仓库里已经有“任务 slug + agent prefix”的 branch 实践，但没有统一 contract；例如 `codex/cross-ide-projection-fix`、`fix/checkpoint-adoption`、`copilot/using-subagents-for-plans` 都是人为约定。
+- live repo smoke 验证显示：一旦仓库同时存在多个 `Status: active` 的 task，`worktree-preflight` 不能只依赖“单 active task”自动解析；必须支持显式 `--task <task-id>` 把 naming helper 锁定到目标任务。
+- namespace 为空时不能被归一化成 `default/` 前缀；branch name 应在无 namespace 时退回 canonical label 本体。
 
 ## Problem Summary
 
@@ -44,6 +46,7 @@
   - `202604281159-codex-app-compatibility-design-001`
   - `copilot/202604281159-codex-app-compatibility-design-001`
   - `fix/202604281159-codex-app-compatibility-design-001`
+- `worktree-preflight` 复用 helper 时应保留 base selection ownership，并允许 `--task <task-id>` 覆盖 naming task resolution；这既不改变 base recommendation，也避免多 active task 仓库里的歧义失败。
 
 ## Design Constraints To Preserve
 
