@@ -142,6 +142,26 @@ test('planHookProjections returns copilot superpowers hook config under .github/
   assert.equal(superpowers.scriptTargetRoot, path.join(process.cwd(), '.github/hooks'));
 });
 
+test('planHookProjections adds copilot safety hooks under .github/hooks', async () => {
+  const plans = await planHookProjections({
+    rootDir: process.cwd(),
+    homeDir: '/home/user',
+    scope: 'workspace',
+    target: 'copilot',
+    hookMode: 'on',
+    policyProfile: 'safety'
+  });
+  const safety = plans.find((plan) => plan.parentSkillName === 'safety');
+
+  assert.equal(safety.status, 'planned');
+  assert.equal(safety.configTarget, path.join(process.cwd(), '.github/hooks/safety.json'));
+  assert.deepEqual(safety.scriptSourcePaths, [
+    path.join(process.cwd(), 'harness/core/hooks/safety/scripts/pretool-guard.sh'),
+    path.join(process.cwd(), 'harness/core/hooks/safety/scripts/session-checkpoint.sh')
+  ]);
+  assert.equal(safety.scriptTargetRoot, path.join(process.cwd(), '.github/hooks'));
+});
+
 test('planHookProjections adds safety hooks when the safety policy profile is active', async () => {
   const plans = await planHookProjections({
     rootDir: process.cwd(),
