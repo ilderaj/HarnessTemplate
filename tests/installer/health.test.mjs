@@ -720,6 +720,107 @@ test('readHarnessHealth records measured hook payloads in context', async () => 
   }
 });
 
+test('readHarnessHealth measures Copilot hook payloads and reports worst hook target', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      hookMode: 'on',
+      targets: {
+        copilot: { enabled: true, paths: [path.join(root, '.github/copilot-instructions.md')] }
+      },
+      upstream: {}
+    });
+
+    await mkdir(path.join(root, 'planning/active/compact-task'), { recursive: true });
+    await writeFile(
+      path.join(root, 'planning/active/compact-task/task_plan.md'),
+      [
+        '# Compact Task',
+        '',
+        '## Goal',
+        '- Keep Copilot hook payload measurements visible.',
+        '',
+        '## Current State',
+        'Status: active',
+        'Archive Eligible: no'
+      ].join('\n')
+    );
+    await writeFile(
+      path.join(root, 'planning/active/compact-task/findings.md'),
+      ['# Findings', '', '- Copilot hook context should be measured by category.'].join('\n')
+    );
+    await writeFile(
+      path.join(root, 'planning/active/compact-task/progress.md'),
+      ['# Progress', '', '- Synced Copilot hook projections for verification.'].join('\n')
+    );
+
+    await withCwd(root, () => sync([]));
+    const health = await readHarnessHealth(root, '/home/user');
+
+    assert.equal(health.context.summary.hooks.target, 'copilot');
+    assert.ok(health.context.summary.hooks.approxTokens > 0);
+    assert.match(health.context.hooks[0].target, /copilot/);
+    assert.ok(health.context.hooks.some((hook) => hook.category === 'planning-hot'));
+    assert.ok(health.context.hooks.some((hook) => hook.category === 'planning-brief'));
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('readHarnessHealth does not double count Copilot hook payloads across both scopes', async (t) => {
+  const root = await createHarnessFixture();
+  const home = path.join(root, 'home');
+  try {
+    await mkdir(home, { recursive: true });
+    t.mock.method(os, 'homedir', () => home);
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'both',
+      projectionMode: 'link',
+      hookMode: 'on',
+      targets: {
+        copilot: {
+          enabled: true,
+          paths: [
+            path.join(root, '.github/copilot-instructions.md'),
+            path.join(home, '.copilot/instructions/harness.instructions.md')
+          ]
+        }
+      },
+      upstream: {}
+    });
+
+    await withCwd(root, () => sync([]));
+
+    const sharedPayload = '{"hookSpecificOutput":{"hookEventName":"sessionStart","additionalContext":"shared logical payload"}}\n';
+    await Promise.all([
+      writeFile(
+        path.join(root, '.github/hooks/session-start'),
+        ['#!/usr/bin/env bash', `printf '%s\\n' '${sharedPayload.replace(/\n$/, '')}'`].join('\n')
+      ),
+      writeFile(
+        path.join(home, '.copilot/hooks/session-start'),
+        ['#!/usr/bin/env bash', `printf '%s\\n' '${sharedPayload.replace(/\n$/, '')}'`].join('\n')
+      )
+    ]);
+
+    const health = await readHarnessHealth(root, home);
+    const superpowersPayload = health.context.hooks.find((hook) => hook.target === 'copilot' && hook.parentSkillName === 'superpowers');
+
+    assert.ok(superpowersPayload);
+    assert.deepEqual(superpowersPayload.measurement, measureText(sharedPayload));
+    assert.deepEqual(superpowersPayload.runtimePaths.sort(), [
+      path.join(home, '.copilot/hooks/session-start'),
+      path.join(root, '.github/hooks/session-start')
+    ].sort());
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
 test('readHarnessHealth summarizes hook, planning, and skill profile context ledgers', async () => {
   const root = await createHarnessFixture();
   try {

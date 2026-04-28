@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { access, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { readState, writeState } from '../../harness/installer/lib/state.mjs';
@@ -15,6 +15,13 @@ const execFileAsync = promisify(execFile);
 function harnessCommand(root, ...args) {
   return execFileAsync('node', [path.join(root, 'harness/installer/commands/harness.mjs'), ...args], {
     cwd: root
+  });
+}
+
+function harnessCommandWithEnv(root, env, ...args) {
+  return execFileAsync('node', [path.join(root, 'harness/installer/commands/harness.mjs'), ...args], {
+    cwd: root,
+    env: { ...process.env, ...env }
   });
 }
 
@@ -236,6 +243,59 @@ test('verify prints to stdout by default without writing reports', async () => {
     assert.match(stdout, /Planning hot context verdict:/);
     assert.match(stdout, /Skill profile verdict:/);
     await assert.rejects(access(path.join(root, 'reports/verification/latest.md')), /ENOENT/);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('verify renders overlap and per-target hook ledger rows when Copilot is enabled', async () => {
+  const root = await createHarnessFixture();
+  const home = path.join(root, 'home');
+  try {
+    await mkdir(home, { recursive: true });
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'both',
+      projectionMode: 'link',
+      hookMode: 'on',
+      targets: {
+        copilot: {
+          enabled: true,
+          paths: [
+            path.join(root, '.github/copilot-instructions.md'),
+            path.join(home, '.copilot/instructions/harness.instructions.md')
+          ]
+        }
+      },
+      upstream: {}
+    });
+
+    await mkdir(path.join(root, 'planning/active/compact-task'), { recursive: true });
+    await writeFile(
+      path.join(root, 'planning/active/compact-task/task_plan.md'),
+      [
+        '# Compact Task',
+        '',
+        '## Goal',
+        '- Keep Copilot verification ledger output visible.',
+        '',
+        '## Current State',
+        'Status: active',
+        'Archive Eligible: no'
+      ].join('\n')
+    );
+    await writeFile(path.join(root, 'planning/active/compact-task/findings.md'), '# Findings\n');
+    await writeFile(path.join(root, 'planning/active/compact-task/progress.md'), '# Progress\n');
+
+    await harnessCommandWithEnv(root, { HOME: home }, 'sync');
+    const { stdout } = await harnessCommandWithEnv(root, { HOME: home }, 'verify');
+
+    assert.match(stdout, /Hook payload verdict:/);
+    assert.match(stdout, /Hook payload target: copilot/);
+    assert.match(stdout, /Hook payload detail:/);
+    assert.match(stdout, /copilot \/ planning-hot \/ ok \/ \d+ tokens/);
+    assert.match(stdout, /Scope overlap verdict:/);
+    assert.match(stdout, /Scope overlap detail:/);
   } finally {
     await removeHarnessFixture(root);
   }
