@@ -7,6 +7,7 @@ import { readHarnessHealth } from './health.mjs';
 import { loadPlatforms, normalizeTargets } from './metadata.mjs';
 import { loadPolicyProfiles } from './policy-render.mjs';
 import { resolveTargetPaths } from './paths.mjs';
+import { isSafetyPolicyProfile } from './safety-projection.mjs';
 import { loadSkillProfiles } from './skill-projection.mjs';
 import { readState, writeState } from './state.mjs';
 
@@ -46,7 +47,7 @@ function isEffectivelyEmptyState(state) {
 }
 
 function defaultBootstrapTargets(metadata) {
-  return Object.keys(metadata.platforms).filter((target) => target !== 'copilot');
+  return Object.keys(metadata.platforms);
 }
 
 export function enabledTargetsFromState(state) {
@@ -145,6 +146,10 @@ export async function ensureUserGlobalState(rootDir, options = {}) {
     throw new Error(
       `Invalid profile: ${policyProfile}. Expected one of: ${Object.keys(policyProfiles.profiles).join(', ')}.`
     );
+  }
+
+  if (isSafetyPolicyProfile(policyProfile)) {
+    throw new Error(`Safety profiles are workspace-only. Refusing ${policyProfile} for user-global scope.`);
   }
 
   if (!skillProfiles.profiles[skillProfile]) {

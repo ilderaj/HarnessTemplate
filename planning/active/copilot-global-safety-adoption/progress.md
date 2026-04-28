@@ -40,15 +40,39 @@
 ### Phase 4: 实机校准与 live 状态收敛
 - **Status:** complete
 - Actions taken:
-  - 首次 disposable HOME 校准误读了仓库已有 `.harness/state.json`，因此走到了 preserve 路径；随后通过清理临时副本中的 `.harness/` 重新执行真正的空 bootstrap 校准。
-  - 在干净 disposable HOME 中执行 `adopt-global` 与 `adoption-status`，确认 fresh bootstrap 只启用 `claude-code,codex,cursor`，且状态为 `in_sync`。
-  - 盘点真实 HOME 下的 Copilot user-global 路径，确认 `.copilot/instructions/` 与 `.copilot/hooks/` 当前为空，但 repo `.harness/state.json` 仍保留历史 `copilot` target，导致 adoption state 漂移。
-  - 在真实 HOME 上执行 `./scripts/harness install --scope=user-global --targets=codex,cursor,claude-code --projection=link --profile=always-on-core --skills-profile=full --hooks=on`、`./scripts/harness sync` 与 `./scripts/harness doctor --check-only`，先把 live state 收敛到不含 Copilot 的 target 集。
-  - 因旧 receipt 仍记录 4 个 targets，`adoption-status` 一度显示 `state_mismatch`；随后再次执行 `./scripts/harness adopt-global` 刷新 receipt，最终恢复为 `in_sync`。
-  - 最终复核真实 HOME 下的 Harness-managed Copilot 路径，全部不存在。
+  - 按用户新目标回改 `tests/installer/adoption.test.mjs`、`harness/installer/lib/adoption.mjs`、`README.md`、`docs/install/copilot.md` 与 `harness/installer/commands/adopt-global.mjs`。
+  - 运行 `node --test tests/installer/adoption.test.mjs tests/installer/policy-render.test.mjs`，确认“default bootstrap 含 Copilot”与“默认不是 safety”两条边界同时通过。
+  - 在真实 HOME 上执行 `./scripts/harness install --scope=user-global --targets=all --projection=link --profile=always-on-core --skills-profile=full --hooks=on`、`./scripts/harness sync`、`./scripts/harness adopt-global` 与 `./scripts/harness doctor --check-only`，把 live baseline 恢复到包含 Copilot。
+  - 复核真实 HOME 下的 Copilot 文件：baseline entry 与 planning/superpowers hooks 存在，但 safety 相关文件不存在。
 - Files created/modified:
   - `.harness/state.json` (updated live state)
   - `.harness/adoption/global.json` (updated live receipt)
+
+### Phase 5: workspace-only safety 硬保护与最终 apply
+- **Status:** complete
+- Actions taken:
+  - 先在 `tests/installer/commands.test.mjs` 添加 “install rejects safety profiles outside workspace scope”。
+  - 再在 `tests/installer/adoption.test.mjs` 添加 “adopt-global rejects user-global safety profiles”，并把 preserve case 改回 non-safety profile。
+  - 首轮红测失败，证明当前缺口真实存在：`install` 会先进入 sync，`adopt-global` 会保留 user-global safety state。
+  - 在 `harness/installer/commands/install.mjs` 增加 workspace-only safety 校验；在 `harness/installer/lib/adoption.mjs` 增加 user-global safety 拒绝逻辑。
+  - 更新 `README.md` 与 `docs/install/copilot.md`，把“global safety 不支持、workspace-only”写成明确口径。
+  - 运行 `node --test tests/installer/commands.test.mjs tests/installer/adoption.test.mjs`，24 passing, 0 failing。
+  - 依次执行最终 apply：
+    - `./scripts/harness adopt-global`
+    - `./scripts/harness adoption-status`
+    - `./scripts/harness doctor --check-only`
+    - `./scripts/harness install --scope=workspace --targets=copilot --projection=link --profile=safety --skills-profile=full --hooks=on`
+    - `./scripts/harness doctor --check-only`
+  - 复核 global 与 workspace 边界：
+    - global：Copilot baseline 文件存在，但没有 safety 文件
+    - workspace：`.github/hooks/safety.json`、`pretool-guard.sh`、`session-checkpoint.sh` 存在
+- Files created/modified:
+  - `tests/installer/commands.test.mjs` (modified)
+  - `tests/installer/adoption.test.mjs` (modified)
+  - `harness/installer/commands/install.mjs` (modified)
+  - `harness/installer/lib/adoption.mjs` (modified)
+  - `README.md` (modified)
+  - `docs/install/copilot.md` (modified)
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -56,9 +80,12 @@
 | Red check | `node --test tests/installer/adoption.test.mjs` | 默认 bootstrap 不应带 Copilot；旧实现应失败 | 首轮失败，diff 显示实际多了 `copilot` | ✓ |
 | Focused installer/docs validation | `node --test tests/installer/adoption.test.mjs tests/installer/policy-render.test.mjs` | adopt-global 边界与 README / Copilot 文档口径一致 | 13 passing, 0 failing | ✓ |
 | Static diagnostics | `get_errors` on changed files | 无新增错误 | No errors found | ✓ |
-| Disposable-home bootstrap calibration | clean temp repo without `.harness/`, `HOME=/tmp/... ./scripts/harness adopt-global && ./scripts/harness adoption-status` | fresh bootstrap excludes Copilot and returns `in_sync` | `hookMode=off`, `policyProfile=always-on-core`, targets=`claude-code,codex,cursor`, status=`in_sync` | ✓ |
-| Live user-global convergence | `./scripts/harness install --scope=user-global --targets=codex,cursor,claude-code ... && ./scripts/harness sync && ./scripts/harness adopt-global && ./scripts/harness adoption-status` | real user-global state excludes Copilot and final status is `in_sync` | final targets=`claude-code,codex,cursor`, status=`in_sync`, Copilot managed files absent | ✓ |
+| Focused installer/docs validation after target restore | `node --test tests/installer/adoption.test.mjs tests/installer/policy-render.test.mjs` | default bootstrap includes Copilot while docs still render correctly | 13 passing, 0 failing | ✓ |
+| Live user-global convergence | `./scripts/harness install --scope=user-global --targets=all ... && ./scripts/harness sync && ./scripts/harness adopt-global && ./scripts/harness adoption-status` | real user-global state includes Copilot and final status is `in_sync` | final targets=`claude-code,codex,copilot,cursor`, status=`in_sync`, Copilot baseline files present | ✓ |
 | Live doctor | `./scripts/harness doctor --check-only` | no health failures after live convergence | `Harness check passed.` | ✓ |
+| Workspace-only safety enforcement | `node --test tests/installer/commands.test.mjs tests/installer/adoption.test.mjs` | user-global/both safety rejected; workspace safety still allowed by existing slices | 24 passing, 0 failing | ✓ |
+| Final global adopt verification | `./scripts/harness adopt-global && ./scripts/harness adoption-status && ./scripts/harness doctor --check-only` | global baseline includes Copilot and stays non-safety | `status=in_sync`, `policyProfile=always-on-core`, user-global Copilot safety files absent | ✓ |
+| Final workspace safety enablement | `./scripts/harness install --scope=workspace --targets=copilot --profile=safety --hooks=on && ./scripts/harness doctor --check-only` | workspace Copilot safety enabled with local hooks projected | `.github/hooks/safety.json`, `pretool-guard.sh`, `session-checkpoint.sh` all exist; doctor passed | ✓ |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

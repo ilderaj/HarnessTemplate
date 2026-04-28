@@ -65,11 +65,11 @@ test('adopt-global bootstraps user-global state, verification output, and receip
     assert.equal(state.scope, 'user-global');
     assert.equal(state.hookMode, 'off');
     assert.equal(state.policyProfile, 'always-on-core');
-    assert.deepEqual(Object.keys(state.targets).sort(), ['claude-code', 'codex', 'cursor']);
+    assert.deepEqual(Object.keys(state.targets).sort(), ['claude-code', 'codex', 'copilot', 'cursor']);
     assert.equal(receipt.status, 'success');
     assert.equal(receipt.scope, 'user-global');
     assert.equal(receipt.policyProfile, 'always-on-core');
-    assert.deepEqual(receipt.targets, ['claude-code', 'codex', 'cursor']);
+    assert.deepEqual(receipt.targets, ['claude-code', 'codex', 'copilot', 'cursor']);
     assert.equal(receipt.repoHead, await currentHead(root));
     assert.equal(verification.health.problems.length, 0);
   } finally {
@@ -89,7 +89,7 @@ test('adopt-global preserves an existing user-global install instead of overwrit
       scope: 'user-global',
       projectionMode: 'portable',
       hookMode: 'on',
-      policyProfile: 'safety',
+      policyProfile: 'always-on-core',
       skillProfile: 'minimal-global',
       targets: {
         codex: {
@@ -110,11 +110,43 @@ test('adopt-global preserves an existing user-global install instead of overwrit
     assert.equal(state.scope, 'user-global');
     assert.equal(state.projectionMode, 'portable');
     assert.equal(state.hookMode, 'on');
-    assert.equal(state.policyProfile, 'safety');
+    assert.equal(state.policyProfile, 'always-on-core');
     assert.equal(state.skillProfile, 'minimal-global');
     assert.deepEqual(Object.keys(state.targets), ['codex']);
-    assert.equal(receipt.policyProfile, 'safety');
+    assert.equal(receipt.policyProfile, 'always-on-core');
     assert.deepEqual(receipt.targets, ['codex']);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('adopt-global rejects user-global safety profiles', async () => {
+  const root = await createHarnessFixture();
+  const homeDir = path.join(root, 'home');
+  try {
+    await mkdir(homeDir, { recursive: true });
+    await initGitRepo(root);
+
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'user-global',
+      projectionMode: 'link',
+      hookMode: 'on',
+      policyProfile: 'safety',
+      skillProfile: 'full',
+      targets: {
+        copilot: {
+          enabled: true,
+          paths: [path.join(homeDir, '.copilot/instructions/harness.instructions.md')]
+        }
+      },
+      upstream: {}
+    });
+
+    await assert.rejects(
+      harnessCommand(root, homeDir, 'adopt-global'),
+      /Safety profiles are workspace-only/
+    );
   } finally {
     await removeHarnessFixture(root);
   }

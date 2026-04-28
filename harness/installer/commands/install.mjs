@@ -3,6 +3,7 @@ import { loadPlatforms, normalizeScope, normalizeTargets } from '../lib/metadata
 import { loadPolicyProfiles } from '../lib/policy-render.mjs';
 import { resolveTargetPaths } from '../lib/paths.mjs';
 import { loadSkillProfiles } from '../lib/skill-projection.mjs';
+import { isSafetyPolicyProfile } from '../lib/safety-projection.mjs';
 import { writeState } from '../lib/state.mjs';
 import { sync } from './sync.mjs';
 
@@ -40,6 +41,12 @@ export async function install(args = []) {
   if (!policyProfiles.profiles[policyProfile]) {
     throw new Error(
       `Invalid profile: ${policyProfile}. Expected one of: ${Object.keys(policyProfiles.profiles).join(', ')}.`
+    );
+  }
+
+  if (scope !== 'workspace' && isSafetyPolicyProfile(policyProfile)) {
+    throw new Error(
+      `Safety profiles are workspace-only. Refusing ${policyProfile} for ${scope} scope.`
     );
   }
 

@@ -94,6 +94,22 @@ test('install rejects an unknown skills profile', async () => {
   }
 });
 
+test('install rejects safety profiles outside workspace scope', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await assert.rejects(
+      harnessCommand(root, 'install', '--scope=user-global', '--targets=all', '--profile=safety'),
+      /Safety profiles are workspace-only/
+    );
+    await assert.rejects(
+      harnessCommand(root, 'install', '--scope=both', '--targets=all', '--profile=cloud-safe'),
+      /Safety profiles are workspace-only/
+    );
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
 test('sync uses the stored entry profile when rendering entries', async () => {
   const root = await createHarnessFixture();
   try {
