@@ -6,6 +6,8 @@
 > **Lifecycle state:** waiting_review
 > **Sync-back status:** synced on 2026-04-28
 
+Active task path: planning/active/codex-stop-hook-json-analysis/
+
 **Goal:** Align Codex hook projection with the verified-event allowlist by removing the unsupported planning `Stop` hook, preserving the retained Codex events, and updating tests plus docs so Harness advertises only the Codex hook events it actually verifies.
 
 **Architecture:** Keep the fix in Harness-owned projection, regression-test, and documentation layers. Update the Codex planning event list in the installer projection and generated Codex hook config, rewrite tests so they encode the new allowlist rather than the old blanket support model, and then update the Codex-facing compatibility docs to describe retained, disabled, and conditional events. Do not change upstream vendored sources.

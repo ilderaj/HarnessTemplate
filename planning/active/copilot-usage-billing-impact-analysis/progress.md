@@ -111,6 +111,19 @@
 | Focused regression suite | `node --test tests/hooks/task-scoped-hook.test.mjs tests/hooks/hook-budget.test.mjs tests/hooks/superpowers-codex-hook.test.mjs tests/installer/policy-render.test.mjs tests/installer/commands.test.mjs tests/installer/health.test.mjs` | Entry + hooks + health regressions stay green | 68 passed, 0 failed | ✓ |
 | Real verify command | `node harness/installer/commands/harness.mjs verify --output=.harness/verification-ledger` | Report written with new ledger summaries | Report generated successfully | ✓ |
 
+### Phase 9: 后续优化 impl plan 编制
+- **Status:** complete
+- Actions taken:
+  - 读取 `writing-plans`、`planning-with-files` 与当前 companion plan，确认本轮目标是产出完整实现计划而不是继续动代码。
+  - 复核 `health.mjs`、`skill-projection.mjs`、`install.mjs`、`adoption.mjs`、`verify.mjs`、`doctor.mjs`、planning hooks 与 Copilot override，锁定后续 5 个高 ROI 切口。
+  - 新建 companion implementation plan，覆盖 ledger fidelity、Copilot 默认 skill profile、planning recovery v2、scope overlap 治理、budget gates，以及低优先级 output guidance。
+  - 将 active task 的 companion reference 切换到新的 impl plan，方便后续 review 与执行直接对齐。
+- Files created/modified:
+  - `docs/superpowers/plans/2026-04-28-copilot-usage-optimization-implementation-plan.md` (created)
+  - `planning/active/copilot-usage-billing-impact-analysis/task_plan.md` (updated)
+  - `planning/active/copilot-usage-billing-impact-analysis/findings.md` (updated)
+  - `planning/active/copilot-usage-billing-impact-analysis/progress.md` (updated)
+
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
 |-----------|-------|---------|------------|

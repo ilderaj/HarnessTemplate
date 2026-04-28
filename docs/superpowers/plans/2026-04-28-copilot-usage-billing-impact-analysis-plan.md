@@ -3,6 +3,8 @@
 > Active task: `planning/active/copilot-usage-billing-impact-analysis/`
 > Scope: plan only, no implementation in this round.
 
+Active task path: planning/active/copilot-usage-billing-impact-analysis/
+
 ## 目标
 
 在 GitHub Copilot 从 request/unit 计费迁移到 usage-based billing 之后，评估当前 Harness 在不同 chat 使用场景下的 credits 消耗结构，并提出一套不过分损伤效能的 usage 优化计划。

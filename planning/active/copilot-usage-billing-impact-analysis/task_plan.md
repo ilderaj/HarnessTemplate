@@ -9,12 +9,12 @@ Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 8
+Phase 9
 
 ## Companion Plan
-- Companion plan: `docs/superpowers/plans/2026-04-28-copilot-usage-billing-impact-analysis-plan.md`
-- Companion summary: Copilot usage-based billing impact analysis and phased optimization plan covering fixed tax, recovery tax, and execution tax.
-- Sync-back status: plan and active task files synced on 2026-04-28
+- Companion plan: `docs/superpowers/plans/2026-04-28-copilot-usage-optimization-implementation-plan.md`
+- Companion summary: Detailed implementation plan for the next Copilot usage optimization phases covering cost ledger fidelity, lean skill defaults, planning recovery v2, overlap governance, and budget gates.
+- Sync-back status: implementation plan and active task files synced on 2026-04-28
 
 ## Phases
 
@@ -65,6 +65,12 @@ Phase 8
 - [x] 完成 entry + hooks 的定向回归与真实 `verify`
 - **Status:** complete
 
+### Phase 9: 后续优化 impl plan 编制
+- [x] 汇总当前已完成的 usage 优化基线
+- [x] 盘点 skill / planning / adoption / budget 的下一阶段切口
+- [x] 产出完整实现计划供 review
+- **Status:** complete
+
 ## Risk Assessment
 
 | 风险 | 触发条件 | 影响范围 | 缓解 / 已落盘的回退方案 |
@@ -89,6 +95,7 @@ Phase 8
 | `skillProfile` 先定义为 hook-enabled 场景下的技能发现面账本 | 这样能补可观测性，又不会在轻量 entry-only 检查里引入高噪声回归 |
 | Copilot 默认入口单独映射到 `copilot-always-on-thin` | Copilot override 已明确要求 thin entry，且只对该 target 收紧能最小化跨平台回归风险 |
 | Copilot planning hooks 只压缩 `session-start` 与 `pre-tool-use` | 这两类事件重复且高频，改为摘要能降低固定税与 cached token，同时保留 `user-prompt-submit` 的恢复能力 |
+| 下一阶段优先级定为 ledger fidelity → lean skills → planning recovery v2 → overlap governance → budget gates | 这个顺序先打稳可观测性与默认固定税，再处理长会话重复税，最后上治理与回归门禁 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -100,3 +107,4 @@ Phase 8
 - 若后续进入执行阶段，需要单独评估哪些优化属于 source 侧一次性改动，哪些属于 platform/profile 配置策略。
 - 当前轮次已完成“分析 + 计划”交付；后续若推进实现，应从 `waiting_execution` 状态继续。
 - 当前已进入执行阶段，并完成路线图的前 3 个高 ROI 步骤：可观测性、Copilot 薄入口、Copilot planning hook 摘要化。
+- 当前已补完一份可执行的 impl plan，后续若启动实现，建议按 Companion Plan 里的 Batch A / B / C 串行推进。

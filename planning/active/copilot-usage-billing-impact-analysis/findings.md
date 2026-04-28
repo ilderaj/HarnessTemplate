@@ -32,6 +32,10 @@
 - Copilot 默认入口此前与其他 target 共用 `always-on-core` section 集，导致 `When Superpowers Is Allowed`、`When Superpowers Is Not Allowed`、`Tool Preferences` 这些对 Copilot startup 不必要的固定税持续进入 input。
 - Copilot planning hook 此前在 `session-start`、`user-prompt-submit`、`pre-tool-use` 上重复注入同一份 hot context；其中 `session-start` 与 `pre-tool-use` 的恢复收益低于它们带来的重复 input / cached token 成本。
 - 当前真实 `verify` 报告显示优化后最重 entry 目标仍为 copilot，但 worst target session 已降到约 `1282` tokens；hook payload worst target session 为 `88` tokens，仍在预算内。
+- 当前 `health.mjs` 的 hook payload测量仍然只覆盖 `codex`，这意味着 Copilot hooks 已优化但还没有被 verification ledger 真实计量；下一阶段需要先补观测再继续削减。
+- 当前 skill profile 默认值仍是 `full`，`install.mjs` 和 `adoption.mjs` 都按全局默认解析，这会让 Copilot-only installs 继续携带过大的 skills discovery 面。
+- 当前 planning-with-files 对 Copilot 的 `user-prompt-submit` 仍然每次发送完整 hot context；相比已经收紧的 `session-start` / `pre-tool-use`，这里是下一笔最大的重复 recovery tax。
+- 当前 adoption / doctor / verify 还没有把 user-global 与 workspace 的 Copilot 双安装显式建模成 overlap tax；这会掩盖一类真实的 cached token 重复来源。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -43,6 +47,8 @@
 | `verify` markdown 报告新增 hooks / planning / skill profile 三类摘要 | 这样 CLI 用户无需翻 JSON 也能看到主要输入成本面 |
 | 新增 `copilot-always-on-thin` policy profile，但不改变 persisted `always-on-core` 状态语义 | 这样既能降低 Copilot fixed tax，也不会把安装态和跨平台 policy 语义拆散 |
 | Copilot `session-start` 改为 task-path startup cue，`pre-tool-use` 改为最小进度提醒 | 保留行为约束提示，但把完整 hot context 延后到真正需要的 `user-prompt-submit` |
+| 下一阶段先补 Copilot ledger fidelity，再改默认 skill profile | 没有观测先改默认值，会让后续收益评估失真；先补测量才能知道 `copilot-default` 带来的实际降幅 |
+| planning 恢复 v2 需要做 change-detection，而不是只继续裁文案 | 单纯继续压缩文案会损伤恢复力，只有“内容未变则不重发 full hot context”才能同时保住效能和 usage |
 
 ## Issues Encountered
 | Issue | Resolution |
