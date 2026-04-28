@@ -23,14 +23,25 @@
 - 当前 live `adoption-status` 为 `in_sync`，targets 为 `claude-code,codex,copilot,cursor`；`doctor --check-only` 返回 `Harness check passed.`。
 - 在执行最终 apply 后，当前仓库状态已切换为 `scope=workspace`、`target=copilot`、`policyProfile=safety`，并且 `.github/hooks/safety.json`、`.github/hooks/pretool-guard.sh`、`.github/hooks/session-checkpoint.sh` 都已落地。
 - 在 workspace safety 开启后，真实 HOME 下的 Copilot safety 文件仍然不存在，这说明 workspace safety 没有泄漏到 global。
+- 用户随后手动执行了 `user-global + always-on-core + targets=all` 的 install/sync/adopt-global/doctor 序列，当前仓库 `.harness/state.json` 与 `.harness/adoption/global.json` 都已恢复到 global baseline。
+- 当前仓库 `.github/hooks/` 目录为空，说明 workspace safety 已被移除，不再拦截本仓库的正常工具调用。
+- 仓库内已新增正式 roadmap 文档 `docs/roadmap.md`，记录三条后续事项：
+  - `global baseline + workspace safety overlay`
+  - `safety hook false-positive reduction`
+  - `re-evaluate default safety posture`
 
 ## Verification Conclusion
-- 结论：通过。
+- 结论：通过，并补充新的默认策略判断也成立。
 - 逐条对应：
 	- “整体的 harness adopt 要包括 copilot”：通过。fresh bootstrap 测试与 live global adopt 均得到 targets=`claude-code,codex,copilot,cursor`。
 	- “safety profile 默认不 global”：通过。global live state 的 `policyProfile=always-on-core`，且 user-global Copilot 目录没有 safety 文件。
-	- “只针对 copilot 下的当前 workspace 生效”：通过。当前仓库 `scope=workspace`、`targets=[copilot]`、`policyProfile=safety`，workspace safety hooks 已投影到 `.github/hooks/`。
+	- “只针对 copilot 下的当前 workspace 生效”：这条在 Phase 5 中已被验证过；随后按用户新决策已主动回退当前 workspace safety，避免影响日常使用。
 	- “以后全局 harness 中的 safety profiles 默认关闭，只有在 workspace 中指定针对某个 IDE 开启的时候才开启”：通过。实现层已经禁止 user-global/both 的 safety/cloud-safe 安装或 adoption 保留。
+	- “当前应该回到全局 adopt 相同的 skills、harness 和关闭 safety 的状态”：通过。当前 repo state 为 `user-global + always-on-core + full`，`.github/hooks/` 为空，global receipt 为 `in_sync`。
+
+## Roadmap Conclusion
+- 用户关于 safety 当前增益有限、默认关闭更合理、待 overlay 模型和 tool false-positive 修复后再重评的建议成立。
+- 该结论已记录到 `docs/roadmap.md`，作为后续 review / prioritization 的正式输入。
 
 ## Technical Decisions
 | Decision | Rationale |

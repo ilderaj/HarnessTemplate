@@ -74,6 +74,19 @@
   - `README.md` (modified)
   - `docs/install/copilot.md` (modified)
 
+### Phase 6: roadmap 记录与安全默认态回归
+- **Status:** complete
+- Actions taken:
+  - 用户提出新的产品判断：safety 当前增益不足，默认应关闭；先修 `global baseline + workspace safety overlay` 与正常 tools 误拦截问题，再考虑重开。
+  - 检查仓库内没有现成 roadmap 文档，于是新建 `docs/roadmap.md`。
+  - 在 roadmap 中记录三项正式迭代项：overlay 模型、false-positive reduction、default safety posture re-evaluation。
+  - 在 README Docs 列表中加入 roadmap 入口。
+  - 根据用户提供的终端输出确认：已重新执行 `user-global + always-on-core + targets=all` 的 install/sync/adopt-global/doctor。
+  - 直接复核当前 repo 状态：`.harness/state.json` 为 `user-global + always-on-core + full + all targets`，`.harness/adoption/global.json` 为 success/in_sync，`.github/hooks/` 为空。
+- Files created/modified:
+  - `docs/roadmap.md` (created)
+  - `README.md` (modified)
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -86,6 +99,8 @@
 | Workspace-only safety enforcement | `node --test tests/installer/commands.test.mjs tests/installer/adoption.test.mjs` | user-global/both safety rejected; workspace safety still allowed by existing slices | 24 passing, 0 failing | ✓ |
 | Final global adopt verification | `./scripts/harness adopt-global && ./scripts/harness adoption-status && ./scripts/harness doctor --check-only` | global baseline includes Copilot and stays non-safety | `status=in_sync`, `policyProfile=always-on-core`, user-global Copilot safety files absent | ✓ |
 | Final workspace safety enablement | `./scripts/harness install --scope=workspace --targets=copilot --profile=safety --hooks=on && ./scripts/harness doctor --check-only` | workspace Copilot safety enabled with local hooks projected | `.github/hooks/safety.json`, `pretool-guard.sh`, `session-checkpoint.sh` all exist; doctor passed | ✓ |
+| Final baseline restore | user-provided `install --scope=user-global --targets=all --profile=always-on-core ... && sync && adopt-global && doctor --check-only` | repo returns to global baseline with no workspace safety residue | `adoption-status=in_sync`, `.github/hooks/` empty, `Harness check passed.` | ✓ |
+| Roadmap artifact check | `docs/roadmap.md` exists and README links it | roadmap becomes a stable place to track this deferred work | roadmap file created; README docs list updated | ✓ |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

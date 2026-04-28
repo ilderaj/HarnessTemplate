@@ -362,6 +362,7 @@ npm run verify
 
 ## Docs
 
+- [Roadmap](docs/roadmap.md)
 - [Architecture](docs/architecture.md)
 - [Maintenance](docs/maintenance.md)
 - [Release](docs/release.md)

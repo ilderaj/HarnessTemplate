@@ -22,6 +22,13 @@
   - `planningHotContext.warn = 4000 tokens`
   - `skillProfile.warn = 5500 tokens`
   这些预算已足够作为场景分析的成本边界输入。
+- `harness/installer/lib/health.mjs` 在实现前已经有：
+  - `context.entries` 和 `context.hooks` 的测量能力
+  - `context.planning` 与 `context.skillProfiles` 的容器占位
+  - 但 `context.summary` 只汇总了 `entries`
+- `harness/core/hooks/planning-with-files/scripts/task-scoped-hook.sh` 的真实 planning 热上下文来源是 `render-hot-context.mjs`，其核心实现通过 `buildPlanningHotContext()` 生成。
+- `harness/installer/lib/planning-hot-context.mjs` 已对外 re-export `buildPlanningHotContext`，适合在 installer health 层直接复用。
+- 将 `skillProfile` 直接按所有 `SKILL.md` 正文求和会把轻量安装场景也变成预算问题；第一版更合理的定义是“当前 profile 在 hook-enabled 场景下的技能发现面账本”。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -29,11 +36,15 @@
 | 用“固定税 / 恢复税 / 执行税”作为成本分析主框架 | 与仓库既有分析口径一致，且更适合 usage-based billing 的场景化比较 |
 | 将 cached token 单独建模 | 新计费明确 cached token 也消耗 credits，不能被折叠进 input |
 | 先做计划，不做代码级整改 | 用户要求先输出计划；当前目标是决策质量而不是实现速度 |
+| 第 1 阶段实现只补 context ledger，不重做预算系统 | 现有 `measureText` / `evaluateBudget` / `readHarnessHealth` 已有足够基础 |
+| `verify` markdown 报告新增 hooks / planning / skill profile 三类摘要 | 这样 CLI 用户无需翻 JSON 也能看到主要输入成本面 |
 
 ## Issues Encountered
 | Issue | Resolution |
 |-------|------------|
 | 仓库中已有多个上下文治理任务，容易与本次 billing 主题混淆 | 新建独立 task，并把旧任务仅作为证据来源而非执行容器 |
+| `~/.agents/skills` 本轮不存在技能文件，真实 skill root 在 workspace `.agents/skills/` | 改为读取 workspace skill 投影，避免错误引用用户目录 |
+| `skillProfile` summary 初版会污染 entry-only 预算测试 | 将其测量范围收敛到 `hookMode=on` 场景，保留轻量校验稳定性 |
 
 ## Destructive Operations Log
 | Command | Target | Checkpoint | Rollback |
@@ -45,6 +56,9 @@
 - 已有基线任务：`planning/active/global-rule-context-load-analysis/`
 - 预算配置：`harness/core/context-budgets.json`
 - Copilot compatibility note: `docs/compatibility/copilot-planning-with-files.md`
+- 关键实现：`harness/installer/lib/health.mjs`
+- 关键实现：`harness/installer/commands/verify.mjs`
+- 真实 planning helper：`harness/installer/lib/planning-hot-context.mjs`
 
 ## Visual/Browser Findings
 - GitHub 官方说明明确把 usage-based billing 的对象从“请求单位”切换成“token usage”，并把 input、output、cached token 全部纳入 credits 计算。

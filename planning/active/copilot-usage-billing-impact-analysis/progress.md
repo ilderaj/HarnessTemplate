@@ -42,11 +42,43 @@
   - `planning/active/copilot-usage-billing-impact-analysis/task_plan.md` (updated)
   - `planning/active/copilot-usage-billing-impact-analysis/progress.md` (updated)
 
+### Phase 5: 第 1 阶段可观测性实现
+- **Status:** complete
+- Actions taken:
+  - 恢复 task 上下文并读取 `executing-plans`、`test-driven-development`、`planning-with-files`。
+  - 锁定最小实现切口：`harness/installer/lib/health.mjs` 已有 entries/hooks 测量与 planning/skillProfiles 容器，但缺少 summary 与 `verify` 输出。
+  - 先在 `tests/installer/health.test.mjs` 和 `tests/installer/commands.test.mjs` 增加失败测试。
+  - 实现 `hooks`、`planning`、`skillProfiles` 三类 context ledger summary。
+  - 在 `verify` markdown 报告里增加三类 ledger 的 verdict / target / size 输出。
+  - 为避免轻量场景回归，把 `skillProfile` 测量限制在 `hookMode=on` 的场景。
+- Files created/modified:
+  - `tests/installer/health.test.mjs` (updated)
+  - `tests/installer/commands.test.mjs` (updated)
+  - `harness/installer/lib/health.mjs` (updated)
+  - `harness/installer/commands/verify.mjs` (updated)
+
+### Phase 6: 定向验证与交付
+- **Status:** complete
+- Actions taken:
+  - 运行 `node --test tests/installer/health.test.mjs tests/installer/commands.test.mjs`，先确认 RED。
+  - 修复实现后再次运行同一命令，结果 `52` 通过，`0` 失败。
+  - 运行 `node harness/installer/commands/harness.mjs verify --output=.harness/verification-ledger`，成功生成仓库内真实报告。
+  - 检查 `.harness/verification-ledger/latest.md`，确认 report 已包含 entry / hook payload / planning hot context / skill profile 四类 ledger summary。
+- Files created/modified:
+  - `planning/active/copilot-usage-billing-impact-analysis/task_plan.md` (updated)
+  - `planning/active/copilot-usage-billing-impact-analysis/findings.md` (updated)
+  - `planning/active/copilot-usage-billing-impact-analysis/progress.md` (updated)
+  - `.harness/verification-ledger/latest.md` (generated)
+  - `.harness/verification-ledger/latest.json` (generated)
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
 | Planning bootstrap | Create task-scoped planning files | Files created successfully | Created successfully | ✓ |
 | Markdown diagnostics | Check new planning and plan files for workspace errors | No errors | No errors | ✓ |
+| RED installer tests | `node --test tests/installer/health.test.mjs tests/installer/commands.test.mjs` | New ledger tests fail before implementation | Failed in 3 targeted assertions | ✓ |
+| GREEN installer tests | `node --test tests/installer/health.test.mjs tests/installer/commands.test.mjs` | All targeted installer tests pass | 52 passed, 0 failed | ✓ |
+| Real verify command | `node harness/installer/commands/harness.mjs verify --output=.harness/verification-ledger` | Report written with new ledger summaries | Report generated successfully | ✓ |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
@@ -56,8 +88,8 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 4 已完成，本轮任务状态为 waiting_execution |
-| Where am I going? | 若继续推进，将进入实现执行阶段 |
+| Where am I? | Phase 6 已完成，本轮实现可进入 review / handoff |
+| Where am I going? | 若继续推进，将进入下一阶段：薄 always-on entry 与 hook 摘要化 |
 | What's the goal? | 输出一份基于当前 Harness 真实路径的 Copilot usage 优化计划 |
-| What have I learned? | GitHub 新计费按 input/output/cached token 计；当前 Harness 的主要成本杠杆集中在 always-on entry、hooks、skills 和 planning hot context |
-| What have I done? | 已完成分析与计划文档编写，且验证新增文件无错误 |
+| What have I learned? | 第 1 阶段最小实现点是 `health` / `verify` 的 ledger summary；planning 热上下文可直接复用现有 helper；skill profile 需要避免污染轻量场景 |
+| What have I done? | 已补 tests、实现 summary 和 verify 输出、让窄测试全绿，并生成真实 verify 报告 |

@@ -27,6 +27,9 @@ function usage() {
 function renderMarkdown(report) {
   const context = report.health?.context;
   const summary = context?.summary?.entries;
+  const hookSummary = context?.summary?.hooks;
+  const planningSummary = context?.summary?.planning;
+  const skillProfileSummary = context?.summary?.skillProfiles;
   return [
     '# Harness Verification Report',
     '',
@@ -39,6 +42,15 @@ function renderMarkdown(report) {
     `Context entry verdict: ${summary?.verdict ?? 'unknown'}`,
     `Context entry target: ${summary?.target ?? 'none'}`,
     `Context entry size: ${summary?.chars ?? 0} chars, ${summary?.lines ?? 0} lines, ${summary?.approxTokens ?? 0} approx tokens (worst target session)`,
+    `Hook payload verdict: ${hookSummary?.verdict ?? 'unknown'}`,
+    `Hook payload target: ${hookSummary?.target ?? 'none'}`,
+    `Hook payload size: ${hookSummary?.chars ?? 0} chars, ${hookSummary?.lines ?? 0} lines, ${hookSummary?.approxTokens ?? 0} approx tokens (worst target session)`,
+    `Planning hot context verdict: ${planningSummary?.verdict ?? 'unknown'}`,
+    `Planning hot context target: ${planningSummary?.target ?? 'none'}`,
+    `Planning hot context size: ${planningSummary?.chars ?? 0} chars, ${planningSummary?.lines ?? 0} lines, ${planningSummary?.approxTokens ?? 0} approx tokens (worst target session)`,
+    `Skill profile verdict: ${skillProfileSummary?.verdict ?? 'unknown'}`,
+    `Skill profile target: ${skillProfileSummary?.target ?? 'none'}`,
+    `Skill profile size: ${skillProfileSummary?.chars ?? 0} chars, ${skillProfileSummary?.lines ?? 0} lines, ${skillProfileSummary?.approxTokens ?? 0} approx tokens (worst target session)`,
     `Context warnings: ${context?.warnings?.length ?? 0}`
   ].join('\n') + '\n';
 }

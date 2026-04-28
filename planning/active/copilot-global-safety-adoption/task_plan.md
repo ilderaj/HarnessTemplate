@@ -6,7 +6,7 @@
 ## Current State
 Status: closed
 Archive Eligible: yes
-Close Reason: workspace-only safety enforcement shipped, final verification passed, global adopt executed, and current workspace Copilot safety enabled on 2026-04-28.
+Close Reason: roadmap recorded, safety-default-off direction documented, and repo restored to global baseline without workspace safety on 2026-04-28.
 
 ## Current Phase
 Completed
@@ -43,6 +43,13 @@ Completed
 - [x] 执行一次 global adopt 并验证全局 baseline 含 Copilot 但不是 safety
 - [x] 开启当前 workspace 的 Copilot safety 并验证 workspace hooks 已投影
 - [x] 将验证过程与结论写回 planning files
+- **Status:** complete
+
+### Phase 6: roadmap 记录与安全默认态回归
+- [x] 将“safety 保留但默认关闭、待 overlay/tooling 修复后再评估”的决策写入项目 roadmap
+- [x] 记录 overlay 模型与 tool false-positive 修复为后续迭代项
+- [x] 验证当前仓库已回到 global adopt baseline + no safety
+- [x] 将最终验证与结论写回 planning files
 - **Status:** complete
 
 ## Key Questions

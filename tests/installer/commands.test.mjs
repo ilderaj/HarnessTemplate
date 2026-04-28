@@ -202,6 +202,9 @@ test('verify prints to stdout by default without writing reports', async () => {
     const { stdout } = await harnessCommand(root, 'verify');
     assert.match(stdout, /# Harness Verification Report/);
     assert.match(stdout, /Context entry verdict:/);
+    assert.match(stdout, /Hook payload verdict:/);
+    assert.match(stdout, /Planning hot context verdict:/);
+    assert.match(stdout, /Skill profile verdict:/);
     await assert.rejects(access(path.join(root, 'reports/verification/latest.md')), /ENOENT/);
   } finally {
     await removeHarnessFixture(root);
@@ -228,7 +231,13 @@ test('verify --output writes report files only to the requested directory', asyn
     );
 
     assert.match(markdown, /Context entry verdict:/);
+    assert.match(markdown, /Hook payload verdict:/);
+    assert.match(markdown, /Planning hot context verdict:/);
+    assert.match(markdown, /Skill profile verdict:/);
     assert.equal(report.health.context.summary.entries.verdict, 'ok');
+    assert.equal(report.health.context.summary.hooks.verdict, 'ok');
+    assert.equal(report.health.context.summary.planning.verdict, 'ok');
+    assert.equal(report.health.context.summary.skillProfiles.verdict, 'ok');
     assert.equal(report.health.context.entries.length, 0);
     assert.ok(Array.isArray(report.health.context.warnings));
     await assert.rejects(access(path.join(root, 'reports/verification/latest.md')), /ENOENT/);

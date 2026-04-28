@@ -4,12 +4,12 @@
 在不直接执行改动的前提下，基于当前 Harness 的真实上下文装载路径，分析 GitHub Copilot usage-based billing 下不同场景的 chat 成本结构，并产出一个投入产出均衡的 usage 优化计划。
 
 ## Current State
-Status: waiting_execution
+Status: waiting_review
 Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 4
+Phase 6
 
 ## Phases
 
@@ -36,6 +36,18 @@ Phase 4
 - [x] 回写任务状态与结论摘要
 - **Status:** complete
 
+### Phase 5: 第 1 阶段可观测性实现
+- [x] 选择最小实现切口
+- [x] 以 TDD 方式补充失败测试
+- [x] 为 `verify` / `health` 增加 context ledger summary
+- **Status:** complete
+
+### Phase 6: 定向验证与交付
+- [x] 跑窄测试验证实现
+- [x] 回写 findings / progress
+- [x] 运行一次仓库内实际 `verify` 生成报告
+- **Status:** complete
+
 ## Risk Assessment
 
 | 风险 | 触发条件 | 影响范围 | 缓解 / 已落盘的回退方案 |
@@ -55,6 +67,9 @@ Phase 4
 | 新建独立 tracked task 而不是复用旧任务 | 本次问题面向 Copilot usage-based billing，结论需与既有“全局上下文治理”分析隔离 |
 | 以 `global-rule-context-load-analysis` 作为初始证据锚点 | 该任务已量化 entry、skills 与 hooks 的近似 token 体积，可直接复用 |
 | 本轮只输出计划，不执行优化 | 用户明确要求“不要直接执行，先输出计划” |
+| 第 1 阶段先落地 `verify` / `health` 的 context ledger summary | 现有测量与预算原语已存在，补 summary 和报告是成本最低、反馈最快的实现切口 |
+| `planningHotContext` 直接复用 `buildPlanningHotContext` | 这是 hooks 已经在用的真实热上下文生成逻辑，避免二次定义 |
+| `skillProfile` 先定义为 hook-enabled 场景下的技能发现面账本 | 这样能补可观测性，又不会在轻量 entry-only 检查里引入高噪声回归 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -65,3 +80,4 @@ Phase 4
 - 当前阶段重点是把“开销来源”映射到真实 Harness 路径，而不是提前做方案细节实现。
 - 若后续进入执行阶段，需要单独评估哪些优化属于 source 侧一次性改动，哪些属于 platform/profile 配置策略。
 - 当前轮次已完成“分析 + 计划”交付；后续若推进实现，应从 `waiting_execution` 状态继续。
+- 当前已进入执行阶段，并完成路线图的 Phase 1 可观测性最小实现；后续若继续，将按既有 ROI 顺序推进薄入口和 hook 摘要化。
