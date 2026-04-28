@@ -45,6 +45,10 @@ function isEffectivelyEmptyState(state) {
   return Object.keys(state.targets ?? {}).length === 0 && Object.keys(state.upstream ?? {}).length === 0;
 }
 
+function defaultBootstrapTargets(metadata) {
+  return Object.keys(metadata.platforms).filter((target) => target !== 'copilot');
+}
+
 export function enabledTargetsFromState(state) {
   return sortedUnique(
     Object.entries(state.targets ?? {})
@@ -127,7 +131,7 @@ export async function ensureUserGlobalState(rootDir, options = {}) {
     ? normalizeTargets(metadata, options.targets)
     : currentTargets.length > 0
       ? currentTargets
-      : normalizeTargets(metadata, ['all']);
+      : defaultBootstrapTargets(metadata);
 
   const projectionMode = options.projectionMode ?? state.projectionMode ?? 'link';
   const hookMode = options.hookMode ?? state.hookMode ?? 'off';

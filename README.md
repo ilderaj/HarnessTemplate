@@ -81,12 +81,14 @@ Thanks to the upstream authors and communities whose work this repository builds
 ./scripts/harness adoption-status
 ```
 
+`adopt-global` bootstraps the repo baseline into user-global state, but it intentionally leaves GitHub Copilot out of that default bootstrap. Keep Copilot repo-local unless you explicitly opt into a global Copilot install.
+
 Use `--scope=both` when you want a shared user-global baseline plus repository-local entry files.
 
 If you want a non-default user-global profile, install it once and then reuse `adopt-global`:
 
 ```bash
-./scripts/harness install --scope=user-global --targets=all --projection=link --skills-profile=minimal-global
+./scripts/harness install --scope=user-global --targets=codex,cursor,claude-code --projection=link --skills-profile=minimal-global
 ./scripts/harness adopt-global
 ```
 
@@ -97,7 +99,7 @@ Rendered entry files use the `always-on-core` profile by default. That keeps ses
 Skill projections use the `full` profile by default. If you are adopting Harness into an existing user-global setup, `minimal-global` is the opt-in profile that keeps `planning-with-files` plus the allow-listed `superpowers` children:
 
 ```bash
-./scripts/harness install --scope=user-global --targets=all --projection=link --skills-profile=minimal-global
+./scripts/harness install --scope=user-global --targets=codex,cursor,claude-code --projection=link --skills-profile=minimal-global
 ```
 
 The default does not flip to `minimal-global`; omit `--skills-profile` to keep `full`.
@@ -127,7 +129,7 @@ npm run verify
 ./scripts/harness doctor --check-only
 ```
 
-The expected default remains thin rendered entry files, `full` skill projection, and hooks off. For user-global adoption trials, use the opt-in `minimal-global` profile in an isolated profile before writing real user-global files.
+The expected default remains thin rendered entry files, `full` skill projection, hooks off, and no global Copilot bootstrap. For user-global adoption trials, use the opt-in `minimal-global` profile in an isolated profile before writing real user-global files.
 
 ### Worktree Naming
 
@@ -245,10 +247,11 @@ The `safety` profile is an opt-in layer for users who run agents in bypass / aut
 
 ```bash
 ./scripts/harness install --scope=workspace --profile=safety --hooks=on
-./scripts/harness install --scope=user-global --profile=safety --hooks=on
 ./scripts/harness sync
 ./scripts/harness doctor --check-only
 ```
+
+Prefer safety as a workspace-scoped profile. For GitHub Copilot, keep safety enabled only in the repository that needs it instead of turning it on user-global.
 
 What the profile adds:
 

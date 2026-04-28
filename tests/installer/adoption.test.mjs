@@ -63,11 +63,13 @@ test('adopt-global bootstraps user-global state, verification output, and receip
     );
 
     assert.equal(state.scope, 'user-global');
+    assert.equal(state.hookMode, 'off');
     assert.equal(state.policyProfile, 'always-on-core');
-    assert.equal(Object.keys(state.targets).length, 4);
+    assert.deepEqual(Object.keys(state.targets).sort(), ['claude-code', 'codex', 'cursor']);
     assert.equal(receipt.status, 'success');
     assert.equal(receipt.scope, 'user-global');
     assert.equal(receipt.policyProfile, 'always-on-core');
+    assert.deepEqual(receipt.targets, ['claude-code', 'codex', 'cursor']);
     assert.equal(receipt.repoHead, await currentHead(root));
     assert.equal(verification.health.problems.length, 0);
   } finally {

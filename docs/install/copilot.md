@@ -53,12 +53,16 @@ When you create a manual branch or worktree for Copilot-driven work, resolve the
 ./scripts/harness worktree-name --task <task-id> --namespace copilot
 ```
 
-For user-global adoption, keep the default `full` profile unless you explicitly want the smaller `minimal-global` projection:
+Keep Copilot repo-local by default. `adopt-global` does not bootstrap Copilot into user-global state unless you explicitly ask for it.
+
+If you intentionally want a user-global Copilot install, opt in explicitly:
 
 ```bash
 ./scripts/harness install --targets=copilot --scope=user-global --skills-profile=minimal-global
 ./scripts/harness sync
 ```
+
+For this repository, prefer workspace scope when enabling Copilot hooks or the `safety` profile.
 
 Run with hooks:
 
