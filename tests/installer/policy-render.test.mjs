@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { renderEntry } from '../../harness/installer/lib/adapters.mjs';
 import { renderPolicyProfile } from '../../harness/installer/lib/policy-render.mjs';
+import { measureText } from '../../harness/installer/lib/context-budget.mjs';
 
 test('each declared policy profile renders independently', async () => {
   const rootDir = process.cwd();
@@ -23,6 +24,22 @@ test('renderEntry accepts a policy profile override', async () => {
 
   assert.match(rendered, /Complex Task Orchestration/);
   assert.doesNotMatch(rendered, /Task Classification/);
+});
+
+test('renderEntry uses a thinner always-on profile for Copilot by default', async () => {
+  const [copilotRendered, codexRendered] = await Promise.all([
+    renderEntry(process.cwd(), 'copilot', 'always-on-core'),
+    renderEntry(process.cwd(), 'codex', 'always-on-core')
+  ]);
+
+  assert.match(copilotRendered, /Task Classification/);
+  assert.match(copilotRendered, /Communication Guidelines/);
+  assert.doesNotMatch(copilotRendered, /When Superpowers Is Allowed/);
+  assert.doesNotMatch(copilotRendered, /When Superpowers Is Not Allowed/);
+  assert.doesNotMatch(copilotRendered, /Tool Preferences/);
+  assert.match(codexRendered, /When Superpowers Is Allowed/);
+  assert.match(codexRendered, /Tool Preferences/);
+  assert.ok(measureText(copilotRendered).approxTokens < measureText(codexRendered).approxTokens);
 });
 
 test('renderPolicyProfile supports include-based safety profiles', async () => {

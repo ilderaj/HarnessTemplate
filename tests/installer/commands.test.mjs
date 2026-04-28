@@ -136,6 +136,36 @@ test('sync uses the stored entry profile when rendering entries', async () => {
   }
 });
 
+test('sync keeps always-on-core state while rendering a thinner Copilot entry', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      hookMode: 'off',
+      policyProfile: 'always-on-core',
+      skillProfile: 'full',
+      targets: {
+        copilot: { enabled: true, paths: [path.join(root, '.github/copilot-instructions.md')] }
+      },
+      upstream: {}
+    });
+
+    await harnessCommand(root, 'sync');
+    const entry = await readFile(path.join(root, '.github/copilot-instructions.md'), 'utf8');
+    const state = await readState(root);
+
+    assert.equal(state.policyProfile, 'always-on-core');
+    assert.match(entry, /Task Classification/);
+    assert.doesNotMatch(entry, /When Superpowers Is Allowed/);
+    assert.doesNotMatch(entry, /When Superpowers Is Not Allowed/);
+    assert.doesNotMatch(entry, /Tool Preferences/);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
 test('sync --dry-run prints diff without writing files or state', async () => {
   const root = await createHarnessFixture();
   try {

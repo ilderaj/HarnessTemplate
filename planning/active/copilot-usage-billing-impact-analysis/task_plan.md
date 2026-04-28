@@ -1,7 +1,7 @@
 # Copilot usage-based billing 对 Harness 开销影响分析与优化规划
 
 ## Goal
-在不直接执行改动的前提下，基于当前 Harness 的真实上下文装载路径，分析 GitHub Copilot usage-based billing 下不同场景的 chat 成本结构，并产出一个投入产出均衡的 usage 优化计划。
+基于当前 Harness 的真实上下文装载路径，先完成 usage-based billing 影响分析与优化计划，再按不明显削弱 Harness 约束效果的前提，分阶段落实高 ROI 的 Copilot usage 优化。
 
 ## Current State
 Status: waiting_review
@@ -9,7 +9,7 @@ Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 6
+Phase 8
 
 ## Phases
 
@@ -48,6 +48,18 @@ Phase 6
 - [x] 运行一次仓库内实际 `verify` 生成报告
 - **Status:** complete
 
+### Phase 7: Copilot 薄 always-on entry
+- [x] 以 TDD 增加 Copilot 默认薄入口失败测试
+- [x] 仅对 Copilot 的 `always-on-core` 做 target-specific thin profile 映射
+- [x] 保持安装态 `policyProfile` 仍为 `always-on-core`
+- **Status:** complete
+
+### Phase 8: Copilot planning hook 摘要化
+- [x] 以 TDD 增加 Copilot `session-start` / `pre-tool-use` 紧缩失败测试
+- [x] 将重复 hot context 改为事件级短摘要，同时保留 `user-prompt-submit` 的完整 hot context
+- [x] 完成 entry + hooks 的定向回归与真实 `verify`
+- **Status:** complete
+
 ## Risk Assessment
 
 | 风险 | 触发条件 | 影响范围 | 缓解 / 已落盘的回退方案 |
@@ -70,6 +82,8 @@ Phase 6
 | 第 1 阶段先落地 `verify` / `health` 的 context ledger summary | 现有测量与预算原语已存在，补 summary 和报告是成本最低、反馈最快的实现切口 |
 | `planningHotContext` 直接复用 `buildPlanningHotContext` | 这是 hooks 已经在用的真实热上下文生成逻辑，避免二次定义 |
 | `skillProfile` 先定义为 hook-enabled 场景下的技能发现面账本 | 这样能补可观测性，又不会在轻量 entry-only 检查里引入高噪声回归 |
+| Copilot 默认入口单独映射到 `copilot-always-on-thin` | Copilot override 已明确要求 thin entry，且只对该 target 收紧能最小化跨平台回归风险 |
+| Copilot planning hooks 只压缩 `session-start` 与 `pre-tool-use` | 这两类事件重复且高频，改为摘要能降低固定税与 cached token，同时保留 `user-prompt-submit` 的恢复能力 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -80,4 +94,4 @@ Phase 6
 - 当前阶段重点是把“开销来源”映射到真实 Harness 路径，而不是提前做方案细节实现。
 - 若后续进入执行阶段，需要单独评估哪些优化属于 source 侧一次性改动，哪些属于 platform/profile 配置策略。
 - 当前轮次已完成“分析 + 计划”交付；后续若推进实现，应从 `waiting_execution` 状态继续。
-- 当前已进入执行阶段，并完成路线图的 Phase 1 可观测性最小实现；后续若继续，将按既有 ROI 顺序推进薄入口和 hook 摘要化。
+- 当前已进入执行阶段，并完成路线图的前 3 个高 ROI 步骤：可观测性、Copilot 薄入口、Copilot planning hook 摘要化。

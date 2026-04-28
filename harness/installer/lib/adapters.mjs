@@ -4,6 +4,29 @@ import { resolveTargetPaths } from './paths.mjs';
 import { renderTemplate } from './fs-ops.mjs';
 import { renderPolicyProfile } from './policy-render.mjs';
 
+function normalizeProfileNames(profileNames) {
+  if (profileNames === undefined) {
+    return undefined;
+  }
+
+  return Array.isArray(profileNames) ? profileNames : [profileNames];
+}
+
+function resolveEntryPolicyProfiles(target, profileNames) {
+  const normalized = normalizeProfileNames(profileNames);
+  if (target !== 'copilot') {
+    return normalized ?? profileNames;
+  }
+
+  if (!normalized) {
+    return 'copilot-always-on-thin';
+  }
+
+  return normalized.map((profileName) =>
+    profileName === 'always-on-core' ? 'copilot-always-on-thin' : profileName
+  );
+}
+
 export async function loadAdapter(rootDir, target) {
   const file = path.join(rootDir, 'harness/adapters', target, 'manifest.json');
   return JSON.parse(await readFile(file, 'utf8'));
@@ -11,9 +34,10 @@ export async function loadAdapter(rootDir, target) {
 
 export async function renderEntry(rootDir, target, profileNames) {
   const adapter = await loadAdapter(rootDir, target);
+  const resolvedProfiles = resolveEntryPolicyProfiles(target, profileNames);
   const [template, policyProfile, platformOverride] = await Promise.all([
     readFile(path.join(rootDir, adapter.template), 'utf8'),
-    renderPolicyProfile(rootDir, profileNames),
+    renderPolicyProfile(rootDir, resolvedProfiles),
     readFile(path.join(rootDir, adapter.override), 'utf8'),
   ]);
 

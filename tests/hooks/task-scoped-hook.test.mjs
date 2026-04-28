@@ -98,6 +98,71 @@ test('task-scoped-hook treats active status lines with extra whitespace as activ
   }
 });
 
+test('task-scoped-hook keeps Copilot session-start compact and defers hot context to user prompt submit', async () => {
+  const { fixtureRoot } = await createFixture('copilot-compact-session-start', activeTaskFiles());
+
+  try {
+    const scriptPath = path.join(
+      process.cwd(),
+      'harness/core/hooks/planning-with-files/scripts/task-scoped-hook.sh'
+    );
+    const { stdout: sessionStartStdout } = await execFileAsync(
+      'bash',
+      [scriptPath, 'copilot', 'session-start'],
+      {
+        cwd: fixtureRoot
+      }
+    );
+    const { stdout: promptStdout } = await execFileAsync(
+      'bash',
+      [scriptPath, 'copilot', 'user-prompt-submit'],
+      {
+        cwd: fixtureRoot
+      }
+    );
+
+    const sessionStartPayload = JSON.parse(sessionStartStdout);
+    const promptPayload = JSON.parse(promptStdout);
+
+    assert.equal(sessionStartPayload.hookSpecificOutput.hookEventName, 'SessionStart');
+    assert.doesNotMatch(sessionStartPayload.hookSpecificOutput.additionalContext, /HOT CONTEXT/);
+    assert.match(sessionStartPayload.hookSpecificOutput.additionalContext, /next user prompt/i);
+    assert.match(sessionStartPayload.hookSpecificOutput.additionalContext, /planning\/active\/codex-hooks/);
+
+    assert.equal(promptPayload.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+    assert.match(promptPayload.hookSpecificOutput.additionalContext, /HOT CONTEXT/);
+    assert.ok(
+      sessionStartPayload.hookSpecificOutput.additionalContext.length <
+        promptPayload.hookSpecificOutput.additionalContext.length
+    );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('task-scoped-hook keeps Copilot pre-tool-use compact while allowing the tool call', async () => {
+  const { fixtureRoot } = await createFixture('copilot-compact-pretool', activeTaskFiles());
+
+  try {
+    const scriptPath = path.join(
+      process.cwd(),
+      'harness/core/hooks/planning-with-files/scripts/task-scoped-hook.sh'
+    );
+    const { stdout } = await execFileAsync('bash', [scriptPath, 'copilot', 'pre-tool-use'], {
+      cwd: fixtureRoot
+    });
+
+    const payload = JSON.parse(stdout);
+    assert.equal(payload.hookSpecificOutput.hookEventName, 'PreToolUse');
+    assert.equal(payload.hookSpecificOutput.permissionDecision, 'allow');
+    assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /HOT CONTEXT/);
+    assert.match(payload.hookSpecificOutput.additionalContext, /progress\.md/);
+    assert.match(payload.hookSpecificOutput.additionalContext, /task_plan\.md/);
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test('task-scoped-hook still works after projection to the target hook root', async () => {
   const { fixtureRoot } = await createFixture('projected-root', activeTaskFiles());
   const commandCwd = path.join(artifactsRoot, 'projected-root-cwd');

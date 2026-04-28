@@ -71,6 +71,32 @@
   - `.harness/verification-ledger/latest.md` (generated)
   - `.harness/verification-ledger/latest.json` (generated)
 
+### Phase 7: Copilot 薄 always-on entry
+- **Status:** complete
+- Actions taken:
+  - 读取 `policy-render.mjs`、`adapters.mjs`、`entry-profiles.json`、Copilot override 与对应测试，确认 root cause 是 Copilot 与其他 target 共用 `always-on-core`。
+  - 先在 `tests/installer/policy-render.test.mjs` 和 `tests/installer/commands.test.mjs` 增加失败测试，锁定“Copilot 默认入口应更薄，但 persisted state 仍保持 `always-on-core`”的目标行为。
+  - 新增 `copilot-always-on-thin` profile，并在 `renderEntry()` 中仅对 `copilot + always-on-core` 做目标级映射。
+  - 跑窄测试验证 `policy-render` / `sync` 行为通过。
+- Files created/modified:
+  - `harness/core/policy/entry-profiles.json` (updated)
+  - `harness/installer/lib/adapters.mjs` (updated)
+  - `tests/installer/policy-render.test.mjs` (updated)
+  - `tests/installer/commands.test.mjs` (updated)
+
+### Phase 8: Copilot planning hook 摘要化
+- **Status:** complete
+- Actions taken:
+  - 读取 `task-scoped-hook.sh`、`planning-hot-context.mjs` 与 hook tests，确认重复税主要来自 Copilot planning hook 在 `session-start` / `pre-tool-use` 上重复注入 hot context。
+  - 先在 `tests/hooks/task-scoped-hook.test.mjs` 增加失败测试，要求 Copilot `session-start` / `pre-tool-use` 改为短摘要，而 `user-prompt-submit` 保留完整 hot context。
+  - 在 `task-scoped-hook.sh` 中为 Copilot 新增 event-specific compact context，保留 `permissionDecision: allow` 与 `user-prompt-submit` 的完整恢复摘要。
+  - 运行定向 hooks / installer 回归，并再次运行仓库真实 `verify`。
+- Files created/modified:
+  - `harness/core/hooks/planning-with-files/scripts/task-scoped-hook.sh` (updated)
+  - `tests/hooks/task-scoped-hook.test.mjs` (updated)
+  - `.harness/verification-ledger/latest.md` (generated)
+  - `.harness/verification-ledger/latest.json` (generated)
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -78,6 +104,11 @@
 | Markdown diagnostics | Check new planning and plan files for workspace errors | No errors | No errors | ✓ |
 | RED installer tests | `node --test tests/installer/health.test.mjs tests/installer/commands.test.mjs` | New ledger tests fail before implementation | Failed in 3 targeted assertions | ✓ |
 | GREEN installer tests | `node --test tests/installer/health.test.mjs tests/installer/commands.test.mjs` | All targeted installer tests pass | 52 passed, 0 failed | ✓ |
+| RED thin-entry tests | `node --test tests/installer/policy-render.test.mjs tests/installer/commands.test.mjs` | New Copilot thin-entry assertions fail before implementation | 22 passed, 2 failed | ✓ |
+| GREEN thin-entry tests | `node --test tests/installer/policy-render.test.mjs tests/installer/commands.test.mjs` | Copilot thin-entry assertions pass after implementation | 24 passed, 0 failed | ✓ |
+| RED hook-compaction tests | `node --test tests/hooks/task-scoped-hook.test.mjs` | New Copilot hook compaction assertions fail before implementation | 3 passed, 2 failed | ✓ |
+| GREEN hook-compaction tests | `node --test tests/hooks/task-scoped-hook.test.mjs` | Copilot hook compaction assertions pass after implementation | 5 passed, 0 failed | ✓ |
+| Focused regression suite | `node --test tests/hooks/task-scoped-hook.test.mjs tests/hooks/hook-budget.test.mjs tests/hooks/superpowers-codex-hook.test.mjs tests/installer/policy-render.test.mjs tests/installer/commands.test.mjs tests/installer/health.test.mjs` | Entry + hooks + health regressions stay green | 68 passed, 0 failed | ✓ |
 | Real verify command | `node harness/installer/commands/harness.mjs verify --output=.harness/verification-ledger` | Report written with new ledger summaries | Report generated successfully | ✓ |
 
 ## Error Log
@@ -89,7 +120,7 @@
 | Question | Answer |
 |----------|--------|
 | Where am I? | Phase 6 已完成，本轮实现可进入 review / handoff |
-| Where am I going? | 若继续推进，将进入下一阶段：薄 always-on entry 与 hook 摘要化 |
-| What's the goal? | 输出一份基于当前 Harness 真实路径的 Copilot usage 优化计划 |
-| What have I learned? | 第 1 阶段最小实现点是 `health` / `verify` 的 ledger summary；planning 热上下文可直接复用现有 helper；skill profile 需要避免污染轻量场景 |
-| What have I done? | 已补 tests、实现 summary 和 verify 输出、让窄测试全绿，并生成真实 verify 报告 |
+| Where am I going? | 若继续推进，将进入下一阶段：skill profile 分层与 planning 恢复模型优化 |
+| What's the goal? | 在不明显削弱 Harness 约束效果的前提下，按 ROI 逐步落实 Copilot usage 优化 |
+| What have I learned? | Copilot 最值得优先压缩的是 target-specific always-on entry 和高频 planning hook 重复上下文；保留 `user-prompt-submit` 的 hot context 可以兼顾恢复力 |
+| What have I done? | 已完成分析计划、ledger 可观测性、Copilot 薄入口、Copilot hook 摘要化，并跑通定向回归与真实 verify |

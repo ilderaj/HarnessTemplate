@@ -126,10 +126,37 @@ render_session_summary() {
   node "$summary_helper" "$plan" "$findings" "$progress" "${sidecar_epoch:-}"
 }
 
+relative_task_dir() {
+  case "$task_dir" in
+    "$root"/*)
+      printf '%s' "${task_dir#$root/}"
+      ;;
+    *)
+      printf '%s' "$task_dir"
+      ;;
+  esac
+}
+
+render_copilot_session_start_context() {
+  local relative_dir
+  relative_dir="$(relative_task_dir)"
+  printf '%s' "[planning-with-files] Active task detected at ${relative_dir}. Hot context will be injected on the next user prompt. Keep ${relative_dir}/task_plan.md, ${relative_dir}/findings.md, and ${relative_dir}/progress.md authoritative."
+}
+
+render_copilot_pretool_context() {
+  local relative_dir
+  relative_dir="$(relative_task_dir)"
+  printf '%s' "[planning-with-files] Stay aligned with ${relative_dir}/task_plan.md and record tool-impacting progress in ${relative_dir}/progress.md after the tool call."
+}
+
 case "$event" in
   session-start)
     write_session_sidecar "$task_dir"
-    context="$(render_hot_context)"
+    if [ "$target" = "copilot" ]; then
+      context="$(render_copilot_session_start_context)"
+    else
+      context="$(render_hot_context)"
+    fi
     emit_context "$context" "SessionStart"
     ;;
   user-prompt-submit)
@@ -137,7 +164,11 @@ case "$event" in
     emit_context "$context" "UserPromptSubmit"
     ;;
   pre-tool-use)
-    context="$(render_hot_context)"
+    if [ "$target" = "copilot" ]; then
+      context="$(render_copilot_pretool_context)"
+    else
+      context="$(render_hot_context)"
+    fi
     emit_context "$context" "PreToolUse"
     ;;
   post-tool-use)
