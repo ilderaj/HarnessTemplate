@@ -81,6 +81,8 @@ Thanks to the upstream authors and communities whose work this repository builds
 ./scripts/harness adoption-status
 ```
 
+`adopt-global` bootstraps the repo baseline into user-global state, including GitHub Copilot. The default user-global baseline stays on `always-on-core`; safety remains an explicit workspace choice.
+
 Use `--scope=both` when you want a shared user-global baseline plus repository-local entry files.
 
 If you want a non-default user-global profile, install it once and then reuse `adopt-global`:
@@ -127,7 +129,7 @@ npm run verify
 ./scripts/harness doctor --check-only
 ```
 
-The expected default remains thin rendered entry files, `full` skill projection, and hooks off. For user-global adoption trials, use the opt-in `minimal-global` profile in an isolated profile before writing real user-global files.
+The expected default remains thin rendered entry files, `full` skill projection, hooks off, and no global safety profile. For user-global adoption trials, use the opt-in `minimal-global` profile in an isolated profile before writing real user-global files.
 
 ### Worktree Naming
 
@@ -245,10 +247,13 @@ The `safety` profile is an opt-in layer for users who run agents in bypass / aut
 
 ```bash
 ./scripts/harness install --scope=workspace --profile=safety --hooks=on
-./scripts/harness install --scope=user-global --profile=safety --hooks=on
 ./scripts/harness sync
 ./scripts/harness doctor --check-only
 ```
+
+Prefer safety as a workspace-scoped profile. For GitHub Copilot, keep safety enabled only in the repository that needs it instead of turning it on user-global.
+
+User-global and `both` installs stay on non-safety profiles. `safety` and `cloud-safe` are workspace-only profiles.
 
 What the profile adds:
 
@@ -357,6 +362,7 @@ npm run verify
 
 ## Docs
 
+- [Roadmap](docs/roadmap.md)
 - [Architecture](docs/architecture.md)
 - [Maintenance](docs/maintenance.md)
 - [Release](docs/release.md)

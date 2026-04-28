@@ -7,6 +7,7 @@ import { readHarnessHealth } from './health.mjs';
 import { loadPlatforms, normalizeTargets } from './metadata.mjs';
 import { loadPolicyProfiles } from './policy-render.mjs';
 import { resolveTargetPaths } from './paths.mjs';
+import { isSafetyPolicyProfile } from './safety-projection.mjs';
 import { loadSkillProfiles } from './skill-projection.mjs';
 import { readState, writeState } from './state.mjs';
 
@@ -43,6 +44,10 @@ function validateAdoptionMode(mode) {
 
 function isEffectivelyEmptyState(state) {
   return Object.keys(state.targets ?? {}).length === 0 && Object.keys(state.upstream ?? {}).length === 0;
+}
+
+function defaultBootstrapTargets(metadata) {
+  return Object.keys(metadata.platforms);
 }
 
 export function enabledTargetsFromState(state) {
@@ -127,7 +132,7 @@ export async function ensureUserGlobalState(rootDir, options = {}) {
     ? normalizeTargets(metadata, options.targets)
     : currentTargets.length > 0
       ? currentTargets
-      : normalizeTargets(metadata, ['all']);
+      : defaultBootstrapTargets(metadata);
 
   const projectionMode = options.projectionMode ?? state.projectionMode ?? 'link';
   const hookMode = options.hookMode ?? state.hookMode ?? 'off';
@@ -141,6 +146,10 @@ export async function ensureUserGlobalState(rootDir, options = {}) {
     throw new Error(
       `Invalid profile: ${policyProfile}. Expected one of: ${Object.keys(policyProfiles.profiles).join(', ')}.`
     );
+  }
+
+  if (isSafetyPolicyProfile(policyProfile)) {
+    throw new Error(`Safety profiles are workspace-only. Refusing ${policyProfile} for user-global scope.`);
   }
 
   if (!skillProfiles.profiles[skillProfile]) {

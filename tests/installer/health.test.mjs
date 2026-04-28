@@ -720,6 +720,63 @@ test('readHarnessHealth records measured hook payloads in context', async () => 
   }
 });
 
+test('readHarnessHealth summarizes hook, planning, and skill profile context ledgers', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      hookMode: 'on',
+      targets: {
+        codex: { enabled: true, paths: [path.join(root, 'AGENTS.md')] }
+      },
+      upstream: {}
+    });
+
+    await mkdir(path.join(root, 'planning/active/compact-task'), { recursive: true });
+    await writeFile(
+      path.join(root, 'planning/active/compact-task/task_plan.md'),
+      [
+        '# Compact Task',
+        '',
+        '## Goal',
+        '- Keep context ledgers visible.',
+        '',
+        '## Current State',
+        'Status: active',
+        'Archive Eligible: no'
+      ].join('\n')
+    );
+    await writeFile(
+      path.join(root, 'planning/active/compact-task/findings.md'),
+      ['# Findings', '', '- The hook payloads should stay measurable.'].join('\n')
+    );
+    await writeFile(
+      path.join(root, 'planning/active/compact-task/progress.md'),
+      ['# Progress', '', '- Synced hook projections for measurement.'].join('\n')
+    );
+
+    await withCwd(root, () => sync([]));
+    const health = await readHarnessHealth(root, '/home/user');
+
+    assert.ok(health.context.summary.hooks);
+    assert.ok(health.context.summary.planning);
+    assert.ok(health.context.summary.skillProfiles);
+    assert.equal(health.context.summary.hooks.target, 'codex');
+    assert.equal(health.context.summary.planning.target, 'codex');
+    assert.equal(health.context.summary.skillProfiles.target, 'codex');
+    assert.ok(health.context.summary.hooks.approxTokens > 0);
+    assert.ok(health.context.summary.planning.approxTokens > 0);
+    assert.ok(health.context.summary.skillProfiles.approxTokens > 0);
+    assert.equal(health.context.summary.hooks.verdict, 'ok');
+    assert.equal(health.context.summary.planning.verdict, 'ok');
+    assert.equal(health.context.summary.skillProfiles.verdict, 'ok');
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
 test('readHarnessHealth records hook payload warning verdicts in context warnings', async () => {
   const root = await createHarnessFixture();
   try {

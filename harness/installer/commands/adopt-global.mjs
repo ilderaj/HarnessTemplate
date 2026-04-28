@@ -28,7 +28,7 @@ function usage() {
     'Usage: ./scripts/harness adopt-global [--targets=<list>|all] [--profile=<name>] [--skills-profile=<name>] [--projection=link|portable] [--hooks=off|on] [--mode=ensure|force] [--output=<dir>]',
     '',
     'Options:',
-    '  --targets=<list>|all       Global targets to adopt. Defaults to the existing user-global install.',
+    '  --targets=<list>|all       Global targets to adopt. Defaults to the existing user-global install; empty bootstrap includes all supported global targets.',
     '  --profile=<name>           Override the policy profile when bootstrapping or forcing state.',
     '  --skills-profile=<name>    Override the skills profile when bootstrapping or forcing state.',
     '  --projection=link|portable Override projection mode when bootstrapping or forcing state.',

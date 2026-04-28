@@ -9,12 +9,13 @@ import { hookEntryMarker } from './hook-config.mjs';
 import { planHookProjections } from './hook-projection.mjs';
 import { loadPlatforms } from './metadata.mjs';
 import { inspectPlanLocations } from './plan-locations.mjs';
+import { buildPlanningHotContext } from './planning-hot-context.mjs';
 import { resolveHookRoots, resolveSkillRoots, resolveTargetPaths } from './paths.mjs';
 import {
   PLANNING_WITH_FILES_DESTRUCTIVE_LOG_PATCH_MARKER,
   PLANNING_WITH_FILES_RISK_ASSESSMENT_PATCH_MARKER
 } from './planning-with-files-risk-assessment-patch.mjs';
-import { planSkillProjections } from './skill-projection.mjs';
+import { loadSkillProfiles, planSkillProjections } from './skill-projection.mjs';
 import { isSafetyPolicyProfile, resolveAgentConfigRoots } from './safety-projection.mjs';
 import { readState } from './state.mjs';
 import { readUserManaged } from './user-managed.mjs';
@@ -305,7 +306,10 @@ function createEmptyContext() {
     planning: [],
     skillProfiles: [],
     summary: {
-      entries: createEmptyContextTotals()
+      entries: createEmptyContextTotals(),
+      hooks: createEmptyContextTotals(),
+      planning: createEmptyContextTotals(),
+      skillProfiles: createEmptyContextTotals()
     },
     warnings: []
   };
@@ -346,7 +350,7 @@ function addMeasurement(targets, target, measurement) {
   targets.set(target, current);
 }
 
-function chooseWorstEntryTotal(totals) {
+function chooseWorstContextTotal(totals) {
   return totals.reduce((current, candidate) => {
     if (!current) return candidate;
 
@@ -366,6 +370,140 @@ function chooseWorstEntryTotal(totals) {
 
     return candidate.lines > current.lines ? candidate : current;
   }, null);
+}
+
+function applyContextSummary(summary, totals, budget) {
+  const worstTotal = chooseWorstContextTotal(totals);
+  summary.targets = totals;
+
+  if (worstTotal) {
+    summary.target = worstTotal.target;
+    summary.chars = worstTotal.chars;
+    summary.lines = worstTotal.lines;
+    summary.approxTokens = worstTotal.approxTokens;
+  }
+
+  if (!budget) {
+    summary.verdict = 'unknown';
+    summary.evaluation = null;
+    return;
+  }
+
+  summary.verdict = worstTotal?.verdict ?? 'ok';
+  summary.evaluation =
+    worstTotal?.evaluation ?? toBudgetEvaluation(evaluateBudget(summary, budget), budget);
+}
+
+function createMeasuredSummaryEntry(target, measurement, evaluation, extra = {}) {
+  return {
+    target,
+    measurement,
+    evaluation,
+    status: evaluation?.verdict === 'ok' ? 'ok' : (evaluation?.verdict ?? 'unknown'),
+    ...extra
+  };
+}
+
+function buildSkillProfileDiscoveryText(profileName, target, skills) {
+  const lines = [
+    '[harness] SKILL PROFILE DISCOVERY',
+    `Profile: ${profileName}`,
+    `Target: ${target}`,
+    `Skills: ${skills.length}`
+  ];
+
+  for (const skill of skills) {
+    const label = skill.parentSkillName === skill.skillName
+      ? skill.skillName
+      : `${skill.parentSkillName}:${skill.skillName}`;
+    lines.push(`- ${label} (${skill.strategy})`);
+  }
+
+  return lines.join('\n');
+}
+
+async function inspectPlanningHotContext(
+  activeTaskDir,
+  planningBudget,
+  hookMode,
+  target,
+  hooks,
+  contextWarnings,
+  warnings,
+  problems
+) {
+  if (hookMode !== 'on' || !planningBudget || !activeTaskDir) {
+    return null;
+  }
+
+  const hasPlanningHook = hooks.some(
+    (hook) => hook.parentSkillName === 'planning-with-files' && ['ok', 'unsupported'].includes(hook.status)
+  );
+  if (!hasPlanningHook) {
+    return null;
+  }
+
+  const taskPlanPath = path.join(activeTaskDir, 'task_plan.md');
+  const findingsPath = path.join(activeTaskDir, 'findings.md');
+  const progressPath = path.join(activeTaskDir, 'progress.md');
+  const output = await buildPlanningHotContext({ taskPlanPath, findingsPath, progressPath });
+  const measurement = measureText(output);
+  const evaluation = toBudgetEvaluation(evaluateBudget(measurement, planningBudget), planningBudget);
+  const entry = createMeasuredSummaryEntry(target, measurement, evaluation, {
+    taskDir: activeTaskDir
+  });
+
+  if (evaluation.verdict !== 'ok') {
+    const message = formatBudgetMessage(`planning hot context ${target}`, measurement, planningBudget, evaluation.verdict);
+    entry.message = message;
+    addUniqueMessage(contextWarnings, message);
+    addUniqueMessage(warnings, message);
+    if (evaluation.verdict === 'problem') {
+      addUniqueMessage(problems, message);
+    }
+  }
+
+  return entry;
+}
+
+async function inspectSkillProfileContext(
+  rootDir,
+  skillProfileName,
+  skillBudget,
+  hookMode,
+  target,
+  skills,
+  contextWarnings,
+  warnings,
+  problems
+) {
+  if (!skillBudget || hookMode !== 'on') {
+    return null;
+  }
+
+  const skillProfiles = await loadSkillProfiles(rootDir);
+  const profileName = skillProfileName ?? skillProfiles.defaultProfile;
+  const discoveryText = buildSkillProfileDiscoveryText(profileName, target, skills);
+  const measurement = measureText(discoveryText);
+  const evaluation = toBudgetEvaluation(evaluateBudget(measurement, skillBudget), skillBudget);
+  const entry = createMeasuredSummaryEntry(target, measurement, evaluation, {
+    profileName,
+    selectedSkills: skills.map((skill) =>
+      skill.parentSkillName === skill.skillName ? skill.skillName : `${skill.parentSkillName}:${skill.skillName}`
+    )
+  });
+
+  if (evaluation.verdict !== 'ok') {
+    const message = formatBudgetMessage(`skill profile ${target} ${profileName}`, measurement, skillBudget, evaluation.verdict);
+    entry.message = message;
+    addUniqueMessage(contextWarnings, message);
+    addUniqueMessage(warnings, message);
+    if (evaluation.verdict === 'problem') {
+      addUniqueMessage(problems, message);
+    }
+  }
+
+  return entry;
 }
 
 function buildHookPayloadEnv(rootDir, homeDir) {
@@ -861,6 +999,9 @@ export async function readHarnessHealth(rootDir, homeDir) {
   let budgetLoadProblem = null;
   const activeTaskDir = await findSingleActiveTaskDir(rootDir);
   const entryTotalsByTarget = new Map();
+  const hookTotalsByTarget = new Map();
+  const planningTotalsByTarget = new Map();
+  const skillProfileTotalsByTarget = new Map();
 
   try {
     budgets = await loadContextBudgets(rootDir);
@@ -935,6 +1076,22 @@ export async function readHarnessHealth(rootDir, homeDir) {
       }
     }
 
+    const skillProfileEntry = await inspectSkillProfileContext(
+      rootDir,
+      state.skillProfile,
+      budgets?.budgets?.skillProfile,
+      state.hookMode,
+      target,
+      skills,
+      context.warnings,
+      warnings,
+      problems
+    );
+    if (skillProfileEntry) {
+      context.skillProfiles.push(skillProfileEntry);
+      addMeasurement(skillProfileTotalsByTarget, target, skillProfileEntry.measurement);
+    }
+
     const hooks = [];
     for (const projection of await planHookProjections({
       rootDir,
@@ -953,8 +1110,7 @@ export async function readHarnessHealth(rootDir, homeDir) {
 
     targets[target] = { entries, skills, hooks };
 
-    context.hooks.push(
-      ...(await inspectLocalHookPayloads(
+    const hookEntries = await inspectLocalHookPayloads(
         rootDir,
         homeDir,
         activeTaskDir,
@@ -964,8 +1120,28 @@ export async function readHarnessHealth(rootDir, homeDir) {
         context.warnings,
         warnings,
         problems
-      ))
+      );
+    context.hooks.push(...hookEntries);
+    for (const hookEntry of hookEntries) {
+      if (hookEntry.measurement) {
+        addMeasurement(hookTotalsByTarget, hookEntry.target, hookEntry.measurement);
+      }
+    }
+
+    const planningEntry = await inspectPlanningHotContext(
+      activeTaskDir,
+      budgets?.budgets?.planningHotContext,
+      state.hookMode,
+      target,
+      hooks,
+      context.warnings,
+      warnings,
+      problems
     );
+    if (planningEntry) {
+      context.planning.push(planningEntry);
+      addMeasurement(planningTotalsByTarget, target, planningEntry.measurement);
+    }
   }
 
   const entryTargetTotals = [...entryTotalsByTarget.values()].map((measurement) => {
@@ -984,33 +1160,59 @@ export async function readHarnessHealth(rootDir, homeDir) {
       evaluation: toBudgetEvaluation(evaluation, entryBudget)
     };
   });
-  const worstEntryTotal = chooseWorstEntryTotal(entryTargetTotals);
+  applyContextSummary(context.summary.entries, entryTargetTotals, entryBudget);
 
-  context.summary.entries.targets = entryTargetTotals;
-  if (worstEntryTotal) {
-    context.summary.entries.target = worstEntryTotal.target;
-    context.summary.entries.chars = worstEntryTotal.chars;
-    context.summary.entries.lines = worstEntryTotal.lines;
-    context.summary.entries.approxTokens = worstEntryTotal.approxTokens;
-  }
-
-  if (entryBudget) {
-    context.summary.entries.verdict = worstEntryTotal?.verdict ?? 'ok';
-    context.summary.entries.evaluation = worstEntryTotal?.evaluation ?? toBudgetEvaluation(evaluateBudget(context.summary.entries, entryBudget), entryBudget);
-
-    if (context.summary.entries.verdict !== 'ok') {
-      const label = context.summary.entries.target
-        ? `entry summary ${context.summary.entries.target}`
-        : 'entry summary';
-      const message = formatBudgetMessage(label, context.summary.entries, entryBudget, context.summary.entries.verdict);
-      addUniqueMessage(context.warnings, message);
-      if (context.summary.entries.verdict === 'problem') {
-        addUniqueMessage(problems, message);
-      }
+  if (context.summary.entries.verdict !== 'ok' && entryBudget) {
+    const label = context.summary.entries.target
+      ? `entry summary ${context.summary.entries.target}`
+      : 'entry summary';
+    const message = formatBudgetMessage(label, context.summary.entries, entryBudget, context.summary.entries.verdict);
+    addUniqueMessage(context.warnings, message);
+    if (context.summary.entries.verdict === 'problem') {
+      addUniqueMessage(problems, message);
     }
-  } else {
-    context.summary.entries.verdict = 'unknown';
   }
+
+  const hookBudget = budgets?.budgets?.hookPayload;
+  const hookTargetTotals = [...hookTotalsByTarget.values()].map((measurement) => {
+    if (!hookBudget) {
+      return { ...measurement, verdict: 'unknown', evaluation: null };
+    }
+
+    const evaluation = evaluateBudget(measurement, hookBudget);
+    return { ...measurement, verdict: evaluation.verdict, evaluation: toBudgetEvaluation(evaluation, hookBudget) };
+  });
+  applyContextSummary(context.summary.hooks, hookTargetTotals, hookBudget);
+
+  const planningBudget = budgets?.budgets?.planningHotContext;
+  const planningTargetTotals = [...planningTotalsByTarget.values()].map((measurement) => {
+    if (!planningBudget) {
+      return { ...measurement, verdict: 'unknown', evaluation: null };
+    }
+
+    const evaluation = evaluateBudget(measurement, planningBudget);
+    return {
+      ...measurement,
+      verdict: evaluation.verdict,
+      evaluation: toBudgetEvaluation(evaluation, planningBudget)
+    };
+  });
+  applyContextSummary(context.summary.planning, planningTargetTotals, planningBudget);
+
+  const skillProfileBudget = budgets?.budgets?.skillProfile;
+  const skillProfileTargetTotals = [...skillProfileTotalsByTarget.values()].map((measurement) => {
+    if (!skillProfileBudget) {
+      return { ...measurement, verdict: 'unknown', evaluation: null };
+    }
+
+    const evaluation = evaluateBudget(measurement, skillProfileBudget);
+    return {
+      ...measurement,
+      verdict: evaluation.verdict,
+      evaluation: toBudgetEvaluation(evaluation, skillProfileBudget)
+    };
+  });
+  applyContextSummary(context.summary.skillProfiles, skillProfileTargetTotals, skillProfileBudget);
 
   const safety = await inspectSafetyHealth(rootDir, homeDir, state, targets);
   for (const check of safety.checks) {

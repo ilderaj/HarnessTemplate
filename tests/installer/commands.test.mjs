@@ -94,6 +94,22 @@ test('install rejects an unknown skills profile', async () => {
   }
 });
 
+test('install rejects safety profiles outside workspace scope', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await assert.rejects(
+      harnessCommand(root, 'install', '--scope=user-global', '--targets=all', '--profile=safety'),
+      /Safety profiles are workspace-only/
+    );
+    await assert.rejects(
+      harnessCommand(root, 'install', '--scope=both', '--targets=all', '--profile=cloud-safe'),
+      /Safety profiles are workspace-only/
+    );
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
 test('sync uses the stored entry profile when rendering entries', async () => {
   const root = await createHarnessFixture();
   try {
@@ -115,6 +131,36 @@ test('sync uses the stored entry profile when rendering entries', async () => {
 
     assert.match(entry, /# Safety Policy/);
     assert.match(entry, /Never run agents from HOME/);
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
+test('sync keeps always-on-core state while rendering a thinner Copilot entry', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await writeState(root, {
+      schemaVersion: 1,
+      scope: 'workspace',
+      projectionMode: 'link',
+      hookMode: 'off',
+      policyProfile: 'always-on-core',
+      skillProfile: 'full',
+      targets: {
+        copilot: { enabled: true, paths: [path.join(root, '.github/copilot-instructions.md')] }
+      },
+      upstream: {}
+    });
+
+    await harnessCommand(root, 'sync');
+    const entry = await readFile(path.join(root, '.github/copilot-instructions.md'), 'utf8');
+    const state = await readState(root);
+
+    assert.equal(state.policyProfile, 'always-on-core');
+    assert.match(entry, /Task Classification/);
+    assert.doesNotMatch(entry, /When Superpowers Is Allowed/);
+    assert.doesNotMatch(entry, /When Superpowers Is Not Allowed/);
+    assert.doesNotMatch(entry, /Tool Preferences/);
   } finally {
     await removeHarnessFixture(root);
   }
@@ -186,6 +232,9 @@ test('verify prints to stdout by default without writing reports', async () => {
     const { stdout } = await harnessCommand(root, 'verify');
     assert.match(stdout, /# Harness Verification Report/);
     assert.match(stdout, /Context entry verdict:/);
+    assert.match(stdout, /Hook payload verdict:/);
+    assert.match(stdout, /Planning hot context verdict:/);
+    assert.match(stdout, /Skill profile verdict:/);
     await assert.rejects(access(path.join(root, 'reports/verification/latest.md')), /ENOENT/);
   } finally {
     await removeHarnessFixture(root);
@@ -212,7 +261,13 @@ test('verify --output writes report files only to the requested directory', asyn
     );
 
     assert.match(markdown, /Context entry verdict:/);
+    assert.match(markdown, /Hook payload verdict:/);
+    assert.match(markdown, /Planning hot context verdict:/);
+    assert.match(markdown, /Skill profile verdict:/);
     assert.equal(report.health.context.summary.entries.verdict, 'ok');
+    assert.equal(report.health.context.summary.hooks.verdict, 'ok');
+    assert.equal(report.health.context.summary.planning.verdict, 'ok');
+    assert.equal(report.health.context.summary.skillProfiles.verdict, 'ok');
     assert.equal(report.health.context.entries.length, 0);
     assert.ok(Array.isArray(report.health.context.warnings));
     await assert.rejects(access(path.join(root, 'reports/verification/latest.md')), /ENOENT/);
