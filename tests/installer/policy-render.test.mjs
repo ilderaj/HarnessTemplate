@@ -119,3 +119,10 @@ test('renderEntry can include concise copilot output guidance without affecting 
   const codexEntry = await renderEntry(process.cwd(), 'codex', ['copilot-concise-output']);
   assert.doesNotMatch(codexEntry, /Prefer terse progress updates and concise finals unless the user asks for depth/);
 });
+
+test('renderEntry with standalone copilot-concise-output includes thin baseline and concise guidance only', async () => {
+  const copilotEntry = await renderEntry(process.cwd(), 'copilot', ['copilot-concise-output']);
+  assert.match(copilotEntry, /Task Classification/); // thin baseline present
+  assert.match(copilotEntry, /Prefer terse progress updates and concise finals unless the user asks for depth/); // concise guidance present
+  assert.doesNotMatch(copilotEntry, /When Superpowers Is Allowed/); // does not broaden into full baseline
+});

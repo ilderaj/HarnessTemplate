@@ -22,13 +22,24 @@ function resolveEntryPolicyProfiles(target, profileNames) {
     return filtered.length > 0 ? filtered : undefined;
   }
 
+  // For Copilot target, default to the thinner always-on profile when no explicit
+  // profiles are requested.
   if (!normalized) {
     return 'copilot-always-on-thin';
   }
 
-  return normalized.map((profileName) =>
+  // Map any 'always-on-core' requests to the Copilot thin baseline, but ensure
+  // the thin baseline is present whenever Copilot is explicitly targeted so
+  // opt-in profiles (like copilot-concise-output) augment rather than replace it.
+  const mapped = normalized.map((profileName) =>
     profileName === 'always-on-core' ? 'copilot-always-on-thin' : profileName
   );
+
+  if (!mapped.includes('copilot-always-on-thin')) {
+    mapped.unshift('copilot-always-on-thin');
+  }
+
+  return mapped;
 }
 
 export async function loadAdapter(rootDir, target) {
