@@ -2,32 +2,30 @@
 
 superpowering-with-files is a governance harness for local coding-agent workflows. It turns one shared policy into native instruction files, projected skills, and optional hooks for Codex, GitHub Copilot, Cursor, and Claude Code.
 
-An opt-in safety profile adds path-boundary hooks, automatic checkpoints, and a worktree-first flow for bypass / autopilot work. See [Safety](#safety).
+- `planning-with-files` owns durable task state.
+- `superpowers` stays optional and temporary.
+- Harness renders the same policy into each IDE's native shape.
+- `safety` is opt-in for bypass / autopilot / long-running work.
 
 Gemini CLI is not currently a supported installer target.
 
 ## Core Model
 
-- `planning-with-files` owns durable task state
-- `superpowers` is optional and temporary
-- Harness projects both into each supported IDE's native shape
-- Rendered entry files are intentionally thinner than the canonical policy source.
-
 ```mermaid
 flowchart TD
-  A["Task arrives"] --> B["Read Harness entry file"]
-  B --> C{"Simple and clear?"}
-  C -- "Yes" --> D["Execute directly"]
-  C -- "No" --> E["Create or reuse planning/active/<task-id>/"]
-  E --> F["Use Planning with Files as source of truth"]
-  F --> G{"Need deeper reasoning?"}
-  G -- "Yes" --> H["Use Superpowers for that phase only"]
-  G -- "No" --> I["Stay in normal execution mode"]
-  H --> J["Sync durable decisions back to planning files"]
-  I --> K["Verify"]
-  J --> K
-  D --> K
-  K --> L["Report result"]
+	A["Task arrives"] --> B["Read Harness entry file"]
+	B --> C{"Simple and clear?"}
+	C -- "Yes" --> D["Execute directly"]
+	C -- "No" --> E["Create or reuse planning/active/<task-id>/"]
+	E --> F["Use Planning with Files as source of truth"]
+	F --> G{"Need deeper reasoning?"}
+	G -- "Yes" --> H["Use Superpowers for that phase only"]
+	G -- "No" --> I["Stay in normal execution mode"]
+	H --> J["Sync durable decisions back to planning files"]
+	I --> K["Verify"]
+	J --> K
+	D --> K
+	K --> L["Report result"]
 ```
 
 ### Task State
@@ -42,31 +40,9 @@ flowchart TD
 Rules:
 
 1. `planning-with-files` is the only durable task-memory system.
-2. `docs/**` and `docs/plans/**` are documentation, not active task memory.
-3. Once a task is classified as tracked, `planning-with-files` is mandatory even if the implementation itself looks straightforward.
-4. If a Deep-reasoning task actually uses Superpowers, it must also create a secondary companion plan under `docs/superpowers/plans/<date>-<task-id>.md`.
-5. Companion plans are secondary artifacts only; active task memory stays in `planning/active/<task-id>/`.
-6. Keep detailed Superpowers implementation plans and execution checklists in the companion artifact; sync only durable summaries, references, and status back into `planning/active/<task-id>/`.
-7. The active task files must point to the companion plan, and the companion plan must point back to `planning/active/<task-id>/`.
-8. `harness/core/policy/base.md` remains the canonical policy source, while entry files render only the selected always-on profile sections plus the preamble.
-
-Lifecycle transitions are now companion-aware: `close-task` and `archive-task` refuse unsynced companion metadata, and `archive-task` relocates the companion artifact into the archived task directory as `companion_plan.md`.
-
-Recommended companion-plan name: `docs/superpowers/plans/<date>-<task-id>.md`.
-
-## Upstream, License, Credit
-
-Harness vendors two upstream systems and applies stricter local governance on top.
-
-| Upstream | Original role | Upstream license | Harness usage |
-| --- | --- | --- | --- |
-| [`superpowers`](https://github.com/obra/superpowers) | agentic skills framework and software-development workflow | MIT | optional reasoning layer for complex planning, debugging, execution, and review phases; when it is used on a deep-reasoning task, the detailed implementation plan must be written to `docs/superpowers/plans/<date>-<task-id>.md` as a secondary companion artifact |
-| [`planning-with-files`](https://github.com/OthmanAdi/planning-with-files) | persistent markdown planning and session-recovery skill | MIT | the only durable task-memory system, rooted in `planning/active/<task-id>/` |
-
-Thanks to the upstream authors and communities whose work this repository builds on:
-
-- [`obra/superpowers`](https://github.com/obra/superpowers) by Jesse Vincent and contributors
-- [`OthmanAdi/planning-with-files`](https://github.com/OthmanAdi/planning-with-files) by Othman Adi and contributors
+2. Tracked tasks must use `planning/active/<task-id>/` even when implementation is straightforward.
+3. Deep-reasoning work may use `superpowers`, but only as a temporary reasoning layer.
+4. When Superpowers is actually used, the detailed companion plan lives in `docs/superpowers/plans/<date>-<task-id>.md` and syncs back to the active task.
 
 ## Quick Start
 
@@ -81,46 +57,15 @@ Thanks to the upstream authors and communities whose work this repository builds
 ./scripts/harness adoption-status
 ```
 
-`adopt-global` bootstraps the repo baseline into user-global state, including GitHub Copilot. The default user-global baseline stays on `always-on-core`; safety remains an explicit workspace choice.
+Notes:
 
-Use `--scope=both` when you want a shared user-global baseline plus repository-local entry files.
+- Rendered entry files default to the `always-on-core` profile.
+- Use `--scope=both` when you want a shared user-global baseline plus repo-local entry files.
+- Use `--skills-profile=minimal-global` only when you intentionally want the smaller user-global projection.
 
-If you want a non-default user-global profile, install it once and then reuse `adopt-global`:
+## Common Flows
 
-```bash
-./scripts/harness install --scope=user-global --targets=all --projection=link --skills-profile=minimal-global
-./scripts/harness adopt-global
-```
-
-Rendered entry files use the `always-on-core` profile by default. That keeps session-start payloads small and leaves tracked-task and deep-reasoning detail in the canonical source for profile-based rendering when needed.
-
-### Skill Profiles
-
-Skill projections use the `full` profile by default. If you are adopting Harness into an existing user-global setup, `minimal-global` is the opt-in profile that keeps `planning-with-files` plus the allow-listed `superpowers` children:
-
-```bash
-./scripts/harness install --scope=user-global --targets=all --projection=link --skills-profile=minimal-global
-```
-
-The default does not flip to `minimal-global`; omit `--skills-profile` to keep `full`.
-
-### Conflict Backups
-
-By default, `sync` refuses to overwrite non-Harness-owned files. To preserve a backup and continue, run:
-
-```bash
-./scripts/harness sync --conflict=backup
-```
-
-Harness archives the pre-existing content into `~/.harness/backups/` and records it in `~/.harness/backup-index.json`; it no longer leaves `.harness-backup-*` siblings in the live skill or entry roots.
-
-If older `.harness-backup-*` siblings already exist from a previous takeover, the next successful `sync` imports them into the archive store and removes the live duplicates before projecting the new baseline.
-
-### Context Governance
-
-Harness treats context size as a product constraint. Verification reports include `health.context` with entry, hook, planning, skill-profile, summary, and warning data. Entry summaries are measured as the worst target session, not as a cross-IDE total. Use this gate before changing policy rendering, skill projection, or hooks:
-
-When planning hooks are enabled, Harness keeps hot context summary-first instead of replaying raw planning files. Use `./scripts/harness summary` to print the same compact `SESSION SUMMARY` view for the active task, or pass `--task <task-id>` when multiple active tasks exist.
+### Verify a change
 
 ```bash
 npm run verify
@@ -129,74 +74,58 @@ npm run verify
 ./scripts/harness doctor --check-only
 ```
 
-The expected default remains thin rendered entry files, `full` skill projection, hooks off, and no global safety profile. For user-global adoption trials, use the opt-in `minimal-global` profile in an isolated profile before writing real user-global files.
-
-### Worktree Naming
-
-Harness treats `./scripts/harness worktree-name` as the repo-owned source of truth for manual or skill-driven worktree names. It returns a canonical label in the form `YYYYMMDDHHMM-<task-slug>-NNN`, where `task-slug` comes from planning task identity rather than prompt text.
+### Update upstream baselines
 
 ```bash
-./scripts/harness worktree-preflight --task worktree-naming-governance --safety
-./scripts/harness worktree-name --task worktree-naming-governance --namespace copilot
-git worktree add "$HOME/.config/superpowers/worktrees/superpowering-with-files/<canonical-label>" -b "<suggested-branch>" dev
+./scripts/harness fetch
+./scripts/harness update
 ```
 
-`worktree-preflight` reuses the same helper when it can resolve the active task; pass `--task <task-id>` when the repo has multiple active tasks. If the host already owns workspace isolation (for example, Codex App), use `worktree-name` as a supplementary naming tool for manual branches or extra worktrees rather than as a host override.
+### Enable hooks or safety
 
-### Integration Modes
-
-| Mode | Use when | Result |
-| --- | --- | --- |
-| Replace | existing rules should be retired | Harness-rendered files become the rule source |
-| Update | Harness already owns the scope | `sync` refreshes the rendered files |
-| Enhance | lower-level rules still matter | Harness stays above them as governance |
-| Wrap | another local router already coordinates behavior | Harness sets policy and delegates selectively |
+```bash
+./scripts/harness install --scope=workspace --targets=all --projection=link --hooks=on
+./scripts/harness install --scope=workspace --profile=safety --hooks=on
+./scripts/harness sync
+./scripts/harness doctor --check-only
+```
 
 ## Repository Structure
+
+```mermaid
+flowchart LR
+	Repo["superpowering-with-files"] --> Core["harness/core"]
+	Repo --> Adapters["harness/adapters"]
+	Repo --> Installer["harness/installer"]
+	Repo --> Upstream["harness/upstream"]
+
+	Core --> Policy["policy + templates + metadata"]
+	Adapters --> Manifests["target manifests"]
+	Installer --> Sync["install / sync / doctor / update"]
+	Upstream --> Baselines["superpowers + planning-with-files"]
+
+	Policy --> Entries["rendered entry files"]
+	Baselines --> Skills["projected skills"]
+	Sync --> Entries
+	Sync --> Skills
+	Sync --> Hooks["optional hook projections"]
+```
 
 - `harness/core`: policy, templates, schemas, projection metadata
 - `harness/adapters`: target-specific manifests
 - `harness/installer`: CLI commands, state, projection logic, health checks
 - `harness/upstream`: vendored `superpowers` and `planning-with-files` baselines
 
-```mermaid
-flowchart LR
-  Repo["superpowering-with-files"] --> Core["harness/core"]
-  Repo --> Adapters["harness/adapters"]
-  Repo --> Installer["harness/installer"]
-  Repo --> Upstream["harness/upstream"]
-
-  Core --> Policy["policy + templates + metadata"]
-  Adapters --> Manifests["target manifests"]
-  Installer --> Sync["install / sync / doctor / update"]
-  Upstream --> Baselines["superpowers + planning-with-files"]
-
-  Policy --> Entries["rendered entry files"]
-  Baselines --> Skills["projected skills"]
-  Sync --> Entries
-  Sync --> Skills
-  Sync --> Hooks["optional hook projections"]
-```
-
 ## Projection Map
-
-### Sources
-
-| Source in repo | Role | `sync` output |
-| --- | --- | --- |
-| `harness/core/policy/**` + `harness/core/templates/**` | shared governance policy | rendered instruction / rules entry files |
-| `harness/upstream/superpowers/skills/**` | optional reasoning skills baseline | projected IDE skill copies |
-| `harness/upstream/planning-with-files/**` | durable planning baseline | projected IDE skill copies |
-| `harness/core/hooks/**` | optional hook configs and helper scripts | target hook configs and scripts when hook mode is on |
 
 ### Entry Files
 
-| Target | Workspace entry | User-global entry | Notes |
-| --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `~/.codex/AGENTS.md` | rendered file |
-| GitHub Copilot | `.github/copilot-instructions.md` | `~/.copilot/instructions/harness.instructions.md` | rendered file |
-| Cursor | `.cursor/rules/harness.mdc` | user rules in Cursor settings | workspace rendered file only |
-| Claude Code | `CLAUDE.md` | `~/.claude/CLAUDE.md` | rendered file |
+| Target | Workspace entry | User-global entry |
+| --- | --- | --- |
+| Codex | `AGENTS.md` | `~/.codex/AGENTS.md` |
+| GitHub Copilot | `.github/copilot-instructions.md` | `~/.copilot/instructions/harness.instructions.md` |
+| Cursor | `.cursor/rules/harness.mdc` | user rules in Cursor settings |
+| Claude Code | `CLAUDE.md` | `~/.claude/CLAUDE.md` |
 
 ### Skill Roots
 
@@ -207,134 +136,22 @@ flowchart LR
 | Cursor | `.cursor/skills` | `~/.cursor/skills` | materialized |
 | Claude Code | `.claude/skills` | `~/.claude/skills` | materialized |
 
-Shared skill roots are limited to Codex and GitHub Copilot. Claude Code stays on `.claude/skills`, and Cursor stays on `.cursor/skills` until the official skill-directory contract is re-verified. Hooks and entry files remain platform-native.
-
-Projected skills are materialized by default. Claude Code shared skill-root symlinks are intentionally unsupported.
-
-### Hooks
-
-Hooks are opt-in:
-
-```bash
-./scripts/harness install --scope=workspace --targets=all --projection=link --hooks=on
-./scripts/harness sync
-./scripts/harness doctor --check-only
-```
-
-When projected, the `planning-with-files` hook renders a compact `SESSION SUMMARY` block for the active task so agents recover state from task status, phases, findings, progress, and recent verification without loading the raw markdown files.
-
-Support matrix:
-
-| Hook source | Codex | GitHub Copilot | Cursor | Claude Code |
-| --- | --- | --- | --- | --- |
-| `planning-with-files` task-scoped hook | supported with Codex event limits | supported | provisional | supported |
-| `superpowers` session-start hook | supported via Harness wrapper | unsupported | provisional | supported |
-
-Hook roots:
-
-| Target | Workspace hook files | User-global hook files |
-| --- | --- | --- |
-| Codex | `.codex/hooks.json`, `.codex/hooks/*` | `~/.codex/hooks.json`, `~/.codex/hooks/*` |
-| GitHub Copilot | `.github/hooks/planning-with-files.json`, `.github/hooks/task-scoped-hook.sh` | `~/.copilot/hooks/planning-with-files.json`, `~/.copilot/hooks/task-scoped-hook.sh` |
-| Cursor | `.cursor/hooks.json`, `.cursor/hooks/*` | `~/.cursor/hooks.json`, `~/.cursor/hooks/*` |
-| Claude Code | `.claude/settings.json`, `.claude/hooks/*` | `~/.claude/settings.json`, `~/.claude/hooks/*` |
-
-Harness merges only Harness-managed hook entries and preserves unrelated user entries.
+Shared skill roots are limited to Codex and GitHub Copilot. Claude Code and Cursor keep platform-native skill directories.
 
 ## Safety
 
-The `safety` profile is an opt-in layer for users who run agents in bypass / autopilot / long-running modes. It is built on existing hook, policy, and skill projection — no parallel runtime.
-
-```bash
-./scripts/harness install --scope=workspace --profile=safety --hooks=on
-./scripts/harness sync
-./scripts/harness doctor --check-only
-```
-
-Prefer safety as a workspace-scoped profile. For GitHub Copilot, keep safety enabled only in the repository that needs it instead of turning it on user-global.
-
-User-global and `both` installs stay on non-safety profiles. `safety` and `cloud-safe` are workspace-only profiles.
-
-What the profile adds:
-
-| Component | Purpose |
-| --- | --- |
-| `harness/core/policy/safety.md` | Boundary, checkpoint, and risk-assessment rules injected into rendered entry files |
-| `harness/core/hooks/safety/pretool-guard.sh` | PreToolUse hook with allow / ask / deny decisions on cwd, target paths, and dangerous patterns |
-| `harness/core/hooks/safety/session-checkpoint.sh` | SessionStart hook that runs `harness checkpoint` automatically |
-| `harness/core/safety/{protected-paths,dangerous-patterns,safe-commands,cloud-protected-paths}.txt` | Configurable rule lists |
-| `harness/core/safety/bin/checkpoint` | `git bundle` + diffs + untracked tarball + manifest, or full tarball for non-git workspaces |
-| Skills `risk-assessment-before-destructive-changes`, `safe-bypass-flow` | Force a `## Risk Assessment` block in the active task plan and a worktree → push → merge flow before destructive work |
-| `cloud-safe` profile | Stacks on `safety` for Codespaces and devcontainers |
-
-Checkpoints land in `~/.agent-config/checkpoints/<workspace>/<timestamp>/`. Logs land in `~/.agent-config/logs/`. Both are gitignored when projected into a repo.
-
-### Worktree safety
+The `safety` profile adds path-boundary checks, automatic checkpoints, and a worktree-first flow for risky or long-running agent sessions.
 
 ```bash
 ./scripts/harness worktree-preflight --task <task-id> --safety
+./scripts/harness checkpoint-push --message="..."
 ```
-
-Reports remote status, recommended base ref, checkpoint guidance, naming suggestions, and whether the active task plan has a non-placeholder `## Risk Assessment` block. Destructive commands without an upstream branch and without a recorded risk assessment are downgraded to `ask` by the hook.
-
-### Recommended recovery-point flow
-
-When you need an off-machine recovery point for risky work, use this order:
-
-1. Run `./scripts/harness worktree-preflight --task <task-id> --safety` when multiple active tasks exist.
-2. Work from a dedicated worktree branch.
-3. Run `./scripts/harness checkpoint-push --message="..."`.
-4. Review the generated review artifact directory, especially `review.md` and `result.json`.
-5. Keep PR creation and merge as separate manual steps.
-
-### Cloud bootstrap
-
-```bash
-./scripts/harness cloud-bootstrap --target=codespaces
-```
-
-Generates `.devcontainer/devcontainer.json` and `.devcontainer/postCreateCommand.sh` (as `*.harness.suggested` when files already exist) and patches `.gitignore` for safety state. The bootstrap installs the `cloud-safe` profile on container create.
-
-### Personal config sync
-
-```bash
-./scripts/harness link-personal --repo=<git-url>
-```
-
-Clones a private personal-config repo into `~/.agent-config/personal/` and projects entries declared in its `manifest.json` into `~/.agents/`, `~/.codex/`, `~/.copilot/`, and `~/.claude/` according to a user-managed allow list. `sync` and `adopt-global` honor `~/.agent-config/user-managed.json` and never overwrite linked personal files. Use this to keep your private AGENTS.md additions, prompts, and skills under Git without entangling them with the harness governance repo.
 
 More detail:
 
 - [Safety architecture](docs/safety/architecture.md)
 - [Vibe coding safety manual](docs/safety/vibe-coding-safety-manual.md)
 - [Recovery playbook](docs/safety/recovery-playbook.md)
-
-## Upstream Updates
-
-```bash
-./scripts/harness fetch
-./scripts/harness update
-```
-
-Update a single upstream baseline:
-
-```bash
-./scripts/harness fetch --source=superpowers
-./scripts/harness fetch --source=planning-with-files
-./scripts/harness update --source=superpowers
-./scripts/harness update --source=planning-with-files
-```
-
-Then verify and sync:
-
-```bash
-npm run verify
-./scripts/harness sync --dry-run
-./scripts/harness sync
-./scripts/harness doctor
-./scripts/harness adopt-global
-./scripts/harness adoption-status
-```
 
 ## Commands
 
@@ -362,8 +179,8 @@ npm run verify
 
 ## Docs
 
-- [Roadmap](docs/roadmap.md)
 - [Architecture](docs/architecture.md)
+- [Roadmap](docs/roadmap.md)
 - [Maintenance](docs/maintenance.md)
 - [Release](docs/release.md)
 - [Platform support](docs/install/platform-support.md)
@@ -374,3 +191,14 @@ npm run verify
 - [Safety architecture](docs/safety/architecture.md)
 - [Vibe coding safety manual](docs/safety/vibe-coding-safety-manual.md)
 - [Recovery playbook](docs/safety/recovery-playbook.md)
+
+## Upstream, License, Credit
+
+Harness vendors two upstream systems and adds stricter local governance on top.
+
+| Upstream | Original role | License | Harness usage |
+| --- | --- | --- | --- |
+| [`superpowers`](https://github.com/obra/superpowers) | agentic skills framework and workflow | MIT | optional reasoning layer for deep-reasoning phases |
+| [`planning-with-files`](https://github.com/OthmanAdi/planning-with-files) | persistent markdown planning and session recovery | MIT | the only durable task-memory system |
+
+Thanks to the upstream authors and communities whose work this repository builds on.
