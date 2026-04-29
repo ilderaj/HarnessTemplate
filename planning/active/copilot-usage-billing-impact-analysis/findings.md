@@ -31,11 +31,11 @@
 - 将 `skillProfile` 直接按所有 `SKILL.md` 正文求和会把轻量安装场景也变成预算问题；第一版更合理的定义是“当前 profile 在 hook-enabled 场景下的技能发现面账本”。
 - Copilot 默认入口此前与其他 target 共用 `always-on-core` section 集，导致 `When Superpowers Is Allowed`、`When Superpowers Is Not Allowed`、`Tool Preferences` 这些对 Copilot startup 不必要的固定税持续进入 input。
 - Copilot planning hook 此前在 `session-start`、`user-prompt-submit`、`pre-tool-use` 上重复注入同一份 hot context；其中 `session-start` 与 `pre-tool-use` 的恢复收益低于它们带来的重复 input / cached token 成本。
-- 当前真实 `verify` 报告显示优化后最重 entry 目标仍为 copilot，但 worst target session 已降到约 `1282` tokens；hook payload worst target session 为 `88` tokens，仍在预算内。
-- 当前 `health.mjs` 的 hook payload测量仍然只覆盖 `codex`，这意味着 Copilot hooks 已优化但还没有被 verification ledger 真实计量；下一阶段需要先补观测再继续削减。
-- 当前 skill profile 默认值仍是 `full`，`install.mjs` 和 `adoption.mjs` 都按全局默认解析，这会让 Copilot-only installs 继续携带过大的 skills discovery 面。
-- 当前 planning-with-files 对 Copilot 的 `user-prompt-submit` 仍然每次发送完整 hot context；相比已经收紧的 `session-start` / `pre-tool-use`，这里是下一笔最大的重复 recovery tax。
-- 当前 adoption / doctor / verify 还没有把 user-global 与 workspace 的 Copilot 双安装显式建模成 overlap tax；这会掩盖一类真实的 cached token 重复来源。
+- 当前 merged `dev` 已包含 Copilot hook payload ledger、lean default skills、planning recovery v2、overlap governance、budget gates 与 opt-in concise guidance 的完整实现。
+- merged `dev` 上重新运行 focused regression suite，结果仍为 `101 passed, 0 failed`。
+- merged `dev` 在执行 `node harness/installer/commands/harness.mjs sync` 更新本地 projections 后，`verify` 与 `doctor --check-only` 均通过；最新 doctor 结果为 `Harness check passed.`。
+- merged `dev` 的 live verification 中，hook payload 汇总的 worst target 是 `codex`，同时 detail 里仍显示 `copilot / bootstrap / ok / 88 tokens`，说明 merged global install 已按最新逻辑同时计量 Codex 与 Copilot。
+- 为了不覆盖不相关本地内容，merge 前把主工作区中同名的 3 个 planning 文件保存到了 stash `pre-merge copilot usage planning backup`；合并结果以 feature 分支的最新 planning 状态为准。
 - worktree `/Users/jared/SuperpoweringWithFiles/.worktrees/202604281445-copilot-usage-billing-impact-analysis-001`、branch `202604281445-copilot-usage-billing-impact-analysis-001`、HEAD `7b8f628` 才是本任务实现完成情况的权威 review surface；主工作区 `dev` 只能作为基线，不可用于本分支 merge readiness 判断。
 - implementation plan 的 Tasks 1-6 已在该 worktree 中落地，覆盖面包括 Copilot ledger fidelity、lean default skills、planning recovery v2、overlap governance、budget gates、opt-in concise guidance。
 - focused regression suite 在该 worktree 上最新结果为 `101 passed, 0 failed`。
@@ -88,3 +88,4 @@
 - 当前实现结果说明：对 Copilot 单独做 target-aware slimming，能够在不改 persisted state、不改其他 target 的前提下，先压掉一批 always-on 重复税。
 - 当前实现结果说明：把 Copilot planning hook 的完整 hot context 收敛到 `user-prompt-submit`，能降低高频事件的重复输入，同时保留 task 恢复主路径。
 - 当前实现结果说明：planning/companion 治理 warning 只要按解析器认可的 `Companion plan` / `Active task path` 字段落盘，就可以通过 `doctor` 做 deterministic 验证，不需要依赖人工解释。
+- 当前集成结果说明：merged `dev` 只有在本地 projections 也同步到最新代码后，`doctor` 才能正确评估 planning recovery v2 引入的新 hook helper；这一步现在已经完成。

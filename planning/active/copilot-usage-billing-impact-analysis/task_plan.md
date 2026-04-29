@@ -4,19 +4,19 @@
 基于当前 Harness 的真实上下文装载路径，先完成 usage-based billing 影响分析与优化计划，再按不明显削弱 Harness 约束效果的前提，分阶段落实高 ROI 的 Copilot usage 优化。
 
 ## Current State
-Status: waiting_integration
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: merged into local dev, projections synced to the latest code, and published to origin/dev on 2026-04-29.
 
 ## Current Phase
-Phase 12
+Phase 13
 
 ## Companion Plans
 - Companion plan: `docs/superpowers/plans/2026-04-28-copilot-usage-optimization-implementation-plan.md`
 - Companion summary: Detailed implementation plan covering cost ledger fidelity, lean skill defaults, planning recovery v2, overlap governance, budget gates, and opt-in concise output guidance.
 - Companion plan: `docs/superpowers/plans/2026-04-28-copilot-usage-billing-impact-analysis-plan.md`
 - Companion summary: Original plan-only analysis of usage-based billing impact, retained as the historical decision record for this tracked task.
-- Sync-back status: active task and both companion artifacts reconciled on 2026-04-29 after branch-specific implementation review; branch is merge ready pending normal integration.
+- Sync-back status: closed on 2026-04-29 after merge into local dev, projection sync, final verification, and push to origin/dev.
 
 ## Phases
 
@@ -91,6 +91,13 @@ Phase 12
 - [x] 将任务状态推进到 `waiting_integration`，只保留 merge 前的常规集成动作
 - **Status:** complete
 
+### Phase 13: Integration and publication
+- [x] 将 `202604281445-copilot-usage-billing-impact-analysis-001` merge 回本地 `dev`
+- [x] 在 merged `dev` 上重新运行 focused regression suite
+- [x] sync 本地 projections 后重新运行 `verify` / `doctor --check-only`
+- [x] 将任务生命周期收口并发布到 `origin/dev`
+- **Status:** complete
+
 ## Merge Gate
 - `node --test tests/installer/health.test.mjs tests/installer/commands.test.mjs tests/installer/adoption.test.mjs tests/hooks/task-scoped-hook.test.mjs tests/hooks/hook-budget.test.mjs tests/hooks/session-summary.test.mjs tests/installer/policy-render.test.mjs tests/installer/copilot-usage-budget.test.mjs`
 	- Passing standard: `101 passed, 0 failed` on branch `202604281445-copilot-usage-billing-impact-analysis-001`
@@ -138,3 +145,4 @@ Phase 12
 - 当前已补完一份可执行的 impl plan，后续若启动实现，建议按 Companion Plan 里的 Batch A / B / C 串行推进。
 - 当前用于 merge readiness 判断的唯一权威 review surface 是 worktree `202604281445-copilot-usage-billing-impact-analysis-001`，而不是主工作区 `dev`。
 - merge ready 在本任务里表示“代码、测试、live Copilot verify/doctor、planning/companion 治理都已通过”，不等于已经执行实际 merge。
+- 本任务现已完成 merge、projection sync、final verification 与 origin/dev 发布，可按 archive 规则择机归档。

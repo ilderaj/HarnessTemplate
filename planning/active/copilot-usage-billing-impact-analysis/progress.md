@@ -113,6 +113,9 @@
 | Worktree-focused regression suite | `node --test tests/installer/health.test.mjs tests/installer/commands.test.mjs tests/installer/adoption.test.mjs tests/hooks/task-scoped-hook.test.mjs tests/hooks/hook-budget.test.mjs tests/hooks/session-summary.test.mjs tests/installer/policy-render.test.mjs tests/installer/copilot-usage-budget.test.mjs` | Tasks 1-6 remain green on the implementation branch | 101 passed, 0 failed | ✓ |
 | Copilot-only live install | `node harness/installer/commands/harness.mjs install --scope=workspace --targets=copilot --projection=link --profile=always-on-core --hooks=on` | Copilot projection installs cleanly in the review worktree | Exit 0; synced 1 target | ✓ |
 | Final live verify + doctor | `node harness/installer/commands/harness.mjs verify --output=.harness/verification-ledger && ./scripts/harness doctor --check-only` | No companion warnings; Copilot budget/overlap verdicts remain ok | `Harness check passed.`; `Context warnings: 0` | ✓ |
+| Merged-dev regression suite | `node --test tests/installer/health.test.mjs tests/installer/commands.test.mjs tests/installer/adoption.test.mjs tests/hooks/task-scoped-hook.test.mjs tests/hooks/hook-budget.test.mjs tests/hooks/session-summary.test.mjs tests/installer/policy-render.test.mjs tests/installer/copilot-usage-budget.test.mjs` | Merged local dev still satisfies the branch gate | 101 passed, 0 failed | ✓ |
+| Projection refresh on merged dev | `node harness/installer/commands/harness.mjs sync` | Local projections update to include new planning-recovery helpers | Synced 4 targets; no errors | ✓ |
+| Final merged-dev verify + doctor | `node harness/installer/commands/harness.mjs verify --output=.harness/verification-ledger && ./scripts/harness doctor --check-only` | Merged local dev plus refreshed projections stays healthy | `Harness check passed.` | ✓ |
 
 ### Phase 9: 后续优化 impl plan 编制
 - **Status:** complete
@@ -164,6 +167,23 @@
   - `planning/active/copilot-usage-billing-impact-analysis/findings.md` (updated)
   - `planning/active/copilot-usage-billing-impact-analysis/progress.md` (updated)
 
+### Phase 13: Integration and publication
+- **Status:** complete
+- Actions taken:
+  - 在 feature worktree 上提交最终 planning/companion sync-back：`456094a docs: sync copilot usage merge readiness`。
+  - 在主工作区 `dev` 上将同名 planning 文件暂存到 stash `pre-merge copilot usage planning backup`，避免本地脏文件阻塞 merge。
+  - 执行 `git merge --no-ff 202604281445-copilot-usage-billing-impact-analysis-001`，生成 merge commit `f3809b6`，无代码冲突。
+  - 在 merged `dev` 上运行 focused regression suite，确认结果仍为 `101 passed, 0 failed`。
+  - 发现 merged `dev` 初次 `doctor` 因用户级 hook projections 仍停留在旧版本而缺少 `render-brief-context.mjs`；随后执行 `node harness/installer/commands/harness.mjs sync` 更新本地 projections。
+  - 在 projections 更新后重新运行 `node harness/installer/commands/harness.mjs verify --output=.harness/verification-ledger && ./scripts/harness doctor --check-only`，结果为 `Harness check passed.`。
+  - 将任务 lifecycle 与 companion lifecycle 收口为 `closed`，并在本 session 将 `dev` 推送到 `origin/dev`。
+- Files created/modified:
+  - `docs/superpowers/plans/2026-04-28-copilot-usage-billing-impact-analysis-plan.md` (updated)
+  - `docs/superpowers/plans/2026-04-28-copilot-usage-optimization-implementation-plan.md` (updated)
+  - `planning/active/copilot-usage-billing-impact-analysis/task_plan.md` (updated)
+  - `planning/active/copilot-usage-billing-impact-analysis/findings.md` (updated)
+  - `planning/active/copilot-usage-billing-impact-analysis/progress.md` (updated)
+
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
 |-----------|-------|---------|------------|
@@ -172,8 +192,8 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 12 已完成，任务已推进到 `waiting_integration` |
-| Where am I going? | 下一步只剩常规 merge 执行与合并后收尾 |
+| Where am I? | Phase 13 已完成，任务已关闭并可归档 |
+| Where am I going? | 如无额外 follow-up，下一步是按 archive 规则归档 task 记录 |
 | What's the goal? | 在不明显削弱 Harness 约束效果的前提下，按 ROI 逐步落实 Copilot usage 优化 |
 | What have I learned? | merge readiness 只能在正确 worktree 上判断；同时核对 worktree path、branch、HEAD 能避免把主工作区状态误当成实现分支结论 |
-| What have I done? | 已完成分析计划、impl plan 对应实现、focused regression、live Copilot verify/doctor、planning/companion 治理清理，并将任务推进到 merge-ready |
+| What have I done? | 已完成分析计划、impl plan 对应实现、merge 到本地 dev、projection refresh、merged-dev 验证、planning/companion closeout，并发布到 origin/dev |
