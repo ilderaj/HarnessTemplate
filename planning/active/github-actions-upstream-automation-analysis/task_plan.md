@@ -9,7 +9,7 @@ Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 9
+Phase 10
 
 ## Phases
 
@@ -66,6 +66,13 @@ Phase 9
 - [x] 在 task-scoped planning 文件中只保留摘要、决策和引用
 - **Status:** complete
 
+### Phase 10: 4 月 30 日方案复核与实施计划更新
+- [x] 复核当前仓库是否已有 workflow / CI automation 实现
+- [x] 复核远端默认分支、`dev` branch protection 和目标 PR 状态
+- [x] 明确 GitHub 云端自动化与本地 `dev` 同步的边界
+- [x] 更新 companion plan 的详细实施清单
+- **Status:** complete
+
 ## Key Questions
 1. GitHub Actions 是否能定期检测两个 upstream 主源的变更？
 2. Actions 是否能安全触发本项目已有 `fetch` / `update` 流程？
@@ -81,10 +88,13 @@ Phase 9
 | 真正的 upstream 拉取应映射为 Harness `fetch/update/sync/verify/doctor` 链路 | 仓库没有 git remote `upstream`；上游来源定义在 `harness/upstream/sources.json` |
 | refresh 工作分支固定从 `origin/dev` 派生 | 用户目标是最终通过 PR 落到 `dev` |
 | 详细实施清单迁移到 companion plan `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md` | 保持 `planning/active/.../task_plan.md` 为 summary-only durable task memory |
-| 修订计划默认采用 `Friday 21:00 UTC` (`0 21 * * 5`) | 把“每周五”转成可实现、可 review 的具体 schedule 假设 |
+| 2026-04-30 修订采用 `Friday 20:00 Asia/Shanghai`，即 GitHub cron `0 12 * * 5` | 用户本轮明确“周五晚上 8 点”；在未另行指定时区时按中文语境默认 UTC+8 |
 | v1 的“处理冲突”定义为 fail-fast + artifact/log + 人工接管 | 当前仓库没有安全的 bot 自动解冲突机制 |
 | 启用 weekly schedule 前先要求 `dev` branch protection / required checks 就位 | 否则“最终落到 origin dev”的自动化会绕过治理面 |
 | v1 不做 auto-merge，也不允许 workflow 直推 `dev` | 先保留审查面，降低供应链与误推风险 |
+| upstream 更新探测应先做 `git ls-remote <url> HEAD` 对比 | 用户要求“根据 head 分析有无更新”，可避免无更新时创建分支和 PR |
+| GitHub Actions 不能直接同步这台机器的 local `dev` | GitHub runner 只能修改远端仓库；本地 checkout 需要独立 helper、local schedule 或手动触发 |
+| local `dev` 同步 v1 只允许 fast-forward | 脏工作区、本地领先、分叉或冲突都必须停止并输出恢复建议，不能无人值守解冲突 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -98,26 +108,32 @@ Phase 9
 
 ## Current Verdict
 
-- 原始方向仍成立：`main` 上 schedule 触发、工作分支从 `origin/dev` 派生、执行 Harness refresh chain、通过 PR 落到 `dev`。
+- 原始方向仍成立：`main` 上 schedule 触发、先探测 upstream `HEAD`、工作分支从 `origin/dev` 派生、执行 Harness refresh chain、通过 PR 落到 `dev`。
 - 原始计划不能按原样执行，核心缺口是：
   1. 缺少具体的 UTC schedule。
   2. 把“处理冲突”描述得过于乐观，没有 fail-fast 分流。
   3. 缺少 `dev` branch protection / required checks 前置条件。
   4. 详细 checklist 直接写在 task memory，违反当前 summary-only sync-back 边界。
-- 修订后计划已经把这四点收口，并迁移到 companion plan。
+- 2026-04-30 复核后新增边界：GitHub 端自动化可行；PR merge 后自动同步 local `dev` 不是 GitHub-only 能力，需要本地 fast-forward helper。
+- 修订后计划已经把这些边界收口，并迁移到 companion plan。
 
 ## Companion Plan Reference
 
 - Companion plan: `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md`
 - Companion plan role: 保存详细实施清单、rollout gates、文件级任务拆分和启用顺序。
-- Sync-back status: `2026-04-19` 已完成。
+- Sync-back status: `2026-04-30` 已完成。
 
 ## Revised Execution Plan Summary
 
 ### Phase A: Workflow Skeleton And Contracts
 - 建立 `.github/workflows/upstream-refresh.yml`，先接通 contract tests 和 `workflow_dispatch` 演练。
-- 定时入口默认锁定为 `Friday 21:00 UTC`，但只有在 `dev` protection 配好后才启用 schedule。
+- 定时入口默认锁定为 `Friday 20:00 Asia/Shanghai` / `0 12 * * 5`，但只有在 `dev` protection 配好后才启用 schedule。
 - 新增 `tests/automation/` 合约测试，锁定 workflow trigger、branch source、result file 和 PR gate。
+
+### Phase A1: Upstream HEAD Probe
+- 新增 `scripts/ci/lib/upstream-heads.mjs`，读取 `harness/upstream/sources.json` 并用 `git ls-remote <url> HEAD` 检查两个 Git source。
+- 维护 repo-owned source head record，例如 `harness/upstream/.source-heads.json`。
+- 无 upstream HEAD 变化时写出 `no_changes` result，不创建 branch、不开 PR。
 
 ### Phase B: Refresh Runner
 - 用 `scripts/ci/lib/upstream-refresh.mjs` 和 `scripts/ci/run-upstream-refresh.mjs` 执行：
@@ -149,3 +165,8 @@ Phase 9
   - v1 没有 auto-merge，冲突处理是 fail-fast + 人工接管
   - 失败时查看 workflow artifact 与 `.harness/upstream-refresh-result.json`
   - 启用 schedule 前需要人工确认 `dev` branch protection / required checks
+
+### Phase E: Local Dev Sync Helper
+- 新增可选本地命令 `scripts/local/sync-dev-after-upstream-pr.mjs`。
+- helper 只在 clean worktree、local `dev` 未领先、可 fast-forward 时同步 `origin/dev`。
+- GitHub Actions 不直接触发本地同步；本地同步通过手动命令、macOS LaunchAgent 或后续显式配置的本地 webhook 完成。

@@ -38,6 +38,11 @@
 - 2026-04-19 复核：用户这次口头计划只指定了“每周五”，但没有指定具体时刻；GitHub Actions `schedule` 使用 UTC，若不先确定时区与时间点，就无法写出稳定且可 review 的 cron 表达式。
 - 2026-04-19 复核：用户要求“处理冲突”，但当前仓库并没有可支撑 bot 自动解冲突的既有机制；v1 应把冲突、verify 失败、allowlist 失败都视为“停止开 PR/停止合并并告警”的人工分流条件，而不是自动修复条件。
 - 2026-04-19 修订：详细实施清单已迁移到 companion plan `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md`；`planning/active/github-actions-upstream-automation-analysis/` 只保留摘要级任务记忆。
+- 2026-04-30 复核：当前仓库仍没有 `.github/workflows/`、`scripts/ci/` 或 `tests/automation/`，说明 GitHub Actions upstream refresh 自动化尚未开始实现。
+- 2026-04-30 复核：远端默认分支仍为 `main`，`dev` branch protection 仍返回 `404 Branch not protected`，base 为 `dev` 的 open PR 仍为空。
+- 2026-04-30 复核：`harness/installer/lib/upstream.mjs` 当前 `stageGitCandidate` 只是 shallow clone Git source 并删除 `.git`，没有持久记录 upstream HEAD；若要“根据 head 分析有无更新”，需要新增 HEAD probe 和 repo-owned source head record。
+- 2026-04-30 复核：GitHub Actions 可以更新远端 branch/PR，但不能直接同步开发者本机的 local `dev` checkout；本地同步必须由本地 helper、LaunchAgent、手动命令或显式 webhook/listener 负责。
+- 2026-04-30 复核：本地 `dev` 同步只能安全自动化 fast-forward；如果本地有未提交修改、本地领先或分叉，自动解冲突风险过高，应停止并输出恢复建议。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -64,8 +69,12 @@
 | “每周五拉取”在实现前必须补全为“某时区下的明确时刻” | GitHub Actions cron 只接受 UTC；没有时刻就没有可验证的 schedule |
 | v1 的“冲突处理”定义为 fail-fast + 通知，而不是自动解冲突 | upstream baseline 更新涉及供应链输入和投影结果，自动解冲突风险过高 |
 | 只有在 `dev` 完成保护后，计划里的“最终落到 origin dev”才适合自动化推进 | 否则 workflow 结果实际会绕过代码审查与 required checks 治理目标 |
-| companion plan 采用 `Friday 21:00 UTC` (`0 21 * * 5`) 作为默认 schedule 假设 | 让计划从“周五”上升为可执行的 cron 约束 |
+| 旧 companion plan 曾采用 `Friday 21:00 UTC` (`0 21 * * 5`) 作为默认 schedule 假设 | 该假设已被 2026-04-30 的 `Friday 20:00 Asia/Shanghai` / `0 12 * * 5` 修订取代 |
 | companion plan 把 schedule enablement 放到 branch protection 之后 | 先有治理，再启用定时自动化 |
+| 2026-04-30 修订采用 `Friday 20:00 Asia/Shanghai` / `0 12 * * 5` | 用户本轮明确晚上 8 点；未指定时区时按中文语境默认 UTC+8 |
+| 新增 upstream HEAD probe，不直接依赖 `fetch/update` 判断是否有更新 | 当前 updater 不记录 upstream HEAD；先探测 HEAD 可以在无更新时跳过 branch 和 PR |
+| 本地 `dev` 同步从 GitHub workflow 中拆出 | GitHub Actions 无法修改本机 checkout；混在同一条云端 workflow 会制造不可执行假设 |
+| 本地同步 helper 只做 fast-forward，不做 stash/rebase/conflict auto-resolution | 自动解决本地冲突可能覆盖用户工作或错误合并供应链输入 |
 
 ## Issues Encountered
 | Issue | Resolution |
