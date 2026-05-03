@@ -19,6 +19,25 @@ const HARNESS_TEXT = [
   'This materialized copy keeps `planning/active/<task-id>/` authoritative while preserving the required companion-plan workflow.'
 ].join('\n');
 
+const INSERTION_ANCHORS = [
+  '## The Core Pattern',
+  '## Critical Rules'
+];
+
+function applyCompanionPlanTextPatch(original, skillPath) {
+  if (original.includes(UPSTREAM_TEXT)) {
+    return original.replace(UPSTREAM_TEXT, HARNESS_TEXT);
+  }
+
+  for (const anchor of INSERTION_ANCHORS) {
+    if (original.includes(anchor)) {
+      return original.replace(anchor, `${HARNESS_TEXT}\n\n${anchor}`);
+    }
+  }
+
+  throw new Error(`Unable to apply ${MARKER} to ${skillPath}`);
+}
+
 export async function applyPlanningWithFilesCompanionPlanPatch(targetDir) {
   await applyPlanningWithFilesRiskAssessmentPatch(targetDir);
   const skillPath = path.join(targetDir, 'SKILL.md');
@@ -28,11 +47,7 @@ export async function applyPlanningWithFilesCompanionPlanPatch(targetDir) {
     return;
   }
 
-  const patched = original.replace(UPSTREAM_TEXT, HARNESS_TEXT);
-
-  if (patched === original) {
-    throw new Error(`Unable to apply ${MARKER} to ${skillPath}`);
-  }
+  const patched = applyCompanionPlanTextPatch(original, skillPath);
 
   await writeFile(skillPath, patched);
 }

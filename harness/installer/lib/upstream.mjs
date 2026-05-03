@@ -51,6 +51,19 @@ export function candidatePathForSource(rootDir, sourceName) {
   return path.join(rootDir, CANDIDATE_ROOT, sourceName);
 }
 
+function overlayPathForSource(rootDir, sourceName, source) {
+  if (!source?.overlayPath) {
+    return null;
+  }
+
+  const overlayPath = normalizeInside(rootDir, source.overlayPath);
+  if (path.relative(path.resolve(rootDir), overlayPath).startsWith('..')) {
+    throw new Error(`Overlay for ${sourceName} must stay inside the repository root.`);
+  }
+
+  return overlayPath;
+}
+
 export function parseSourceFilter(args) {
   const sourceArg = args.find((arg) => arg.startsWith('--source='));
   return sourceArg ? sourceArg.slice('--source='.length) : 'all';
@@ -105,8 +118,14 @@ export async function stageGitCandidate(rootDir, sourceName, source) {
 export async function applyCandidate(rootDir, sourceName, source) {
   const candidatePath = candidatePathForSource(rootDir, sourceName);
   const targetPath = upstreamPathForSource(rootDir, sourceName, source);
+  const overlayPath = overlayPathForSource(rootDir, sourceName, source);
   await rm(targetPath, { recursive: true, force: true });
   await mkdir(path.dirname(targetPath), { recursive: true });
   await cp(candidatePath, targetPath, { recursive: true });
+
+  if (overlayPath) {
+    await cp(overlayPath, targetPath, { recursive: true, force: true });
+  }
+
   return targetPath;
 }
