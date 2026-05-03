@@ -50,6 +50,24 @@ async function writeSources(root, source) {
   );
 }
 
+async function writeSourcesWithOverlay(root, source, overlayPath) {
+  await mkdir(path.join(root, 'harness/upstream'), { recursive: true });
+  await writeFile(
+    path.join(root, 'harness/upstream/sources.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      sources: {
+        'planning-with-files': {
+          type: 'git',
+          url: source,
+          path: 'harness/upstream/planning-with-files',
+          overlayPath
+        }
+      }
+    })
+  );
+}
+
 test('fetchCommand stages git planning-with-files candidate without touching core', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'harness-fetch-'));
   const source = await mkdtemp(path.join(os.tmpdir(), 'harness-local-source-'));
@@ -146,6 +164,50 @@ test('updateCommand leaves IDE projections to later sync', async () => {
 
     assert.equal(await readFile(path.join(root, 'harness/upstream/planning-with-files/SKILL.md'), 'utf8'), 'new upstream skill');
     assert.equal(await readFile(path.join(root, '.github/skills/planning-with-files/SKILL.md'), 'utf8'), 'old projected skill');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(source, { recursive: true, force: true });
+  }
+});
+
+test('updateCommand reapplies a declared overlay after replacing the upstream source', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'harness-update-overlay-'));
+  const source = await mkdtemp(path.join(os.tmpdir(), 'harness-local-source-'));
+  try {
+    await writeSourcesWithOverlay(
+      root,
+      source,
+      'harness/core/upstream-overlays/planning-with-files'
+    );
+    await mkdir(path.join(root, 'harness/core/upstream-overlays/planning-with-files/scripts'), {
+      recursive: true
+    });
+    await writeFile(
+      path.join(root, 'harness/core/upstream-overlays/planning-with-files/SKILL.md'),
+      'overlay skill'
+    );
+    await writeFile(
+      path.join(root, 'harness/core/upstream-overlays/planning-with-files/scripts/close-task.py'),
+      'overlay close task'
+    );
+    await createGitSource(source, 'upstream skill');
+
+    await withCwd(root, async () => {
+      await fetchCommand(['--source=planning-with-files']);
+      await updateCommand(['--source=planning-with-files']);
+    });
+
+    assert.equal(
+      await readFile(path.join(root, 'harness/upstream/planning-with-files/SKILL.md'), 'utf8'),
+      'overlay skill'
+    );
+    assert.equal(
+      await readFile(
+        path.join(root, 'harness/upstream/planning-with-files/scripts/close-task.py'),
+        'utf8'
+      ),
+      'overlay close task'
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
     await rm(source, { recursive: true, force: true });

@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveSkillTargetPaths } from './paths.mjs';
 
@@ -166,6 +166,34 @@ async function collectionChildNames(sourcePath) {
     .sort();
 }
 
+async function pathExists(targetPath) {
+  try {
+    await access(targetPath);
+    return true;
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
+async function resolveSingleSkillSourceRoot(rootDir, skill) {
+  const sourceRoot = path.join(rootDir, skill.baselinePath);
+
+  if (await pathExists(path.join(sourceRoot, 'SKILL.md'))) {
+    return sourceRoot;
+  }
+
+  const canonicalRoot = path.join(sourceRoot, 'skills', skill.targetName);
+  if (await pathExists(path.join(canonicalRoot, 'SKILL.md'))) {
+    return canonicalRoot;
+  }
+
+  return sourceRoot;
+}
+
 function patchKey(patch) {
   return `${patch.type}:${patch.marker ?? ''}`;
 }
@@ -228,7 +256,9 @@ export async function projectionForSkill(rootDir, skillName, target) {
     skillName,
     target,
     strategy,
-    source: path.join(rootDir, skill.baselinePath),
+    source: skill.layout === 'single'
+      ? await resolveSingleSkillSourceRoot(rootDir, skill)
+      : path.join(rootDir, skill.baselinePath),
     patches: resolvePatches(skill.patches, target)
   };
 }
@@ -265,7 +295,9 @@ export async function planSkillProjections({ rootDir, homeDir, scope, target, sk
   for (const [parentSkillName, skill] of Object.entries(index.skills).sort(([left], [right]) =>
     left.localeCompare(right)
   )) {
-    const sourceRoot = path.join(rootDir, skill.baselinePath);
+    const sourceRoot = skill.layout === 'single'
+      ? await resolveSingleSkillSourceRoot(rootDir, skill)
+      : path.join(rootDir, skill.baselinePath);
     const strategy = strategyFor(skill, target);
 
     if (skill.layout === 'collection') {
