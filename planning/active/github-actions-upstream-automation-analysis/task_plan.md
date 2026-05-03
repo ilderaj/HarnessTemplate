@@ -9,7 +9,7 @@ Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 9
+Phase 15
 
 ## Phases
 
@@ -66,6 +66,51 @@ Phase 9
 - [x] 在 task-scoped planning 文件中只保留摘要、决策和引用
 - **Status:** complete
 
+### Phase 10: 4 月 30 日方案复核与实施计划更新
+- [x] 复核当前仓库是否已有 workflow / CI automation 实现
+- [x] 复核远端默认分支、`dev` branch protection 和目标 PR 状态
+- [x] 明确 GitHub 云端自动化与本地 `dev` 同步的边界
+- [x] 更新 companion plan 的详细实施清单
+- **Status:** complete
+
+### Phase 11: Task 3 code quality review 重要问题修复
+- [x] 修复 refresh command 失败时 stdout/stderr 捕获与错误传播
+- [x] 修复 command-chain 失败结果中的 eligible files best-effort capture
+- [x] 扩展 repo-owned upstream/projection/doc allowlist 并继续排除 runtime-only files
+- [x] 增强 `tests/automation/upstream-refresh-lib.test.mjs` 覆盖以上行为
+- **Status:** complete
+
+### Phase 12: Task 4 PR automation 与 review gate 实现
+- [x] 先运行 `tests/automation/upstream-pr-lib.test.mjs` 确认缺少 PR helper 时 RED
+- [x] 新增 PR helper constants、body builder、command plan builders 与 no-eligible gate
+- [x] 新增 PR CLI runner，读取 `.harness/upstream-refresh-result.json` 并通过注入 runner 执行 git/gh
+- [x] 覆盖 bot git identity、existing PR update、新 PR create、advisory review body、commit/gh terminal failure
+- [x] 运行指定验证并记录 Task 5 workflow 缺口不在本轮范围内
+- **Status:** complete
+
+### Phase 13: Task 5 Workflow And Artifacts 接线
+- [x] 先运行 `tests/automation/upstream-refresh-workflow.test.mjs` 确认缺少 workflow 时 RED
+- [x] 新增 `.github/workflows/upstream-refresh.yml`，接通 `workflow_dispatch` 与 weekly schedule `0 12 * * 5`
+- [x] workflow 使用最小权限 `contents: write` 与 `pull-requests: write`
+- [x] 接通 refresh runner、result artifact 上传、result JSON 输出解析和 PR runner gate
+- [x] 运行 workflow contract test 与 automation 全量测试确认 GREEN
+- **Status:** complete
+
+### Phase 14: Task 7 Optional Local Dev Sync Helper
+- [x] 先新增并运行 `tests/automation/local-dev-sync.test.mjs`，确认 helper 缺失时 RED
+- [x] 新增 `scripts/local/sync-dev-after-upstream-pr.mjs`，只允许 clean worktree、local `dev` 未领先且可 fast-forward 时同步
+- [x] 文档说明 GitHub Actions 不能直接触发本机 helper，v1 使用 manual、macOS LaunchAgent 或有意暴露的 local webhook
+- [x] 运行 focused test、`node --check` 与 `npm run verify` 确认 GREEN
+- **Status:** complete
+
+### Phase 15: Final code review PR helper 修复
+- [x] 在 `runOpenUpstreamPullRequest()` 内部要求 refresh result status 为 `success`
+- [x] 非 success refresh result 抛出 `UpstreamPullRequestError`，让 CLI 非零，并且不运行 git/gh 写操作
+- [x] existing automation PR update 使用 `git push --force-with-lease origin automation/upstream-refresh`
+- [x] create path 保持 `git push --set-upstream origin automation/upstream-refresh`
+- [x] 更新 PR body、maintenance docs 和 regression tests，明确 guarded update 只适用于 matched automation branch/base PR
+- **Status:** complete
+
 ## Key Questions
 1. GitHub Actions 是否能定期检测两个 upstream 主源的变更？
 2. Actions 是否能安全触发本项目已有 `fetch` / `update` 流程？
@@ -81,10 +126,24 @@ Phase 9
 | 真正的 upstream 拉取应映射为 Harness `fetch/update/sync/verify/doctor` 链路 | 仓库没有 git remote `upstream`；上游来源定义在 `harness/upstream/sources.json` |
 | refresh 工作分支固定从 `origin/dev` 派生 | 用户目标是最终通过 PR 落到 `dev` |
 | 详细实施清单迁移到 companion plan `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md` | 保持 `planning/active/.../task_plan.md` 为 summary-only durable task memory |
-| 修订计划默认采用 `Friday 21:00 UTC` (`0 21 * * 5`) | 把“每周五”转成可实现、可 review 的具体 schedule 假设 |
+| 2026-04-30 修订采用 `Friday 20:00 Asia/Shanghai`，即 GitHub cron `0 12 * * 5` | 用户本轮明确“周五晚上 8 点”；在未另行指定时区时按中文语境默认 UTC+8 |
 | v1 的“处理冲突”定义为 fail-fast + artifact/log + 人工接管 | 当前仓库没有安全的 bot 自动解冲突机制 |
 | 启用 weekly schedule 前先要求 `dev` branch protection / required checks 就位 | 否则“最终落到 origin dev”的自动化会绕过治理面 |
 | v1 不做 auto-merge，也不允许 workflow 直推 `dev` | 先保留审查面，降低供应链与误推风险 |
+| upstream 更新探测应先做 `git ls-remote <url> HEAD` 对比 | 用户要求“根据 head 分析有无更新”，可避免无更新时创建分支和 PR |
+| GitHub Actions 不能直接同步这台机器的 local `dev` | GitHub runner 只能修改远端仓库；本地 checkout 需要独立 helper、local schedule 或手动触发 |
+| local `dev` 同步 v1 只允许 fast-forward | 脏工作区、本地领先、分叉或冲突都必须停止并输出恢复建议，不能无人值守解冲突 |
+| local `dev` 同步 preflight 必须使用完整 refs | 短 ref `dev` 可能解析到同名 tag；`origin/dev` 也应避免短名歧义 |
+| PR automation helper 固定 `automation/upstream-refresh` -> `dev` 与 `chore: refresh upstream baselines` | 保持自动化分支、目标分支和 PR 标题稳定，便于去重、review 和 workflow gate |
+| PR body 只把 automatic review/checks 标记为 advisory，并明确 final human review required | 避免 bot review 被误解为最终审批，也不启用 auto-merge |
+| PR CLI 通过注入 runner 执行 git/gh | 测试不实际 push、不创建 PR；CI 运行时仍可执行真实命令 |
+| Task 5 workflow 不运行 `npm ci` | 当前仓库没有 lockfile，加入 install step 会制造不稳定失败；refresh runner 内部会执行 `npm run verify` |
+| PR runner gate 同时要求 job success、`result.status == success` 和 `eligibleFiles.length > 0` | 避免失败 refresh、无变化或无 eligible files 时创建 PR |
+| `.harness/upstream-refresh-result.json` 作为 workflow artifact 上传 | 失败或 blocked 情况下仍保留 result JSON，便于人工接管 |
+| Task 7 local dev sync helper 只运行 `git fetch origin dev`、`git checkout dev`、`git merge --ff-only origin/dev` | 本地同步保持 fast-forward-only；脏工作区、本地领先、分叉或冲突全部停止并报告恢复建议 |
+| PR helper 内部必须再次检查 `refreshResult.status === 'success'` | workflow gate 不能作为唯一保护；helper 被单独调用时必须从 failure/no_changes/unknown result 抛出终止错误，不能创建或更新 PR |
+| existing automation PR update 使用 `--force-with-lease` | 自动化分支每次从 `origin/dev` 重建，plain push 可能 non-fast-forward；lease 只用于已匹配 head `automation/upstream-refresh` 和 base `dev` 的 automation-owned PR |
+| PR create path 不使用 force push | 新建 automation PR 仍使用 `git push --set-upstream origin automation/upstream-refresh`，保持首次远端分支创建语义清晰 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -98,26 +157,32 @@ Phase 9
 
 ## Current Verdict
 
-- 原始方向仍成立：`main` 上 schedule 触发、工作分支从 `origin/dev` 派生、执行 Harness refresh chain、通过 PR 落到 `dev`。
+- 原始方向仍成立：`main` 上 schedule 触发、先探测 upstream `HEAD`、工作分支从 `origin/dev` 派生、执行 Harness refresh chain、通过 PR 落到 `dev`。
 - 原始计划不能按原样执行，核心缺口是：
   1. 缺少具体的 UTC schedule。
   2. 把“处理冲突”描述得过于乐观，没有 fail-fast 分流。
   3. 缺少 `dev` branch protection / required checks 前置条件。
   4. 详细 checklist 直接写在 task memory，违反当前 summary-only sync-back 边界。
-- 修订后计划已经把这四点收口，并迁移到 companion plan。
+- 2026-04-30 复核后新增边界：GitHub 端自动化可行；PR merge 后自动同步 local `dev` 不是 GitHub-only 能力，需要本地 fast-forward helper。
+- 修订后计划已经把这些边界收口，并迁移到 companion plan。
 
 ## Companion Plan Reference
 
 - Companion plan: `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md`
 - Companion plan role: 保存详细实施清单、rollout gates、文件级任务拆分和启用顺序。
-- Sync-back status: `2026-04-19` 已完成。
+- Sync-back status: `2026-04-30` 已完成。
 
 ## Revised Execution Plan Summary
 
 ### Phase A: Workflow Skeleton And Contracts
 - 建立 `.github/workflows/upstream-refresh.yml`，先接通 contract tests 和 `workflow_dispatch` 演练。
-- 定时入口默认锁定为 `Friday 21:00 UTC`，但只有在 `dev` protection 配好后才启用 schedule。
+- 定时入口默认锁定为 `Friday 20:00 Asia/Shanghai` / `0 12 * * 5`，但只有在 `dev` protection 配好后才启用 schedule。
 - 新增 `tests/automation/` 合约测试，锁定 workflow trigger、branch source、result file 和 PR gate。
+
+### Phase A1: Upstream HEAD Probe
+- 新增 `scripts/ci/lib/upstream-heads.mjs`，读取 `harness/upstream/sources.json` 并用 `git ls-remote <url> HEAD` 检查两个 Git source。
+- 维护 repo-owned source head record，例如 `harness/upstream/.source-heads.json`。
+- 无 upstream HEAD 变化时写出 `no_changes` result，不创建 branch、不开 PR。
 
 ### Phase B: Refresh Runner
 - 用 `scripts/ci/lib/upstream-refresh.mjs` 和 `scripts/ci/run-upstream-refresh.mjs` 执行：
@@ -149,3 +214,8 @@ Phase 9
   - v1 没有 auto-merge，冲突处理是 fail-fast + 人工接管
   - 失败时查看 workflow artifact 与 `.harness/upstream-refresh-result.json`
   - 启用 schedule 前需要人工确认 `dev` branch protection / required checks
+
+### Phase E: Local Dev Sync Helper
+- 新增可选本地命令 `scripts/local/sync-dev-after-upstream-pr.mjs`。
+- helper 只在 clean worktree、local `dev` 未领先、可 fast-forward 时同步 `origin/dev`。
+- GitHub Actions 不直接触发本地同步；本地同步通过手动命令、macOS LaunchAgent 或后续显式配置的本地 webhook 完成。
