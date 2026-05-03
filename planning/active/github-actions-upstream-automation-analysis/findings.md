@@ -38,6 +38,11 @@
 - 2026-04-19 复核：用户这次口头计划只指定了“每周五”，但没有指定具体时刻；GitHub Actions `schedule` 使用 UTC，若不先确定时区与时间点，就无法写出稳定且可 review 的 cron 表达式。
 - 2026-04-19 复核：用户要求“处理冲突”，但当前仓库并没有可支撑 bot 自动解冲突的既有机制；v1 应把冲突、verify 失败、allowlist 失败都视为“停止开 PR/停止合并并告警”的人工分流条件，而不是自动修复条件。
 - 2026-04-19 修订：详细实施清单已迁移到 companion plan `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md`；`planning/active/github-actions-upstream-automation-analysis/` 只保留摘要级任务记忆。
+- 2026-04-30 复核：当前仓库仍没有 `.github/workflows/`、`scripts/ci/` 或 `tests/automation/`，说明 GitHub Actions upstream refresh 自动化尚未开始实现。
+- 2026-04-30 复核：远端默认分支仍为 `main`，`dev` branch protection 仍返回 `404 Branch not protected`，base 为 `dev` 的 open PR 仍为空。
+- 2026-04-30 复核：`harness/installer/lib/upstream.mjs` 当前 `stageGitCandidate` 只是 shallow clone Git source 并删除 `.git`，没有持久记录 upstream HEAD；若要“根据 head 分析有无更新”，需要新增 HEAD probe 和 repo-owned source head record。
+- 2026-04-30 复核：GitHub Actions 可以更新远端 branch/PR，但不能直接同步开发者本机的 local `dev` checkout；本地同步必须由本地 helper、LaunchAgent、手动命令或显式 webhook/listener 负责。
+- 2026-04-30 复核：本地 `dev` 同步只能安全自动化 fast-forward；如果本地有未提交修改、本地领先或分叉，自动解冲突风险过高，应停止并输出恢复建议。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -64,8 +69,36 @@
 | “每周五拉取”在实现前必须补全为“某时区下的明确时刻” | GitHub Actions cron 只接受 UTC；没有时刻就没有可验证的 schedule |
 | v1 的“冲突处理”定义为 fail-fast + 通知，而不是自动解冲突 | upstream baseline 更新涉及供应链输入和投影结果，自动解冲突风险过高 |
 | 只有在 `dev` 完成保护后，计划里的“最终落到 origin dev”才适合自动化推进 | 否则 workflow 结果实际会绕过代码审查与 required checks 治理目标 |
-| companion plan 采用 `Friday 21:00 UTC` (`0 21 * * 5`) 作为默认 schedule 假设 | 让计划从“周五”上升为可执行的 cron 约束 |
+| 旧 companion plan 曾采用 `Friday 21:00 UTC` (`0 21 * * 5`) 作为默认 schedule 假设 | 该假设已被 2026-04-30 的 `Friday 20:00 Asia/Shanghai` / `0 12 * * 5` 修订取代 |
 | companion plan 把 schedule enablement 放到 branch protection 之后 | 先有治理，再启用定时自动化 |
+| 2026-04-30 修订采用 `Friday 20:00 Asia/Shanghai` / `0 12 * * 5` | 用户本轮明确晚上 8 点；未指定时区时按中文语境默认 UTC+8 |
+| 新增 upstream HEAD probe，不直接依赖 `fetch/update` 判断是否有更新 | 当前 updater 不记录 upstream HEAD；先探测 HEAD 可以在无更新时跳过 branch 和 PR |
+| 本地 `dev` 同步从 GitHub workflow 中拆出 | GitHub Actions 无法修改本机 checkout；混在同一条云端 workflow 会制造不可执行假设 |
+| 本地同步 helper 只做 fast-forward，不做 stash/rebase/conflict auto-resolution | 自动解决本地冲突可能覆盖用户工作或错误合并供应链输入 |
+| Task 3 review 修复要求 refresh command 失败对象携带 stdout/stderr 与 failed command | `blockedReason` 需要真实输出才能识别 `CONFLICT`、merge 和 verify 失败细节 |
+| command-chain 失败时仍应 best-effort capture changed files 并 filter | 失败结果需要保留 repo-owned eligible files，方便人工接管和 PR gate 判断 |
+| refresh allowlist 扩展为 repo-owned upstream/projection/doc paths，但继续排除 `.harness` runtime result/state files | `./scripts/harness sync` 会写投影文件；运行态文件不应进入 commit surface |
+| Task 4 PR helper 使用固定 branch/base/title constants | `automation/upstream-refresh`、`dev`、`chore: refresh upstream baselines` 是 PR 去重与 reviewer 识别的稳定契约 |
+| Task 4 PR CLI 在 commit 前配置 GitHub Actions bot identity | 避免 runner 上 `git commit` 因缺少 user.name / user.email 失败 |
+| Task 4 no eligible files 时不运行 git/gh | 避免空 commit、空 PR 和不必要的远端写入 |
+| Task 4 existing PR 路径更新分支并刷新 PR body，不创建新 PR | 固定 automation branch 上的 open PR 是去重依据；body 保持 advisory review gate 文案最新 |
+| Task 4 PR body 明确 automatic review/checks are advisory and final human review remains required | 满足 review gate 目标，同时不启用 auto-merge、不让 bot review 替代最终人工 review |
+| Task 5 workflow 入口固定为 `workflow_dispatch` 与 `schedule` cron `0 12 * * 5` | 对应 Friday 20:00 Asia/Shanghai，且满足默认分支 `main` 上运行的约束 |
+| Task 5 workflow 只声明 `contents: write` 与 `pull-requests: write` | PR branch push 与 PR create/update 需要这两项；不扩大 token 权限 |
+| Task 5 workflow 不加 `npm ci` | 当前仓库没有 lockfile，按用户约束避免 broken install step |
+| Task 5 PR gate 使用 `success()`、`result.status == success` 与 `eligible_count != 0` | 只有 refresh 成功且存在 eligible changes 时才运行 PR runner |
+| Task 5 workflow 上传 `.harness/upstream-refresh-result.json` artifact | 保证 blocked/failure 路径有机器可读结果供人工排查 |
+| Task 6 手动 `workflow_dispatch` 默认不走 PR path | `create_pr` input 默认 `false`，只有 operator 显式设置 `create_pr: true` 时才测试 PR create/update |
+| Task 6 schedule 需要 repo variable gate | workflow 合入 `main` 后 cron 仍存在，但 scheduled job 只有 `UPSTREAM_REFRESH_SCHEDULE_ENABLED=true` 时才真正执行 |
+| Task 7 local helper 不能由 GitHub Actions 直接触发本机执行 | GitHub runner 不能访问开发者机器；v1 只记录 manual、macOS LaunchAgent 和有意暴露的 local webhook 三类显式触发方式 |
+| Task 7 local sync 使用 injected runner + pure helper exports | 测试不触碰真实 Git repo；command plan、preflight analysis、ahead/behind parsing 和 report formatting 都可单元测试 |
+| Task 7 local sync preflight 使用 `refs/heads/dev`、`refs/remotes/origin/dev` 和完整 range `refs/heads/dev...refs/remotes/origin/dev` | 避免 tag 或其他同名短 ref 让 preflight 误判 local/remote dev 存在性与 ahead/behind |
+| Task 7 local sync 只有完整 ref preflight 通过后才执行 `git fetch origin dev`、`git checkout dev`、`git merge --ff-only origin/dev` | 保持用户可识别的同步命令形状，同时把短 ref 风险隔离在 preflight 之外 |
+| Task 7 local sync 不执行 stash、rebase 或自动 conflict resolution | 失败时输出 current branch、local HEAD、origin/dev HEAD、stop reason 和 manual recovery suggestions |
+| Final review 修复要求 PR helper 内部检查 refresh status | workflow gate 之外仍要保护 direct helper invocation；failure/no_changes/unknown result 必须抛出终止错误，不能运行 git/gh 写操作 |
+| Final review 修复要求 existing PR update 使用 guarded force-with-lease | 固定 automation branch 会从 `origin/dev` 重建，plain push 容易 non-fast-forward；只有 matched head/base PR 才允许 guarded lease update |
+| PR body 与维护文档必须说明 force-with-lease 不是泛用 force push | 该策略只属于 automation-owned `automation/upstream-refresh` -> `dev` 更新路径；create path 仍使用 `--set-upstream` |
+| Final reviewer approved latest PR helper status gate and guarded push behavior | `failure`、`no_changes`、missing/unknown status 会抛出 `UpstreamPullRequestError` 且不运行 git/gh；matched automation PR update 才使用 `--force-with-lease` |
 
 ## Issues Encountered
 | Issue | Resolution |
