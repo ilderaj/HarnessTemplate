@@ -5,7 +5,7 @@ import { EventEmitter } from 'node:events';
 const expectedRefreshCommands = [
   { file: 'git', args: ['fetch', 'origin', 'main', 'dev'] },
   { file: 'git', args: ['checkout', '-B', 'automation/upstream-refresh', 'origin/dev'] },
-  { file: './scripts/harness', args: ['install', '--scope=workspace', '--targets=all', '--projection=link'] },
+  { file: './scripts/harness', args: ['install', '--scope=workspace', '--targets=all', '--projection=link', '--mode=force'] },
   { file: './scripts/harness', args: ['fetch'] },
   { file: './scripts/harness', args: ['update'] },
   { file: 'npm', args: ['run', 'verify'] },
@@ -18,7 +18,7 @@ const expectedRefreshCommands = [
 const expectedHumanReadableRefreshCommandChain = [
   'git fetch origin main dev',
   'git checkout -B automation/upstream-refresh origin/dev',
-  './scripts/harness install --scope=workspace --targets=all --projection=link',
+  './scripts/harness install --scope=workspace --targets=all --projection=link --mode=force',
   './scripts/harness fetch',
   './scripts/harness update',
   'npm run verify',
