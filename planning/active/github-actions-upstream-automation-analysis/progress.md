@@ -492,3 +492,39 @@
 | Fresh pre-PR repository verify | `npm run verify` | 提交前全量 verify 通过 | 317 tests pass | 通过 |
 | Implementation branch push | `git push --set-upstream origin copilot/202604301444-github-actions-upstream-automation-analysis-001` | 远端创建并追踪实现分支 | branch pushed and tracking set | 通过 |
 | Implementation PR creation | GitHub PR tool | 创建指向 `dev` 的实现 PR | PR `#33` opened | 通过 |
+
+## Session: 2026-05-03
+
+### Phase 16: main 上首次 rehearsal 失败后的 clean-checkout takeover 修复
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/20260503-upstream-refresh-rehearsal-fix`
+- Branch: `copilot/20260503-upstream-refresh-rehearsal-fix`
+- Worktree base: `origin/main @ 89d0926af4c172428294cf90972fb42ebe4ee822`
+- Actions taken:
+  - 在 `main` 上触发第一次 `gh workflow run upstream-refresh.yml --ref main -f create_pr=false`，run `25281979267` 失败于 `Run upstream refresh` step。
+  - 下载 `upstream-refresh-result` artifact 并读取 `.harness/upstream-refresh-result.json`，确认 `blockedReason` 是 `./scripts/harness install --scope=workspace --targets=all --projection=link` 在 `AGENTS.md` 上报 `Refusing to overwrite non-Harness-owned path`。
+  - 读取失败日志，确认 wiring 正常：artifact upload/read result 成功，PR step 因失败 result 被正确跳过。
+  - 用 `worktree-preflight --task github-actions-upstream-automation-analysis` 观察到默认建议 base 为本地 `dev @ 150e824...`，但因其已偏离 `origin/dev` 且失败 workflow 实际运行在 `main`，显式改为从 `origin/main` 建立修复 worktree。
+  - 先在 `tests/installer/commands.test.mjs` 增加 `install --mode=force` takeover regression，并在 `tests/automation/upstream-refresh-lib.test.mjs` 锁定 refresh command chain 必须包含 `--mode=force`；确认 RED。
+  - 在 `harness/installer/commands/install.mjs` 新增 `--mode=ensure|force`，`force` 时转发到 `sync --takeover`；在 `harness/installer/commands/sync.mjs` 新增 `--takeover` 选项，把 desired projection targets 视为本次 run 可接管的 owned targets。
+  - 更新 `scripts/ci/lib/upstream-refresh.mjs`，让 refresh command chain 使用 `./scripts/harness install --scope=workspace --targets=all --projection=link --mode=force`。
+  - 运行 focused tests 与全量 `npm run verify`，确认修复通过且无回归。
+- Files modified:
+  - `harness/installer/commands/install.mjs`
+  - `harness/installer/commands/sync.mjs`
+  - `scripts/ci/lib/upstream-refresh.mjs`
+  - `tests/automation/upstream-refresh-lib.test.mjs`
+  - `tests/installer/commands.test.mjs`
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md`
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md`
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md`
+
+## Additional Test Results 17
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Rehearsal failure artifact | `gh run download 25281979267 -n upstream-refresh-result` + read result | 找到 main 上第一次 rehearsal 的 machine-readable blocked reason | `install --scope=workspace ...` 在 `AGENTS.md` 上拒绝 non-Harness-owned takeover | 通过 |
+| Failed step log inspection | `gh run view 25281979267 --log-failed` | 缩小失败面并确认 artifact/result wiring 正常 | 失败仅在 `Run upstream refresh`，artifact upload/read result 成功，PR step skipped | 通过 |
+| Focused RED | `node --test tests/installer/commands.test.mjs tests/automation/upstream-refresh-lib.test.mjs` | 新增 force-mode tests 先失败 | 3 tests fail: missing `--mode=force` in command chain and install still rejects existing projections | 通过 |
+| Focused GREEN | `node --test tests/installer/commands.test.mjs tests/automation/upstream-refresh-lib.test.mjs` | force-mode takeover 与 refresh command chain 修复通过 | 35 tests pass | 通过 |
+| Diff whitespace check | `git diff --check` | 当前 hotfix diff 无 whitespace 问题 | 无输出，exit 0 | 通过 |
+| Full repository verify | `npm run verify` | installer + automation 改动无回归 | 318 tests pass | 通过 |

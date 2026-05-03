@@ -160,6 +160,28 @@ test('install rejects safety profiles outside workspace scope', async () => {
   }
 });
 
+test('install --mode=force takes over existing workspace projections in a clean checkout', async () => {
+  const root = await createHarnessFixture();
+  try {
+    await mkdir(path.join(root, '.agents/skills/planning-with-files'), { recursive: true });
+    await writeFile(path.join(root, 'AGENTS.md'), 'legacy entry\n');
+    await writeFile(
+      path.join(root, '.agents/skills/planning-with-files/LEGACY.md'),
+      'legacy skill directory\n'
+    );
+
+    await harnessCommand(root, 'install', '--scope=workspace', '--targets=codex', '--mode=force');
+
+    assert.match(await readFile(path.join(root, 'AGENTS.md'), 'utf8'), /Harness Policy For Codex/);
+    assert.match(
+      await readFile(path.join(root, '.agents/skills/planning-with-files/SKILL.md'), 'utf8'),
+      /Planning with Files/
+    );
+  } finally {
+    await removeHarnessFixture(root);
+  }
+});
+
 test('sync uses the stored entry profile when rendering entries', async () => {
   const root = await createHarnessFixture();
   try {

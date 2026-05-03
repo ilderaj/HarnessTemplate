@@ -19,6 +19,7 @@ export async function install(args = []) {
   const policyProfiles = await loadPolicyProfiles(rootDir);
   const skillProfiles = await loadSkillProfiles(rootDir);
   const scope = normalizeScope(readOption(args, 'scope', metadata.defaultScope));
+  const mode = readOption(args, 'mode', 'ensure');
   const projectionMode = readOption(args, 'projection', 'link');
   const policyProfile = readOption(args, 'profile', policyProfiles.defaultProfile);
   const hookMode = readOption(
@@ -36,6 +37,10 @@ export async function install(args = []) {
 
   if (!['link', 'portable'].includes(projectionMode)) {
     throw new Error(`Invalid projection mode: ${projectionMode}`);
+  }
+
+  if (!['ensure', 'force'].includes(mode)) {
+    throw new Error(`Invalid mode: ${mode}`);
   }
 
   if (!['off', 'on'].includes(hookMode)) {
@@ -79,6 +84,6 @@ export async function install(args = []) {
   }
 
   await writeState(rootDir, state);
-  await sync([]);
+  await sync(mode === 'force' ? ['--takeover'] : []);
   console.log(`Installed Harness state for ${targets.join(', ')} using ${scope} scope.`);
 }
