@@ -44,12 +44,13 @@ function hasFlag(args, ...names) {
 
 function usage() {
   return [
-    'Usage: ./scripts/harness sync [--conflict=reject|backup] [--dry-run] [--check]',
+    'Usage: ./scripts/harness sync [--conflict=reject|backup] [--dry-run] [--check] [--takeover]',
     '',
     'Options:',
     '  --conflict=reject|backup  Refuse or back up non-Harness-owned paths before writing',
     '  --dry-run                 Print the desired projection diff without writing files',
     '  --check                   Exit non-zero when sync would make changes',
+    '  --takeover                Treat desired projection targets as Harness-owned for this run',
     '  --help, -h                Show this help message'
   ].join('\n');
 }
@@ -429,6 +430,7 @@ export async function sync(args = []) {
   const conflictMode = readOption(args, 'conflict', 'reject');
   const dryRun = hasFlag(args, '--dry-run');
   const check = hasFlag(args, '--check');
+  const takeover = hasFlag(args, '--takeover');
   if (!['reject', 'backup'].includes(conflictMode)) {
     throw new Error(`Invalid conflict mode: ${conflictMode}`);
   }
@@ -464,7 +466,9 @@ export async function sync(args = []) {
     return;
   }
 
-  const ownedTargets = ownedTargetSet(currentManifest);
+  const ownedTargets = takeover
+    ? new Set([...ownedTargetSet(currentManifest), ...ownedTargetSet(plan.manifest)])
+    : ownedTargetSet(currentManifest);
   const normalization = await backupManager.normalizeLegacyBackups();
   for (const warning of normalization.warnings) {
     console.warn(warning);

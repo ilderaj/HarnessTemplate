@@ -86,6 +86,9 @@
 | Task 5 workflow 入口固定为 `workflow_dispatch` 与 `schedule` cron `0 12 * * 5` | 对应 Friday 20:00 Asia/Shanghai，且满足默认分支 `main` 上运行的约束 |
 | Task 5 workflow 只声明 `contents: write` 与 `pull-requests: write` | PR branch push 与 PR create/update 需要这两项；不扩大 token 权限 |
 | Task 5 workflow 不加 `npm ci` | 当前仓库没有 lockfile，按用户约束避免 broken install step |
+| 2026-05-03 rehearsal failure root cause 是 clean checkout 缺少 workspace projection ownership manifest | GitHub runner 在 `origin/dev` 派生 branch 后执行 `./scripts/harness install --scope=workspace --targets=all --projection=link`，会把已存在的 `AGENTS.md` / workspace skill roots 视为 non-Harness-owned 并拒绝覆盖 |
+| 修复采用显式 `install --mode=force`，内部转发到 `sync --takeover` | 只在调用方明确 opt in 时把 desired projection targets 视为本次 run 可接管，避免放宽默认 reject 语义 |
+| 2026-05-03 rollout fix worktree 明确基于 `origin/main @ 89d0926af4c172428294cf90972fb42ebe4ee822` | `worktree-preflight` 默认建议沿本地 `dev @ 150e824...` 续接，但本地 `dev` 已 ahead/behind `origin/dev`，而失败 workflow 实际运行在 `main`；修复必须跟随远端默认分支 |
 | Task 5 PR gate 使用 `success()`、`result.status == success` 与 `eligible_count != 0` | 只有 refresh 成功且存在 eligible changes 时才运行 PR runner |
 | Task 5 workflow 上传 `.harness/upstream-refresh-result.json` artifact | 保证 blocked/failure 路径有机器可读结果供人工排查 |
 | Task 6 手动 `workflow_dispatch` 默认不走 PR path | `create_pr` input 默认 `false`，只有 operator 显式设置 `create_pr: true` 时才测试 PR create/update |
