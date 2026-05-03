@@ -76,6 +76,88 @@ When you need a remote recovery point for a risky session, use this operator flo
 
 ## Upstream Skill Updates
 
+### Scheduled Refresh Activation
+
+Before enabling the weekly upstream refresh schedule, configure dev branch protection:
+
+- Protect branch: dev
+- Require pull request before merging
+- Require status checks to pass before merging
+- Required check: npm run verify (or the workflow job name that wraps it)
+- Restrict direct pushes to dev
+
+Activation order:
+
+1. Merge workflow implementation to main.
+2. Configure dev branch protection.
+3. Verify locally:
+
+	```bash
+	npm run verify
+	node --test tests/automation/*.test.mjs
+	```
+
+4. Run `workflow_dispatch` with the default `create_pr: false` setting as a PR-disabled rehearsal and confirm:
+
+	- result file generated
+	- artifact uploaded
+	- no unexpected files in `eligibleFiles`
+	- no pull request is created or updated
+
+5. Run `workflow_dispatch` again with `create_pr: true` only when you intentionally want to test the PR creation/update path.
+6. Enable the weekly schedule only after the PR-disabled rehearsal passes, the optional PR path check passes if run, and dev branch protection is in place.
+7. Set the repository variable `UPSTREAM_REFRESH_SCHEDULE_ENABLED=true` to allow scheduled runs to execute after the workflow is merged to main.
+
+Weekly schedule gate: the workflow contains the Friday 20:00 Asia/Shanghai cron (`0 12 * * 5`), but scheduled runs are skipped until the repository variable `UPSTREAM_REFRESH_SCHEDULE_ENABLED` is set to `true`.
+
+When an open pull request already matches the fixed automation head `automation/upstream-refresh` and base `dev`, the PR helper updates that automation-owned branch with `git push --force-with-lease origin automation/upstream-refresh` before refreshing the PR body. This guarded update is not a general force-push path: unmatched PRs use the create path, and new PR creation continues to use `git push --set-upstream origin automation/upstream-refresh`.
+
+### Local Dev Sync After Upstream PR Merge
+
+GitHub Actions cannot directly trigger commands on a developer machine after an upstream refresh PR merges. The optional local helper is intentionally explicit and local-only:
+
+```bash
+node scripts/local/sync-dev-after-upstream-pr.mjs
+```
+
+Recommended v1 trigger options:
+
+- Manual: run `node scripts/local/sync-dev-after-upstream-pr.mjs` after confirming the upstream refresh PR has merged.
+- Local schedule: use a macOS LaunchAgent that runs the helper after expected PR merge windows.
+- Advanced: use a local webhook listener only when this machine is intentionally exposed or tunneled.
+
+The helper performs a safe preflight before changing branches. It verifies that the current checkout is this repository, the worktree is clean, local `refs/heads/dev` exists, `refs/remotes/origin/dev` exists, local dev is not ahead of origin dev, and the update can be fast-forwarded using `refs/heads/dev...refs/remotes/origin/dev`.
+
+After that complete-ref preflight passes, the only sync commands it may run are:
+
+
+```bash
+git fetch origin dev
+git checkout dev
+git merge --ff-only origin/dev
+```
+
+It does not stash, rebase, auto-resolve conflicts, or merge non-fast-forward history. When sync stops, the terminal report includes:
+
+- current branch
+- local HEAD
+- `origin/dev` HEAD
+- reason sync stopped
+- manual recovery suggestions
+
+Common manual recovery checks:
+
+```bash
+git status --short
+git rev-parse --verify refs/heads/dev
+git rev-parse --verify refs/remotes/origin/dev
+git log --oneline refs/remotes/origin/dev..refs/heads/dev
+git log --oneline --left-right refs/heads/dev...refs/remotes/origin/dev
+git fetch origin dev
+git checkout dev
+git merge --ff-only origin/dev
+```
+
 Upstream updates are staged before they are applied:
 
 ```bash
@@ -105,6 +187,37 @@ npm run verify
 ./scripts/harness sync
 ./scripts/harness doctor
 ```
+
+### Scheduled Refresh Failures
+
+The scheduled upstream refresh treats blocked automation as terminal. Git conflicts, `npm run verify` failures, refresh allowlist violations, `git commit` failures, and `gh pr create` or `gh pr edit` failures must not auto-advance.
+
+The refresh runner writes `.harness/upstream-refresh-result.json` before exiting non-zero. Download the workflow artifact that contains this result file and the job log, then inspect `status` and `blockedReason` before taking over manually.
+
+Manual takeover path:
+
+1. Download the failed workflow artifact and review `.harness/upstream-refresh-result.json` plus the job log.
+2. Reproduce from a local `dev` baseline:
+
+	```bash
+	git fetch origin dev
+	git checkout dev
+	git pull --ff-only origin dev
+	node scripts/ci/run-upstream-refresh.mjs
+	```
+
+3. Fix the reported conflict, validation failure, or allowlist violation in the local refresh branch.
+4. Re-run the validation chain:
+
+	```bash
+	npm run verify
+	./scripts/harness worktree-preflight
+	./scripts/harness sync --dry-run
+	./scripts/harness sync
+	./scripts/harness doctor
+	```
+
+5. Open or update the upstream refresh PR manually if automation did not reach the PR step.
 
 ## Context Governance Gates
 

@@ -9,7 +9,7 @@ Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 10
+Phase 15
 
 ## Phases
 
@@ -73,6 +73,44 @@ Phase 10
 - [x] 更新 companion plan 的详细实施清单
 - **Status:** complete
 
+### Phase 11: Task 3 code quality review 重要问题修复
+- [x] 修复 refresh command 失败时 stdout/stderr 捕获与错误传播
+- [x] 修复 command-chain 失败结果中的 eligible files best-effort capture
+- [x] 扩展 repo-owned upstream/projection/doc allowlist 并继续排除 runtime-only files
+- [x] 增强 `tests/automation/upstream-refresh-lib.test.mjs` 覆盖以上行为
+- **Status:** complete
+
+### Phase 12: Task 4 PR automation 与 review gate 实现
+- [x] 先运行 `tests/automation/upstream-pr-lib.test.mjs` 确认缺少 PR helper 时 RED
+- [x] 新增 PR helper constants、body builder、command plan builders 与 no-eligible gate
+- [x] 新增 PR CLI runner，读取 `.harness/upstream-refresh-result.json` 并通过注入 runner 执行 git/gh
+- [x] 覆盖 bot git identity、existing PR update、新 PR create、advisory review body、commit/gh terminal failure
+- [x] 运行指定验证并记录 Task 5 workflow 缺口不在本轮范围内
+- **Status:** complete
+
+### Phase 13: Task 5 Workflow And Artifacts 接线
+- [x] 先运行 `tests/automation/upstream-refresh-workflow.test.mjs` 确认缺少 workflow 时 RED
+- [x] 新增 `.github/workflows/upstream-refresh.yml`，接通 `workflow_dispatch` 与 weekly schedule `0 12 * * 5`
+- [x] workflow 使用最小权限 `contents: write` 与 `pull-requests: write`
+- [x] 接通 refresh runner、result artifact 上传、result JSON 输出解析和 PR runner gate
+- [x] 运行 workflow contract test 与 automation 全量测试确认 GREEN
+- **Status:** complete
+
+### Phase 14: Task 7 Optional Local Dev Sync Helper
+- [x] 先新增并运行 `tests/automation/local-dev-sync.test.mjs`，确认 helper 缺失时 RED
+- [x] 新增 `scripts/local/sync-dev-after-upstream-pr.mjs`，只允许 clean worktree、local `dev` 未领先且可 fast-forward 时同步
+- [x] 文档说明 GitHub Actions 不能直接触发本机 helper，v1 使用 manual、macOS LaunchAgent 或有意暴露的 local webhook
+- [x] 运行 focused test、`node --check` 与 `npm run verify` 确认 GREEN
+- **Status:** complete
+
+### Phase 15: Final code review PR helper 修复
+- [x] 在 `runOpenUpstreamPullRequest()` 内部要求 refresh result status 为 `success`
+- [x] 非 success refresh result 抛出 `UpstreamPullRequestError`，让 CLI 非零，并且不运行 git/gh 写操作
+- [x] existing automation PR update 使用 `git push --force-with-lease origin automation/upstream-refresh`
+- [x] create path 保持 `git push --set-upstream origin automation/upstream-refresh`
+- [x] 更新 PR body、maintenance docs 和 regression tests，明确 guarded update 只适用于 matched automation branch/base PR
+- **Status:** complete
+
 ## Key Questions
 1. GitHub Actions 是否能定期检测两个 upstream 主源的变更？
 2. Actions 是否能安全触发本项目已有 `fetch` / `update` 流程？
@@ -95,6 +133,17 @@ Phase 10
 | upstream 更新探测应先做 `git ls-remote <url> HEAD` 对比 | 用户要求“根据 head 分析有无更新”，可避免无更新时创建分支和 PR |
 | GitHub Actions 不能直接同步这台机器的 local `dev` | GitHub runner 只能修改远端仓库；本地 checkout 需要独立 helper、local schedule 或手动触发 |
 | local `dev` 同步 v1 只允许 fast-forward | 脏工作区、本地领先、分叉或冲突都必须停止并输出恢复建议，不能无人值守解冲突 |
+| local `dev` 同步 preflight 必须使用完整 refs | 短 ref `dev` 可能解析到同名 tag；`origin/dev` 也应避免短名歧义 |
+| PR automation helper 固定 `automation/upstream-refresh` -> `dev` 与 `chore: refresh upstream baselines` | 保持自动化分支、目标分支和 PR 标题稳定，便于去重、review 和 workflow gate |
+| PR body 只把 automatic review/checks 标记为 advisory，并明确 final human review required | 避免 bot review 被误解为最终审批，也不启用 auto-merge |
+| PR CLI 通过注入 runner 执行 git/gh | 测试不实际 push、不创建 PR；CI 运行时仍可执行真实命令 |
+| Task 5 workflow 不运行 `npm ci` | 当前仓库没有 lockfile，加入 install step 会制造不稳定失败；refresh runner 内部会执行 `npm run verify` |
+| PR runner gate 同时要求 job success、`result.status == success` 和 `eligibleFiles.length > 0` | 避免失败 refresh、无变化或无 eligible files 时创建 PR |
+| `.harness/upstream-refresh-result.json` 作为 workflow artifact 上传 | 失败或 blocked 情况下仍保留 result JSON，便于人工接管 |
+| Task 7 local dev sync helper 只运行 `git fetch origin dev`、`git checkout dev`、`git merge --ff-only origin/dev` | 本地同步保持 fast-forward-only；脏工作区、本地领先、分叉或冲突全部停止并报告恢复建议 |
+| PR helper 内部必须再次检查 `refreshResult.status === 'success'` | workflow gate 不能作为唯一保护；helper 被单独调用时必须从 failure/no_changes/unknown result 抛出终止错误，不能创建或更新 PR |
+| existing automation PR update 使用 `--force-with-lease` | 自动化分支每次从 `origin/dev` 重建，plain push 可能 non-fast-forward；lease 只用于已匹配 head `automation/upstream-refresh` 和 base `dev` 的 automation-owned PR |
+| PR create path 不使用 force push | 新建 automation PR 仍使用 `git push --set-upstream origin automation/upstream-refresh`，保持首次远端分支创建语义清晰 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

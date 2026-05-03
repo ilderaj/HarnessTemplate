@@ -236,3 +236,243 @@
 | 远端默认分支复核 | `gh repo view ilderaj/superpowering-with-files --json ...` | 默认分支仍为 `main` | 默认分支为 `main` | 通过 |
 | `dev` 保护复核 | `gh api repos/ilderaj/superpowering-with-files/branches/dev/protection` | 判断是否已有 required checks | `404 Branch not protected` | 通过 |
 | `dev` 目标 PR 复核 | `gh pr list --repo ilderaj/superpowering-with-files --base dev --state open` | 判断是否已有自动更新 PR | `[]` | 通过 |
+
+### Phase 11: Task 3 code quality review 重要问题修复
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Branch: `copilot/202604301444-github-actions-upstream-automation-analysis-001`
+- HEAD: `2bea092`
+- Actions taken:
+  - 按 review 要求扩展 `scripts/ci/lib/upstream-refresh.mjs` 的 `runCommand`，用 piped stdio 同时转发和捕获 stdout/stderr，并把 command、exit code、stdout、stderr 写入失败 error。
+  - 更新 `scripts/ci/run-upstream-refresh.mjs`，在 command-chain 失败后 best-effort 执行 `captureChanges` + `filterChanges`，把 eligible files 写入 failure result；capture 失败时把 capture failure 附加到 blockedReason，保留原始失败。
+  - 扩展 `filterEligibleChanges()` allowlist，允许 repo-owned upstream/projection/doc paths，并继续排除 `.harness/projections.json`、`.harness/state.json`、`.harness/upstream-refresh-result.json` 与 unrelated files。
+  - 增强 `tests/automation/upstream-refresh-lib.test.mjs` 覆盖失败输出捕获、失败后 changed-file capture、capture failure、projection allowlist 和 runtime/unrelated exclusions。
+- Files modified:
+  - `scripts/ci/lib/upstream-refresh.mjs`
+  - `scripts/ci/run-upstream-refresh.mjs`
+  - `tests/automation/upstream-refresh-lib.test.mjs`
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md`
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md`
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md`
+
+## Additional Test Results 6
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| upstream refresh lib tests | `node --test tests/automation/upstream-refresh-lib.test.mjs` | 覆盖 Task 3 review 修复并全部通过 | 12 tests pass | 通过 |
+| Node syntax check | `node --check scripts/ci/lib/upstream-refresh.mjs scripts/ci/run-upstream-refresh.mjs` | 两个 CI script 语法有效 | 无输出，exit 0 | 通过 |
+
+### Phase 12: Task 4 PR automation 与 review gate 实现
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Branch: `copilot/202604301444-github-actions-upstream-automation-analysis-001`
+- HEAD at start: `2bea092`
+- Actions taken:
+  - 按 TDD 先运行 `node --test tests/automation/upstream-pr-lib.test.mjs`，确认缺少 `scripts/ci/lib/upstream-pr.mjs` 时 RED。
+  - 扩展 `tests/automation/upstream-pr-lib.test.mjs`，覆盖 fixed metadata、no eligible skip、existing PR update、新 PR create、PR body advisory gate、bot git identity、no auto-merge、git commit failure、`gh pr create` failure。
+  - 新增 `scripts/ci/lib/upstream-pr.mjs`，提供 constants、`shouldOpenPr`、PR body builder、command plan builders、open PR parser 和 pure plan builder。
+  - 新增 `scripts/ci/open-upstream-pr.mjs`，默认读取 `.harness/upstream-refresh-result.json`，在 eligible files 非空时配置 bot identity、commit、查询 open PR、push branch，并创建或更新 PR metadata。
+  - CLI 使用注入式 `runCommand`，测试不会实际 push 或调用 GitHub；真实 CI 运行时才执行 git/gh。
+- Files created/modified:
+  - `scripts/ci/lib/upstream-pr.mjs` (created)
+  - `scripts/ci/open-upstream-pr.mjs` (created)
+  - `tests/automation/upstream-pr-lib.test.mjs` (modified)
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md` (updated)
+
+## Additional Test Results 7
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| PR helper RED | `node --test tests/automation/upstream-pr-lib.test.mjs` before implementation | 缺少 Task 4 helper 时失败 | 10 tests fail with missing module errors | 通过 |
+| PR helper GREEN | `node --test tests/automation/upstream-pr-lib.test.mjs` | Task 4 helper/CLI 行为全部通过 | 10 tests pass | 通过 |
+| Node syntax check | `node --check scripts/ci/lib/upstream-pr.mjs scripts/ci/open-upstream-pr.mjs` | 新增两个脚本语法有效 | 无输出，exit 0 | 通过 |
+| Diff whitespace check | `git diff --check` | 当前 diff 无 whitespace 警告 | 无输出，exit 0 | 通过 |
+| Automation partial regression | `node --test tests/automation/*.test.mjs` | Task 4 与已实现 helper 不回归 | 25 pass；2 fail because `.github/workflows/upstream-refresh.yml` belongs to Task 5 and is not created yet | 范围外缺口 |
+
+### Phase 12 Quality Review: Important issue fix
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Actions taken:
+  - 修复 `findOpenAutomationPullRequest()`，existing PR 只有同时匹配 head `automation/upstream-refresh` 和 base `dev` 时才会被更新。
+  - 修复 `buildListOpenPullRequestsCommand()`，`gh pr list` command plan 现在同时带 `--head automation/upstream-refresh` 和 `--base dev`。
+  - 增加 wrong-base regression：同 head 但 base 是 `main` 的 open PR 不会被更新，会创建指向 `dev` 的新 PR。
+  - 轻量增强 raw command object 断言，确认执行层收到的是 `{ file, args }` 形式的 git/gh command object。
+- Files modified:
+  - `scripts/ci/lib/upstream-pr.mjs`
+  - `tests/automation/upstream-pr-lib.test.mjs`
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md`
+
+## Additional Test Results 8
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| PR helper regression | `node --test tests/automation/upstream-pr-lib.test.mjs` | wrong-base PR 创建新 dev PR，其余 PR helper 行为不回归 | 14 tests pass | 通过 |
+| Node syntax check | `node --check scripts/ci/lib/upstream-pr.mjs scripts/ci/open-upstream-pr.mjs` | 两个 PR scripts 语法有效 | 无输出，exit 0 | 通过 |
+| Individual Node syntax check | `node --check scripts/ci/lib/upstream-pr.mjs && node --check scripts/ci/open-upstream-pr.mjs` | 分别确认两个 PR scripts 语法有效 | 无输出，exit 0 | 通过 |
+
+### Phase 13: Task 5 Workflow And Artifacts 接线
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Branch: `copilot/202604301444-github-actions-upstream-automation-analysis-001`
+- HEAD at start: `2bea092`
+- Actions taken:
+  - 按 TDD 先运行 `node --test tests/automation/upstream-refresh-workflow.test.mjs`，确认 `.github/workflows/upstream-refresh.yml` 不存在时 RED。
+  - 新增 `.github/workflows/upstream-refresh.yml`，配置 `workflow_dispatch`、weekly schedule cron `0 12 * * 5`、最小权限 `contents: write` 与 `pull-requests: write`。
+  - 使用 `actions/checkout@v4` checkout `main` 并设置 `fetch-depth: 0`；`scripts/ci/run-upstream-refresh.mjs` 内部继续负责 `git fetch origin main dev` 与切到 `origin/dev` 派生的 automation branch。
+  - 使用 `actions/setup-node@v4`，因为仓库没有 lockfile，所以没有加入 `npm ci`。
+  - 在 refresh runner 后上传 `.harness/upstream-refresh-result.json` artifact，并用 Node step 读取 result JSON 输出 `status` 与 `eligible_count`。
+  - PR runner 只在 `success()`、`status == success` 且 `eligible_count != 0` 时运行；未加入 auto-merge 行为。
+- Files created/modified:
+  - `.github/workflows/upstream-refresh.yml` (created)
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md` (updated)
+
+## Additional Test Results 9
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Workflow contract RED | `node --test tests/automation/upstream-refresh-workflow.test.mjs` before workflow creation | 缺少 workflow 时失败 | 2 tests fail with `ENOENT` for `.github/workflows/upstream-refresh.yml` | 通过 |
+| Workflow contract GREEN | `node --test tests/automation/upstream-refresh-workflow.test.mjs` | workflow trigger 与 permissions contract 通过 | 2 tests pass | 通过 |
+| Automation full regression | `node --test tests/automation/*.test.mjs` | upstream heads、refresh、PR、workflow contracts 全部通过 | 31 tests pass | 通过 |
+| Workflow whitespace check | `git diff --check -- .github/workflows/upstream-refresh.yml` | 新增 workflow 无 whitespace/EOF 问题 | 无输出，exit 0 | 通过 |
+
+### Phase 13 Quality Review: workflow-level contract tests 补强
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Actions taken:
+  - 补充 `tests/automation/upstream-refresh-workflow.test.mjs` 的文本级 workflow contract helpers，不引入 YAML 依赖。
+  - 断言 `runs-on: ubuntu-latest`，checkout 使用 `actions/checkout@v4`、`ref: main`、`fetch-depth: 0`。
+  - 断言 step 顺序固定为 checkout、setup node、run refresh、upload artifact、read result、open PR。
+  - 断言 artifact upload 使用 `always()` 且 path 为 `.harness/upstream-refresh-result.json`。
+  - 断言 read result step 的 `id: refresh_result`、guard 和 `readFileSync` 使用同一个 result path，并输出 `status` 与 `eligible_count`。
+  - 断言 PR step gate 同时要求 `success()`、`status == 'success'` 和 `eligible_count != '0'`。
+  - 断言 workflow 不包含 `gh pr merge`、`--auto` 或 `auto-merge`。
+  - 未修改 `.github/workflows/upstream-refresh.yml`，现有 workflow 已满足新增 contract。
+- Files modified:
+  - `tests/automation/upstream-refresh-workflow.test.mjs`
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md`
+
+## Additional Test Results 10
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Workflow quality contract | `node --test tests/automation/upstream-refresh-workflow.test.mjs` | Task 5 quality review 要求全部被测试覆盖且通过 | 8 tests pass | 通过 |
+| Automation full regression | `node --test tests/automation/*.test.mjs` | automation tests 全部通过 | 37 tests pass | 通过 |
+
+### Phase 13 Task 6 Quality Review: manual/scheduled gates 修复
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Actions taken:
+  - 在 `.github/workflows/upstream-refresh.yml` 增加 `workflow_dispatch.inputs.create_pr`，默认 `false`，让手动演练默认不创建或更新 PR。
+  - 给 `upstream-refresh` job 增加 schedule gate：scheduled run 只有 `UPSTREAM_REFRESH_SCHEDULE_ENABLED=true` 时才执行。
+  - 收紧 PR runner 条件，继续要求 `success()`、`result.status == 'success'`、`eligible_count != '0'`，并额外要求 schedule event 或手动 `create_pr == true`。
+  - 更新 `docs/maintenance.md`，把 workflow 手动触发描述为 PR-disabled rehearsal，并记录显式 PR path 与 repo variable schedule 启用动作。
+  - 更新 `tests/automation/upstream-refresh-workflow.test.mjs`，锁住 `create_pr` input、schedule variable gate 和 PR step gate。
+- Files modified:
+  - `.github/workflows/upstream-refresh.yml`
+  - `docs/maintenance.md`
+  - `tests/automation/upstream-refresh-workflow.test.mjs`
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md`
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md`
+
+## Additional Test Results 11
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Workflow gate contract | `node --test tests/automation/upstream-refresh-workflow.test.mjs` | `create_pr` input、schedule repo variable gate、PR step gate 全部通过 | 8 tests pass | 通过 |
+| Automation full regression | `node --test tests/automation/*.test.mjs` | automation tests 全部通过 | 37 tests pass | 通过 |
+| Repository verify | `npm run verify` | 全量 verify 通过 | 305 tests pass | 通过 |
+
+### Phase 14 Task 7: Optional Local Dev Sync Helper
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Actions taken:
+  - 按 TDD 新增 `tests/automation/local-dev-sync.test.mjs`，先确认 helper 模块缺失时 RED。
+  - 新增 `scripts/local/sync-dev-after-upstream-pr.mjs`，导出 command plan、formatCommand、ahead/behind parser、preflight analysis、report formatting、injected runner 和 `runLocalDevSync`。
+  - helper 先确认 repo root、当前分支、clean worktree、local `dev`、fetch 后的 `origin/dev`、以及 `dev...origin/dev` ahead/behind；只有 local `dev` 未领先且可 fast-forward 时继续。
+  - 真实同步只执行 `git fetch origin dev`、`git checkout dev`、`git merge --ff-only origin/dev`；不 stash、不 rebase、不自动解冲突。
+  - 更新 `docs/maintenance.md`，说明 GitHub Actions 不能直接触发本机 helper，推荐 manual、macOS LaunchAgent 或有意暴露的 local webhook，并记录 blocked report 字段和恢复命令。
+  - 将 companion plan Task 7 checklist 标记完成。
+- Files created/modified:
+  - `scripts/local/sync-dev-after-upstream-pr.mjs` (created)
+  - `tests/automation/local-dev-sync.test.mjs` (created)
+  - `docs/maintenance.md` (modified)
+  - `docs/superpowers/plans/2026-04-19-github-actions-upstream-automation-analysis-plan.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md` (updated)
+
+## Additional Test Results 12
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Local dev sync RED | `node --test tests/automation/local-dev-sync.test.mjs` before helper creation | helper 缺失时失败 | 6 tests fail with `ERR_MODULE_NOT_FOUND` | 通过 |
+| Local dev sync focused GREEN | `node --test tests/automation/local-dev-sync.test.mjs` | command plan、preflight、report 和 runner 行为全部通过 | 6 tests pass | 通过 |
+| Local dev sync syntax | `node --check scripts/local/sync-dev-after-upstream-pr.mjs` | helper 语法有效 | 无输出，exit 0 | 通过 |
+| Repository verify | `npm run verify` | 全量 verify 通过且包含 `tests/automation/local-dev-sync.test.mjs` | 311 tests pass | 通过 |
+
+### Phase 14 Quality Review: Important issue fix
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Actions taken:
+  - 修复 `scripts/local/sync-dev-after-upstream-pr.mjs` 的 preflight ref 解析：local dev 使用 `refs/heads/dev`，remote dev 使用 `refs/remotes/origin/dev`，ahead/behind 使用 `refs/heads/dev...refs/remotes/origin/dev`。
+  - 调整同步执行顺序：完整 ref preflight 通过后，才执行允许的 `git fetch origin dev`、`git checkout dev`、`git merge --ff-only origin/dev`。
+  - 整理 reason：local-only ahead 保持 `local_dev_ahead_of_origin_dev`，双向分叉使用 `fast_forward_not_available`。
+  - 新增 tag named `dev` 但没有 `refs/heads/dev` 的回归测试，确认不会被短 ref 骗过 preflight。
+  - 同步更新 `docs/maintenance.md` 中 local helper 的 preflight 与 recovery checks 描述。
+- Files modified:
+  - `scripts/local/sync-dev-after-upstream-pr.mjs`
+  - `tests/automation/local-dev-sync.test.mjs`
+  - `docs/maintenance.md`
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md`
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md`
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md`
+
+## Additional Test Results 13
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Local dev sync quality regression | `node --test tests/automation/local-dev-sync.test.mjs` | 完整 ref preflight、dev tag regression 和允许同步命令顺序全部通过 | 8 tests pass | 通过 |
+| Local dev sync syntax | `node --check scripts/local/sync-dev-after-upstream-pr.mjs` | helper 语法有效 | 无输出，exit 0 | 通过 |
+| Repository verify | `npm run verify` | 全量 verify 通过 | 313 tests pass | 通过 |
+
+## Session: 2026-05-01
+
+### Phase 15: Final code review PR helper 修复
+- **Status:** complete
+- Worktree: `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/202604301444-github-actions-upstream-automation-analysis-001`
+- Actions taken:
+  - 修正 regression test：`runOpenUpstreamPullRequest()` 收到 `{ status: 'failure', eligibleFiles: [...] }` 时抛出 `UpstreamPullRequestError`，且不运行任何 git/gh command。
+  - 新增 regression tests：`status: 'no_changes'` 与 missing status / `unknown` 也抛出 `UpstreamPullRequestError`，且不运行任何 git/gh command。
+  - 在 PR helper 内部加入 terminal refresh status gate，只有 `refreshResult.status === 'success'` 才继续 plan、commit、push 或 create/update PR。
+  - 将 existing matched automation PR update 的 push command 改为参数数组 `['push', '--force-with-lease', 'origin', 'automation/upstream-refresh']`。
+  - 保持 create path 使用参数数组 `['push', '--set-upstream', 'origin', 'automation/upstream-refresh']`。
+  - 更新 PR body 和 `docs/maintenance.md`，说明 guarded `--force-with-lease` 只用于固定 automation branch 且 PR 必须匹配 head/base，不是泛用 force push。
+- Files modified:
+  - `scripts/ci/lib/upstream-pr.mjs`
+  - `scripts/ci/open-upstream-pr.mjs`
+  - `tests/automation/upstream-pr-lib.test.mjs`
+  - `docs/maintenance.md`
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md`
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md`
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md`
+
+## Additional Test Results 14
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| PR helper regression RED | `node --test tests/automation/upstream-pr-lib.test.mjs` before implementation | 新增 final review tests 暴露 status gate、force-with-lease 和 PR body 缺口 | 4 tests fail | 通过 |
+| PR helper regression GREEN | `node --test tests/automation/upstream-pr-lib.test.mjs` | refresh failure/no_changes/unknown terminal reject、matched update force-with-lease、wrong-base create path 和 PR body docs 全部通过 | 18 tests pass | 通过 |
+| Automation full regression | `node --test tests/automation/*.test.mjs` | automation tests 全部通过 | 49 tests pass | 通过 |
+| Repository verify | `npm run verify` | 全量 verify 通过 | 317 tests pass | 通过 |
+| Diff whitespace check | `git diff --check` | 当前 diff 无 whitespace 警告 | 无输出，exit 0 | 通过 |
+
+### Final Review: upstream refresh automation
+- **Status:** approved
+- Actions taken:
+  - 读取主控最终验证输出，确认 `git diff --check`、PR helper focused tests、automation tests 与全量 verify 均通过。
+  - 执行最终只读 code review，重点复核 PR helper status gate、`--force-with-lease` 约束、workflow gate、local fast-forward-only helper 与 automation test coverage。
+  - reviewer 结论为 `APPROVED`，未发现需要修改的问题。
+
+## Additional Test Results 15
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Final PR helper focused regression | `node --test tests/automation/upstream-pr-lib.test.mjs` | PR helper latest final review 修复全部通过 | 18 tests pass | 通过 |
+| Final automation full regression | `node --test tests/automation/*.test.mjs` | automation tests 全部通过 | 49 tests pass | 通过 |
+| Final repository verify | `npm run verify` | 全量 verify 通过 | 317 tests pass | 通过 |
+| Final diff whitespace check | `git diff --check` | 当前 diff 无 whitespace 警告 | 无输出，exit 0 | 通过 |
+| Final code review | read-only reviewer | 无阻塞问题 | APPROVED | 通过 |

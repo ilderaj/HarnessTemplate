@@ -390,7 +390,7 @@ cron: 0 12 * * 5
 - Modify: `docs/maintenance.md`
 - Optional local config: macOS LaunchAgent or manual shell alias outside the repository
 
-- [ ] **Step 1: Implement safe local preflight**
+- [x] **Step 1: Implement safe local preflight**
 
 The helper must verify:
 
@@ -403,7 +403,7 @@ local dev is not ahead of origin/dev
 update can be fast-forwarded
 ```
 
-- [ ] **Step 2: Execute only fast-forward sync**
+- [x] **Step 2: Execute only fast-forward sync**
 
 Allowed command shape:
 
@@ -415,7 +415,7 @@ git merge --ff-only origin/dev
 
 If this fails, stop and print recovery instructions. Do not stash, rebase, or resolve conflicts automatically in v1.
 
-- [ ] **Step 3: Trigger the helper explicitly**
+- [x] **Step 3: Trigger the helper explicitly**
 
 Recommended v1 activation is manual or local scheduled polling. GitHub Actions cannot directly trigger it on this machine. Optional approaches:
 
@@ -425,7 +425,7 @@ local schedule: macOS LaunchAgent that runs the helper after expected PR merge w
 advanced: local webhook listener, only if the machine is intentionally exposed or tunneled
 ```
 
-- [ ] **Step 4: Document conflict boundaries**
+- [x] **Step 4: Document conflict boundaries**
 
 Document that local conflicts are not automatically resolved. The helper should create a clear terminal report with:
 

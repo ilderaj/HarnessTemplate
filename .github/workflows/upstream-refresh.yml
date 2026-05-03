@@ -1,0 +1,64 @@
+name: Upstream Refresh
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_pr:
+        description: Create or update the upstream refresh pull request
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: '0 12 * * 5'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  upstream-refresh:
+    name: Refresh upstream baselines
+    if: ${{ github.event_name != 'schedule' || vars.UPSTREAM_REFRESH_SCHEDULE_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run upstream refresh
+        run: node scripts/ci/run-upstream-refresh.mjs
+
+      - name: Upload upstream refresh result
+        if: ${{ always() && hashFiles('.harness/upstream-refresh-result.json') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-refresh-result
+          path: .harness/upstream-refresh-result.json
+          if-no-files-found: error
+
+      - name: Read upstream refresh result
+        id: refresh_result
+        if: ${{ always() && hashFiles('.harness/upstream-refresh-result.json') != '' }}
+        run: |
+          node <<'NODE'
+          const { readFileSync, appendFileSync } = require('node:fs');
+
+          const result = JSON.parse(readFileSync('.harness/upstream-refresh-result.json', 'utf8'));
+          const eligibleCount = Array.isArray(result.eligibleFiles) ? result.eligibleFiles.length : 0;
+          appendFileSync(process.env.GITHUB_OUTPUT, `status=${result.status ?? ''}\n`);
+          appendFileSync(process.env.GITHUB_OUTPUT, `eligible_count=${eligibleCount}\n`);
+          NODE
+
+      - name: Open upstream refresh pull request
+        if: ${{ success() && steps.refresh_result.outputs.status == 'success' && steps.refresh_result.outputs.eligible_count != '0' && (github.event_name == 'schedule' || inputs.create_pr == true) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ci/open-upstream-pr.mjs
