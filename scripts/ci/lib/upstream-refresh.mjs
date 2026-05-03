@@ -37,7 +37,7 @@ export function buildRefreshCommandChain() {
   return [
     { file: 'git', args: ['fetch', 'origin', 'main', 'dev'] },
     { file: 'git', args: ['checkout', '-B', branchName, baseRef] },
-    { file: './scripts/harness', args: ['install', '--scope=workspace', '--targets=all', '--projection=link'] },
+    { file: './scripts/harness', args: ['install', '--scope=workspace', '--targets=all', '--projection=link', '--mode=force'] },
     { file: './scripts/harness', args: ['fetch'] },
     { file: './scripts/harness', args: ['update'] },
     { file: 'npm', args: ['run', 'verify'] },

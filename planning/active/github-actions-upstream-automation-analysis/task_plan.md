@@ -4,12 +4,12 @@
 分析并规划如何用 GitHub Actions 定期检测 Superpowers 和 Planning with Files 主源变更，在本项目内自动刷新 baseline、执行验证，并以 PR 方式把结果落到 `dev`。
 
 ## Current State
-Status: waiting_review
+Status: active
 Archive Eligible: no
 Close Reason:
 
 ## Current Phase
-Phase 15
+Phase 16
 
 ## Phases
 
@@ -111,6 +111,15 @@ Phase 15
 - [x] 更新 PR body、maintenance docs 和 regression tests，明确 guarded update 只适用于 matched automation branch/base PR
 - **Status:** complete
 
+### Phase 16: Post-merge rehearsal fix for clean-checkout workspace takeover
+- [x] 在 `main` 上触发第一次 `workflow_dispatch` rehearsal，并下载失败 artifact 与 logs
+- [x] 确认失败根因是 clean checkout 缺少 workspace projection ownership，导致 `install --scope=workspace` 在 `AGENTS.md` 处拒绝 takeover
+- [x] 从 `origin/main` 创建隔离 worktree 修复 CI 路径，而不是沿本地分叉 `dev` 继续
+- [x] 先补 failing tests，锁住 `install --mode=force` 和 refresh command chain
+- [x] 实现显式 `install --mode=force` -> `sync --takeover` 通道，并让 upstream refresh 使用它
+- [x] 运行 focused tests 与 `npm run verify` 确认 GREEN
+- **Status:** complete
+
 ## Key Questions
 1. GitHub Actions 是否能定期检测两个 upstream 主源的变更？
 2. Actions 是否能安全触发本项目已有 `fetch` / `update` 流程？
@@ -138,6 +147,8 @@ Phase 15
 | PR body 只把 automatic review/checks 标记为 advisory，并明确 final human review required | 避免 bot review 被误解为最终审批，也不启用 auto-merge |
 | PR CLI 通过注入 runner 执行 git/gh | 测试不实际 push、不创建 PR；CI 运行时仍可执行真实命令 |
 | Task 5 workflow 不运行 `npm ci` | 当前仓库没有 lockfile，加入 install step 会制造不稳定失败；refresh runner 内部会执行 `npm run verify` |
+| clean checkout 的 workspace refresh install 必须显式 opt into takeover | CI checkout 没有 `.harness/projections.json` ownership manifest，但仓库已经包含 authoritative workspace projections；默认 reject 会在 `AGENTS.md` / skill roots 处阻塞 refresh |
+| `install --mode=force` 通过 `sync --takeover` 接管 desired projection targets | 只为显式重建场景放宽 ownership，不改变默认 install/sync 的 reject 保护 |
 | PR runner gate 同时要求 job success、`result.status == success` 和 `eligibleFiles.length > 0` | 避免失败 refresh、无变化或无 eligible files 时创建 PR |
 | `.harness/upstream-refresh-result.json` 作为 workflow artifact 上传 | 失败或 blocked 情况下仍保留 result JSON，便于人工接管 |
 | Task 7 local dev sync helper 只运行 `git fetch origin dev`、`git checkout dev`、`git merge --ff-only origin/dev` | 本地同步保持 fast-forward-only；脏工作区、本地领先、分叉或冲突全部停止并报告恢复建议 |
@@ -188,7 +199,7 @@ Phase 15
 - 用 `scripts/ci/lib/upstream-refresh.mjs` 和 `scripts/ci/run-upstream-refresh.mjs` 执行：
   - `git fetch origin main dev`
   - `git checkout -B automation/upstream-refresh origin/dev`
-  - `./scripts/harness install --scope=workspace --targets=all --projection=link`
+  - `./scripts/harness install --scope=workspace --targets=all --projection=link --mode=force`
   - `./scripts/harness fetch`
   - `./scripts/harness update`
   - `npm run verify`
