@@ -528,3 +528,34 @@
 | Focused GREEN | `node --test tests/installer/commands.test.mjs tests/automation/upstream-refresh-lib.test.mjs` | force-mode takeover 与 refresh command chain 修复通过 | 35 tests pass | 通过 |
 | Diff whitespace check | `git diff --check` | 当前 hotfix diff 无 whitespace 问题 | 无输出，exit 0 | 通过 |
 | Full repository verify | `npm run verify` | installer + automation 改动无回归 | 318 tests pass | 通过 |
+
+## Session: 2026-05-04
+
+### Phase 17: final rehearsal, rollout enablement, and local branch alignment
+- **Status:** complete
+- Worktrees:
+  - `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/20260504-upstream-refresh-layout-compat-main`
+  - `/Users/jared/.config/superpowers/worktrees/SuperpoweringWithFiles/20260504-upstream-refresh-rehearsal-final-fix-dev`
+- Actions taken:
+  - 合并 `main` 修复 PR `#39`，将 final gating fix 带入 `origin/main`，本地 `main` worktree fast-forward 到 `295698f`。
+  - 在最新 `main` 上重新触发 manual rehearsal：`gh workflow run upstream-refresh.yml --ref main -f create_pr=false`，得到 run `25295497835`。
+  - 轮询 run 状态并确认最终 workflow 全绿：`Run upstream refresh`、artifact upload、result read 全部成功，PR step 按 `create_pr=false` 正常 skipped。
+  - 从 `d0a690f` cherry-pick final gating fix 到 `dev` 修复分支，推送并创建 PR `#40`，随后合并到 `dev`；`origin/dev` 前进到 `8517660`。
+  - 启用 repo variable：`UPSTREAM_REFRESH_SCHEDULE_ENABLED=true`。
+  - 为 `dev` 配置最小可行 branch protection：required pull request reviews = 1、required conversation resolution = true、禁用 force push 和 deletion。
+  - 检查主工作区本地 `dev` 发现其 `ahead 1, behind 9`；先创建 `backup/dev-before-origin-align-20260504`，再将 `dev` 重置到 `origin/dev`，完成安全对齐。
+- Files created/modified:
+  - `planning/active/github-actions-upstream-automation-analysis/task_plan.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/findings.md` (updated)
+  - `planning/active/github-actions-upstream-automation-analysis/progress.md` (updated)
+
+## Additional Test Results 18
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Final rehearsal dispatch | `gh workflow run upstream-refresh.yml --ref main -f create_pr=false` | 在包含 PR `#39` 修复的最新 `main` 上启动新 rehearsal | run `25295497835` created | 通过 |
+| Final rehearsal completion | `gh run view 25295497835 --json status,conclusion,jobs,url` | workflow 全部完成且成功 | `status: completed`, `conclusion: success`，核心 job 全绿 | 通过 |
+| Dev parity PR readiness | `gh pr view 40 --json state,isDraft,mergeStateStatus,reviewDecision,headRefName,baseRefName,url` + status checks | PR `#40` 可直接合并 | `mergeStateStatus: CLEAN`，无额外 approvals/check blockers | 通过 |
+| Dev parity merge | `gh pr merge 40 --merge --delete-branch` | final gating fix 进入 `dev` | PR `#40` merged；本地自动切回 `dev` 因 worktree 占用报一条非阻塞 git error | 通过 |
+| Schedule gate verification | `gh api repos/ilderaj/superpowering-with-files/actions/variables/UPSTREAM_REFRESH_SCHEDULE_ENABLED` | variable 已启用 | `value: true` | 通过 |
+| Dev protection verification | `gh api repos/ilderaj/superpowering-with-files/branches/dev/protection` | `dev` protection 生效 | 返回 required reviews/conversation resolution/force-push disabled 配置 | 通过 |
+| Local dev alignment | `git status --short --branch` + `git branch -vv` | 主工作区 `dev` 与 `origin/dev` 完全对齐 | `## dev...origin/dev`，`dev` 指向 `8517660 [origin/dev]` | 通过 |

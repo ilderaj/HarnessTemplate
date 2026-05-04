@@ -4,12 +4,12 @@
 分析并规划如何用 GitHub Actions 定期检测 Superpowers 和 Planning with Files 主源变更，在本项目内自动刷新 baseline、执行验证，并以 PR 方式把结果落到 `dev`。
 
 ## Current State
-Status: active
-Archive Eligible: no
-Close Reason:
+Status: closed
+Archive Eligible: yes
+Close Reason: final rehearsal on main succeeded, dev parity fix merged, schedule gate enabled, and local dev aligned with origin/dev
 
 ## Current Phase
-Phase 16
+Phase 17
 
 ## Phases
 
@@ -120,6 +120,14 @@ Phase 16
 - [x] 运行 focused tests 与 `npm run verify` 确认 GREEN
 - **Status:** complete
 
+### Phase 17: Final rollout rehearsal and governance enablement
+- [x] 触发带有 final gating fix 的最新 `main` rehearsal，并确认 workflow run `25295497835` 全部成功
+- [x] 将 final gating fix 同步到 `dev`，合并 PR `#40` 保持 `main` / `dev` automation parity
+- [x] 启用 repo variable `UPSTREAM_REFRESH_SCHEDULE_ENABLED=true`
+- [x] 为 `dev` 启用最小可行 branch protection：PR required、1 个 approval、resolved conversations
+- [x] 将主工作区本地 `dev` 安全对齐到 `origin/dev`，并保留备份分支
+- **Status:** complete
+
 ## Key Questions
 1. GitHub Actions 是否能定期检测两个 upstream 主源的变更？
 2. Actions 是否能安全触发本项目已有 `fetch` / `update` 流程？
@@ -155,6 +163,7 @@ Phase 16
 | PR helper 内部必须再次检查 `refreshResult.status === 'success'` | workflow gate 不能作为唯一保护；helper 被单独调用时必须从 failure/no_changes/unknown result 抛出终止错误，不能创建或更新 PR |
 | existing automation PR update 使用 `--force-with-lease` | 自动化分支每次从 `origin/dev` 重建，plain push 可能 non-fast-forward；lease 只用于已匹配 head `automation/upstream-refresh` 和 base `dev` 的 automation-owned PR |
 | PR create path 不使用 force push | 新建 automation PR 仍使用 `git push --set-upstream origin automation/upstream-refresh`，保持首次远端分支创建语义清晰 |
+| final rollout 在启用 schedule 前先补 `dev` 最小保护，再把 repo variable 打开 | 仓库没有其他 required checks 可挂，因此用 PR review + conversation resolution 建立最低治理面，避免定时自动化在无保护分支上长期运行 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -165,6 +174,7 @@ Phase 16
 - 需要用中文输出分析；代码相关名称、命令、workflow 字段保持英文。
 - 本轮只修订计划与 planning 文件，不创建 workflow、不改 GitHub 设置、不推分支。
 - Companion plan 与 task memory 已双向关联；task memory 保留摘要，companion plan 保存详细步骤。
+- 2026-05-04 已完成 rollout 收口：`main` rehearsal 通过、`dev` parity fix 合并、schedule gate 启用、`dev` protection 生效、本地 `dev` 已对齐远端。
 
 ## Current Verdict
 

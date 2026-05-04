@@ -102,6 +102,12 @@
 | Final review 修复要求 existing PR update 使用 guarded force-with-lease | 固定 automation branch 会从 `origin/dev` 重建，plain push 容易 non-fast-forward；只有 matched head/base PR 才允许 guarded lease update |
 | PR body 与维护文档必须说明 force-with-lease 不是泛用 force push | 该策略只属于 automation-owned `automation/upstream-refresh` -> `dev` 更新路径；create path 仍使用 `--set-upstream` |
 | Final reviewer approved latest PR helper status gate and guarded push behavior | `failure`、`no_changes`、missing/unknown status 会抛出 `UpstreamPullRequestError` 且不运行 git/gh；matched automation PR update 才使用 `--force-with-lease` |
+- 2026-05-04 最终 rehearsal run `25295497835` 在最新 `main` 上全部成功 | 之前的 `25295417628` 已因启动时未包含 PR `#39` 修复而失效，不能作为最终 rollout 判定 |
+- 2026-05-04 `dev` parity 通过 cherry-pick `d0a690f`、PR `#40` 合并完成 | automation gating 修复现在同时存在于 `main` 和 `dev`，避免后续主线漂移 |
+- 2026-05-04 已启用 repo variable `UPSTREAM_REFRESH_SCHEDULE_ENABLED=true` | scheduled run gate 已正式打开，后续 weekly cron 将真正执行 |
+- 2026-05-04 `dev` branch protection 采用最小可行治理配置 | 当前仓库没有其他 PR checks 可作为 required checks，因此配置为要求 PR、1 个 approval、resolved conversations，且禁用 force push/deletion |
+- 2026-05-04 主工作区本地 `dev` 原本 `ahead 1, behind 9` | 通过创建 `backup/dev-before-origin-align-20260504` 备份分支后重置到 `origin/dev`，完成安全对齐 |
+| 正式启用 schedule 前先补最小 `dev` protection，再打开 variable gate | 既遵守“不要在无治理分支上启用定时自动化”的 rollout 原则，也避免因虚构 required checks 把仓库卡死 |
 
 ## Issues Encountered
 | Issue | Resolution |
