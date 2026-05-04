@@ -8,6 +8,7 @@ const execFileAsync = promisify(execFile);
 export const baseRef = 'origin/dev';
 export const branchName = 'automation/upstream-refresh';
 export const resultPath = '.harness/upstream-refresh-result.json';
+export const refreshTaskId = 'github-actions-upstream-automation-analysis';
 
 const conflictFailurePattern = /\b(CONFLICT|conflict|merge conflict|merge failed|unmerged|would be overwritten|needs merge)\b/i;
 
@@ -29,6 +30,7 @@ const repoOwnedProjectionPathPrefixes = [
 
 const repoOwnedProjectionFiles = new Set([
   'AGENTS.md',
+  'CLAUDE.md',
   'docs/maintenance.md',
   '.github/copilot-instructions.md'
 ]);
@@ -41,7 +43,7 @@ export function buildRefreshCommandChain() {
     { file: './scripts/harness', args: ['fetch'] },
     { file: './scripts/harness', args: ['update'] },
     { file: 'npm', args: ['run', 'verify'] },
-    { file: './scripts/harness', args: ['worktree-preflight'] },
+    { file: './scripts/harness', args: ['worktree-preflight', '--task', refreshTaskId] },
     { file: './scripts/harness', args: ['sync', '--dry-run'] },
     { file: './scripts/harness', args: ['sync'] },
     { file: './scripts/harness', args: ['doctor'] }
