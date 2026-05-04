@@ -9,7 +9,7 @@ const expectedRefreshCommands = [
   { file: './scripts/harness', args: ['fetch'] },
   { file: './scripts/harness', args: ['update'] },
   { file: 'npm', args: ['run', 'verify'] },
-  { file: './scripts/harness', args: ['worktree-preflight'] },
+  { file: './scripts/harness', args: ['worktree-preflight', '--task', 'github-actions-upstream-automation-analysis'] },
   { file: './scripts/harness', args: ['sync', '--dry-run'] },
   { file: './scripts/harness', args: ['sync'] },
   { file: './scripts/harness', args: ['doctor'] }
@@ -22,7 +22,7 @@ const expectedHumanReadableRefreshCommandChain = [
   './scripts/harness fetch',
   './scripts/harness update',
   'npm run verify',
-  './scripts/harness worktree-preflight',
+  './scripts/harness worktree-preflight --task github-actions-upstream-automation-analysis',
   './scripts/harness sync --dry-run',
   './scripts/harness sync',
   './scripts/harness doctor'
@@ -343,6 +343,7 @@ test('filterEligibleChanges includes repo-owned projection and maintenance files
   const result = filterEligibleChanges([
     { path: 'docs/maintenance.md', status: 'M', tracked: true },
     { path: 'AGENTS.md', status: 'M', tracked: true },
+    { path: 'CLAUDE.md', status: 'M', tracked: true },
     { path: '.agents/skills/planning-with-files/SKILL.md', status: 'M', tracked: true },
     { path: '.claude/skills/superpowers/SKILL.md', status: 'M', tracked: true },
     { path: '.codex/skills/planning-with-files/SKILL.md', status: 'M', tracked: true },
@@ -355,6 +356,7 @@ test('filterEligibleChanges includes repo-owned projection and maintenance files
   assert.deepEqual(result.eligibleFiles, [
     'docs/maintenance.md',
     'AGENTS.md',
+    'CLAUDE.md',
     '.agents/skills/planning-with-files/SKILL.md',
     '.claude/skills/superpowers/SKILL.md',
     '.codex/skills/planning-with-files/SKILL.md',
